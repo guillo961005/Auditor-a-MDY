@@ -1,0 +1,1980 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Generador BG & ER - Excel Ejecutivo</title>
+<script src="./xlsx-js-style.min.js"></script>
+<style>
+  :root {
+    --bg:#f6f8fb;--card:#fff;--ink:#0f172a;--muted:#475569;--line:#e2e8f0;
+    --head:#0b2d5c;--head2:#133b73;--radius:14px;--shadow:0 10px 24px rgba(15, 23, 42, .08);
+    --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans)}
+  .wrap{max-width:1200px;margin:22px auto;padding:0 18px 40px}
+  .topbar{display:flex;gap:14px;align-items:center;justify-content:space-between;flex-wrap:wrap;
+    padding:18px;background:linear-gradient(135deg,var(--head),var(--head2));
+    border-radius:18px;color:#fff;box-shadow:var(--shadow);}
+  .topbar h1{margin:0;font-size:18px}
+  .topbar .sub{opacity:.9;font-size:12.5px}
+  .grid{display:grid;grid-template-columns:1.1fr .9fr;gap:16px;margin-top:16px}
+  .card{background:var(--card);border:1px solid #e2e8f0;border-radius:var(--radius);box-shadow:var(--shadow);padding:14px}
+  .card h2{margin:0 0 10px;font-size:14px;color:var(--head)}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
+  .col{flex:1;min-width:220px}
+  label{font-size:12px;color:#475569;display:block;margin-bottom:6px}
+  input[type="file"], select, input[type="number"], input[type="text"]{
+    width:100%;padding:10px;border:1px solid #e2e8f0;border-radius:12px;background:#fff;color:#0f172a;outline:none}
+  .btns{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+  button{border:1px solid #e2e8f0;background:#fff;color:#0f172a;padding:10px 12px;border-radius:12px;cursor:pointer;font-weight:800}
+  button.primary{background:linear-gradient(135deg,#1d4ed8,#2563eb);border-color:transparent;color:#fff}
+  button:disabled{opacity:.5;cursor:not-allowed}
+  .hint{font-size:12px;color:#475569;margin-top:10px;line-height:1.35}
+  .kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:10px}
+  .kpi{border:1px solid #e2e8f0;border-radius:14px;padding:10px;background:#fbfdff}
+  .kpi .t{font-size:12px;color:#475569}
+  .kpi .v{margin-top:6px;font-size:14px;font-weight:900;color:var(--head)}
+  .mapping-output{width:100%;min-height:120px;padding:10px;border:1px dashed #cbd5f5;border-radius:12px;background:#f8fafc;font-size:12px;color:#0f172a;white-space:pre-wrap}
+  .mapping-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:8px}
+  @media (max-width: 980px){.grid{grid-template-columns:1fr}.kpis{grid-template-columns:repeat(1,1fr)}}
+
+/* ===== preview tables ===== */
+.preview-wrap{overflow:auto; border:1px solid rgba(15,23,42,.12); border-radius:14px;}
+.preview table{width:100%; border-collapse:separate; border-spacing:0;}
+.preview thead th{position:sticky; top:0; background:var(--bg); z-index:1; text-align:left; font-size:12px; color:var(--muted); padding:10px 10px; border-bottom:1px solid rgba(15,23,42,.12);}
+.preview tbody td{padding:10px 10px; border-bottom:1px solid rgba(15,23,42,.08); font-size:13px; vertical-align:top;}
+.preview tbody tr:last-child td{border-bottom:none;}
+.preview .num{text-align:right; font-variant-numeric:tabular-nums;}
+.preview .code{color:var(--muted); white-space:nowrap;}
+.preview .is-section td{background:#104862; color:#fff; font-weight:700;}
+.preview .is-subheader td{background:#CFECF7; font-weight:700;}
+.preview .is-subtotal td{background:#D9D9D9; font-weight:700;}
+.preview .is-total td{background:#BFBFBF; font-weight:800;}
+  .preview .is-detail td{background:#FBE3D6;}
+  .preview .var-alert{background:#fee2e2; color:#991b1b; font-weight:700;}
+  .preview .pct-alert{background:#fee2e2; color:#991b1b; font-weight:700;}
+  .hide-detail .is-detail{display:none;}
+  .unmapped-controls{display:flex;flex-direction:column;gap:6px;}
+  .unmapped-controls input[type="text"],
+  .unmapped-controls select{padding:8px;border-radius:10px;}
+  .unmapped-muted{font-size:11px;color:var(--muted);}
+
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <div>
+      <h1>Generador Balance General y Estado de Resultados (Excel Ejecutivo)</h1>
+      <div class="sub">Modelo fijo embebido · SDACCTA · Cifras en miles · Exporta Excel + JSON · No incluidas con DESCCTA</div>
+    </div>
+    <div class="sub" id="statusText">Listo.</div>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h2>Entrada</h2>
+      <div class="row">
+        <div class="col">
+          <label>Archivo de cifras (.xlsx)</label>
+          <input id="figuresFile" type="file" accept=".xlsx,.xls"/>
+        </div>
+      </div>
+
+      <div class="row" style="margin-top:10px;">
+        <div class="col">
+          <label>Hoja Período Actual (más reciente)</label>
+          <select id="figCurrentSheet"></select>
+        </div>
+        <div class="col">
+          <label>Hoja Período Anterior</label>
+          <select id="figPrevSheet"></select>
+        </div>
+      </div>
+
+      <div class="row" style="margin-top:10px;">
+        <div class="col">
+          <label>Etiqueta Período Actual</label>
+          <input id="labelCurrent" type="text" placeholder="Ej: 2024"/>
+        </div>
+        <div class="col">
+          <label>Etiqueta Período Anterior</label>
+          <input id="labelPrev" type="text" placeholder="Ej: 2023"/>
+        </div>
+      </div>
+
+      <div class="row" style="margin-top:10px;">
+        <div class="col">
+          <label>Umbral variación significativa (%)</label>
+          <input id="thresholdPct" type="number" value="20" min="0" step="1"/>
+        </div>
+        <div class="col">
+          <label>Escala</label>
+          <input type="text" value="Miles de pesos (÷ 1.000)" disabled/>
+        </div>
+      </div>
+
+      <div class="btns">
+        <button class="primary" id="btnProcess" disabled>Procesar</button>
+        <button id="btnExcel" disabled>Generar Excel</button>
+        <button id="btnJSON" disabled>Descargar JSON</button>
+      </div>
+
+      <div class="hint">
+        • Se usan solo cuentas <b>detalle</b> CODICTA de <b>8 dígitos</b> para evitar doble conteo.<br/>
+        • Expresiones como <b>5110-5120</b> se interpretan como <b>lista de prefijos</b> (5110 y 5120), no como rango.<br/>
+        • Subtotales/totales se calculan por jerarquía visual (columna B): detalle “guayaba” ≈ FBE3D6; grises = totales.<br/>
+        • “Resultado del ejercicio” en Balance se toma del ER (fila resultado del periodo/ejercicio).
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Resumen</h2>
+      <div class="kpis">
+        <div class="kpi"><div class="t">Cuentas 8 dígitos leídas (Actual)</div><div class="v" id="kpiCur">—</div></div>
+        <div class="kpi"><div class="t">Cuentas 8 dígitos leídas (Anterior)</div><div class="v" id="kpiPrev">—</div></div>
+        <div class="kpi"><div class="t">Cuentas no incluidas (saldo ≠ 0)</div><div class="v" id="kpiUnm">—</div></div>
+      </div>
+      <div id="unmappedPlacementWrap" style="margin-top:12px;">
+        <div class="hint" style="margin-bottom:8px;">Ubica cada cuenta no incluida en una línea específica o crea una fila nueva y recalcula el reporte.</div>
+        <div class="preview-wrap">
+          <div class="preview" id="unmappedPlacementTable"></div>
+        </div>
+        <div class="btns">
+          <button id="btnApplyUnmapped" type="button" disabled>Aplicar ubicaciones</button>
+          <button id="btnSaveMappings" type="button" disabled>Guardar asignaciones como base</button>
+        </div>
+        <div class="mapping-actions">
+          <button id="btnDownloadMappings" type="button" disabled>Descargar snippet de modelo</button>
+          <button id="btnCopyMappings" type="button" disabled>Copiar snippet</button>
+          <button id="btnClearMappings" type="button" disabled>Revertir asignaciones guardadas</button>
+        </div>
+        <textarea id="customMappingsOutput" class="mapping-output" readonly placeholder="Aquí aparecerá el snippet JS que puedes pegar en el código fuente para que las cuentas queden incluidas de forma permanente."></textarea>
+        <div class="hint">Las asignaciones guardadas se aplican en este navegador (localStorage). Usa el snippet para actualizar el código fuente y compartirlo entre equipos.</div>
+      </div>
+      <div class="hint" id="runMeta">—</div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+const MODEL = {"balance": [{"row": 7, "code_raw": "", "concept": "ACTIVO", "fill": "theme:4:-0.249977111117893", "fill_class": "section"}, {"row": 8, "code_raw": "", "concept": "Activo corriente", "fill": "theme:7:0.7999816888943144", "fill_class": "subheader"}, {"row": 9, "code_raw": "1110-1120", "concept": "Bancos", "fill": "theme:5:0.7999816888943144", "fill_class": "detail"}, {"row": 10, "code_raw": "1105", "concept": "Caja", "fill": "theme:5:0.7999816888943144", "fill_class": "detail"}, {"row": 11, "code_raw": "", "concept": "Efectivo y equivalentes de efectivo", "fill": null, "fill_class": "group"}, {"row": 12, "code_raw": "1225", "concept": "Activos financieros (CDT)", "fill": null, "fill_class": "group"}, {"row": 13, "code_raw": "1245", "concept": "Fiduciaria Cuota Extraordinaria", "fill": null, "fill_class": "group"}, {"row": 14, "code_raw": "13250501-13250502-13250503-13250504-13250505-13250506-13250508-1390-1399", "concept": "Cuentas por cobrar copropietarios", "fill": "theme:5:0.7999816888943144", "fill_class": "detail"}, {"row": 15, "code_raw": "", "concept": "Cuentas por cobrar PLA (Control de obras)", "fill": "theme:5:0.7999816888943144", "fill_class": "detail"}, {"row": 16, "code_raw": "13809508", "concept": "Incapacidades", "fill": "theme:5:0.7999816888943144", "fill_class": "detail"}, {"row": 17, "code_raw": "1365", "concept": "Cuentas por cobrar trabajadores", "fill": "theme:5:0.7999816888943144", "fill_class": "detail"}, {"row": 18, "code_raw": "1330", "concept": "Anticipos y avances", "fill": "theme:5:0.7999816888943144", "fill_class": "detail"}, {"row": 19, "code_raw": "13101001", "concept": "Cuentas por cobrar Club", "fill": "theme:5:0.7999816888943144", "fill_class": "detail"}, {"row": 20, "code_raw": "1305-13250507-1335-1345", "concept": "Otros", "fill": "theme:5:0.7999816888943144", "fill_class": "detail"}, {"row": 21, "code_raw": "", "concept": "Deudores", "fill": null, "fill_class": "group"}, {"row": 22, "code_raw": "1710", "concept": "Seguros pagados por anticipados", "fill": null, "fill_class": "group"}, {"row": 23, "code_raw": "14", "concept": "Inventarios", "fill": null, "fill_class": "group"}, {"row": 24, "code_raw": "", "concept": "Total activo corriente", "fill": "theme:0:-0.1499984740745262", "fill_class": "subtotal"}, {"row": 25, "code_raw": "", "concept": "Activo no corriente", "fill": "theme:7:0.7999816888943144", "fill_class": "subheader"}, {"row": 26, "code_raw": "13809502", "concept": "Acreencias en UVR Promotora", "fill": "theme:5:0.7999816888943144", "fill_class": "detail"}, {"row": 27, "code_raw": "13809501", "concept": "Acreencias en Pesos Promotora", "fill": "theme:5:0.7999816888943144", "fill_class": "detail"}, {"row": 28, "code_raw": "13809509", "concept": "Cta por cobrar promotora - acuerdo", "fill": "theme:5:0.7999816888943144", "fill_class": "detail"}, {"row": 29, "code_raw": "13809510", "concept": "Cuentas por cobrar Otros", "fill": "theme:5:0.7999816888943144", "fill_class": "detail"}, {"row": 30, "code_raw": "13809511", "concept": "CxC Int.OtroSi Memo. Ente. PLA", "fill": "theme:5:0.7999816888943144", "fill_class": "detail"}, {"row": 31, "code_raw": "13809512", "concept": "CxC PLA Via Longitudinal Sector U", "fill": "rgb:FFFF00", "fill_class": "detail"}, {"row": 32, "code_raw": "13809513-13809514", "concept": "Préstamo e Intereses PLA Pagaré", "fill": "theme:5:0.7999816888943144", "fill_class": "detail"}, {"row": 33, "code_raw": "", "concept": "Acreencias PLA y otros", "fill": null, "fill_class": "group"}, {"row": 34, "code_raw": "1205", "concept": "Acciones", "fill": "theme:5:0.7999816888943144", "fill_class": "detail"}, {"row": 35, "code_raw": "1905", "concept": "Valorización acciones", "fill": "theme:5:0.7999816888943144", "fill_class": "detail"}, {"row": 36, "code_raw": "", "concept": "Inversiones PLA", "fill": null, "fill_class": "group"}, {"row": 37, "code_raw": "1516-159205", "concept": "Construcciones y edificaciones", "fill": "theme:5:0.7999816888943144", "fill_class": "detail"}, {"row": 38, "code_raw": "1556-159255", "concept": "Acueductos plantas y redes", "fill": "theme:5:0.7999816888943144", "fill_class": "detail"}, {"row": 39, "code_raw": "1520-159210", "concept": "Maquinaria y equipo", "fill": "theme:5:0.7999816888943144", "fill_class": "detail"}, {"row": 40, "code_raw": "1528-159220", "concept": "Equipo de computación y comunicación", "fill": "theme:5:0.7999816888943144", "fill_class": "detail"}, {"row": 41, "code_raw": "1524-159215", "concept": "Equipo de oficina", "fill": "theme:5:0.7999816888943144", "fill_class": "detail"}, {"row": 42, "code_raw": "1540-159235", "concept": "Flota y equipo de transporte", "fill": "theme:5:0.7999816888943144", "fill_class": "detail"}, {"row": 43, "code_raw": "1508", "concept": "Proyectos de inversión en curso", "fill": "theme:5:0.7999816888943144", "fill_class": "detail"}, {"row": 44, "code_raw": "", "concept": "Propiedad, planta y equipo", "fill": null, "fill_class": "group"}, {"row": 45, "code_raw": "1705", "concept": "Suscripciones", "fill": null, "fill_class": "group"}, {"row": 46, "code_raw": "", "concept": "Total activo no corriente", "fill": "theme:0:-0.1499984740745262", "fill_class": "subtotal"}, {"row": 47, "code_raw": "", "concept": "TOTAL ACTIVO", "fill": "theme:0:-0.249977111117893", "fill_class": "total"}, {"row": 48, "code_raw": "", "concept": "PASIVO", "fill": "theme:4:-0.249977111117893", "fill_class": "section"}, {"row": 49, "code_raw": "", "concept": "Pasivo corriente", "fill": "theme:7:0.7999816888943144", "fill_class": "subheader"}, {"row": 50, "code_raw": "22", "concept": "Proveedores", "fill": null, "fill_class": "group"}, {"row": 51, "code_raw": "2335", "concept": "Costos y gastos por pagar", "fill": "theme:5:0.7999816888943144", "fill_class": "detail"}, {"row": 52, "code_raw": "2370", "concept": "Retenciones y aportes de nomina", "fill": "theme:5:0.7999816888943144", "fill_class": "detail"}, {"row": 53, "code_raw": "2380", "concept": "Acreedores varios", "fill": "theme:5:0.7999816888943144", "fill_class": "detail"}, {"row": 54, "code_raw": "2368", "concept": "Industria y comercio retenido", "fill": "theme:5:0.7999816888943144", "fill_class": "detail"}, {"row": 55, "code_raw": "", "concept": "Costos y gastos por pagar", "fill": null, "fill_class": "group"}, {"row": 56, "code_raw": "24", "concept": "Pasivos por impuestos corrientes", "fill": null, "fill_class": "group"}, {"row": 57, "code_raw": "25", "concept": "Pasivos por beneficios a empleados", "fill": null, "fill_class": "group"}, {"row": 58, "code_raw": "2815", "concept": "Cuotas extraordinarias 2024", "fill": null, "fill_class": "group"}, {"row": 59, "code_raw": "2828", "concept": "Rete de Garatia a Terceros Contratos", "fill": null, "fill_class": "group"}, {"row": 60, "code_raw": "26-27-23050103", "concept": "Otros pasivos", "fill": null, "fill_class": "group"}, {"row": 61, "code_raw": "", "concept": "Total Pasivo Corriente", "fill": "theme:0:-0.1499984740745262", "fill_class": "subtotal"}, {"row": 62, "code_raw": "", "concept": "Pasivo no corriente", "fill": "theme:7:0.7999816888943144", "fill_class": "subheader"}, {"row": 63, "code_raw": "23050104-23050121", "concept": "Cuentas por pagar Club", "fill": null, "fill_class": "group"}, {"row": 64, "code_raw": "2810", "concept": "Cuotas extraordinarias", "fill": null, "fill_class": "group"}, {"row": 65, "code_raw": "", "concept": "Total Pasivo no Corriente", "fill": "theme:0:-0.1499984740745262", "fill_class": "subtotal"}, {"row": 66, "code_raw": "", "concept": "TOTAL PASIVO", "fill": "theme:0:-0.249977111117893", "fill_class": "total"}, {"row": 67, "code_raw": "", "concept": "PATRIMONIO", "fill": "theme:4:-0.249977111117893", "fill_class": "section"}, {"row": 68, "code_raw": "3310", "concept": "Reservas estatutarias", "fill": null, "fill_class": "group"}, {"row": 69, "code_raw": "38", "concept": "Superávit por valorizaciones", "fill": null, "fill_class": "group"}, {"row": 70, "code_raw": "3905", "concept": "Cuentas Nominales De Cierre", "fill": null, "fill_class": "group"}, {"row": 71, "code_raw": "3420-3610-3705", "concept": "Excedentes acumuladas", "fill": null, "fill_class": "group"}, {"row": 72, "code_raw": "3150", "concept": "Excedentes acumuladas por acreencias", "fill": null, "fill_class": "group"}, {"row": 73, "code_raw": "", "concept": "Resultado del periodo", "fill": null, "fill_class": "group"}, {"row": 74, "code_raw": "", "concept": "TOTAL PATRIMONIO", "fill": "theme:0:-0.249977111117893", "fill_class": "total"}, {"row": 75, "code_raw": "", "concept": "TOTAL PASIVO Y PATRIMONIO", "fill": "theme:0:-0.249977111117893", "fill_class": "total"}], "er": [{"row": 7, "code_raw": "", "concept": "INGRESOS", "fill": "theme:4:-0.249977111117893", "fill_class": "section"}, {"row": 8, "code_raw": "41", "concept": "Cuotas de administración", "fill": null, "fill_class": "group"}, {"row": 9, "code_raw": "4235", "concept": "Servicios", "fill": null, "fill_class": "group"}, {"row": 10, "code_raw": "", "concept": "Total Ingresos operacionales", "fill": "theme:0:-0.1499984740745262", "fill_class": "subtotal"}, {"row": 11, "code_raw": "612592", "concept": "SERVICIOS A COPROPIETARIOS CIF CONTABILI", "fill": "theme:5:0.7999816888943144", "fill_class": "detail"}, {"row": 12, "code_raw": "612590", "concept": "SERVICIOS A COPROPIETARIOS INV-MAT.PRIMA", "fill": "theme:5:0.7999816888943144", "fill_class": "detail"}, {"row": 13, "code_raw": "612591", "concept": "SERVICIOS A COPROPIETARIOS MANO DE OBRA", "fill": "theme:5:0.7999816888943144", "fill_class": "detail"}, {"row": 14, "code_raw": "", "concept": "Costo de servicios", "fill": null, "fill_class": "group"}, {"row": 15, "code_raw": "", "concept": "Excedente bruto", "fill": "theme:0:-0.1499984740745262", "fill_class": "subtotal"}, {"row": 16, "code_raw": "5135", "concept": "Servicios", "fill": "theme:5:0.7999816888943144", "fill_class": "detail"}, {"row": 17, "code_raw": "5105", "concept": "Gastos del personal", "fill": "theme:5:0.7999816888943144", "fill_class": "detail"}, {"row": 18, "code_raw": "5145", "concept": "Mantenimiento y reparaciones", "fill": "theme:5:0.7999816888943144", "fill_class": "detail"}, {"row": 19, "code_raw": "5160", "concept": "Depreciaciones", "fill": "theme:5:0.7999816888943144", "fill_class": "detail"}, {"row": 20, "code_raw": "5120", "concept": "Arrendamientos", "fill": "theme:5:0.7999816888943144", "fill_class": "detail"}, {"row": 21, "code_raw": "5195", "concept": "Diversos ", "fill": "theme:5:0.7999816888943144", "fill_class": "detail"}, {"row": 22, "code_raw": "5110", "concept": "Honorarios", "fill": "theme:5:0.7999816888943144", "fill_class": "detail"}, {"row": 23, "code_raw": "5130", "concept": "Seguros", "fill": "theme:5:0.7999816888943144", "fill_class": "detail"}, {"row": 24, "code_raw": "5140", "concept": "Gastos legales", "fill": "theme:5:0.7999816888943144", "fill_class": "detail"}, {"row": 25, "code_raw": "5199", "concept": "Provisiones", "fill": "theme:5:0.7999816888943144", "fill_class": "detail"}, {"row": 26, "code_raw": "5115", "concept": "Impuestos", "fill": "theme:5:0.7999816888943144", "fill_class": "detail"}, {"row": 27, "code_raw": "5150", "concept": "Adecuación e instalación", "fill": "theme:5:0.7999816888943144", "fill_class": "detail"}, {"row": 28, "code_raw": "5155", "concept": "Gastos de viaje", "fill": "theme:5:0.7999816888943144", "fill_class": "detail"}, {"row": 29, "code_raw": "", "concept": "Gastos de administración", "fill": null, "fill_class": "group"}, {"row": 30, "code_raw": "", "concept": "Déficit operacional", "fill": "theme:0:-0.1499984740745262", "fill_class": "subtotal"}, {"row": 31, "code_raw": "4295", "concept": "DIVERSOS", "fill": "theme:5:0.7999816888943144", "fill_class": "detail"}, {"row": 32, "code_raw": "4220", "concept": "ARRENDAMIENTOS", "fill": "theme:5:0.7999816888943144", "fill_class": "detail"}, {"row": 33, "code_raw": "4210", "concept": "FINANCIEROS", "fill": "theme:5:0.7999816888943144", "fill_class": "detail"}, {"row": 34, "code_raw": "4250", "concept": "RECUPERACIONES", "fill": "theme:5:0.7999816888943144", "fill_class": "detail"}, {"row": 35, "code_raw": "4230", "concept": "Honorarios", "fill": "theme:5:0.7999816888943144", "fill_class": "detail"}, {"row": 36, "code_raw": "", "concept": "Otros ingresos no operacionales", "fill": null, "fill_class": "group"}, {"row": 37, "code_raw": "5305", "concept": "Financieros", "fill": "theme:5:0.7999816888943144", "fill_class": "detail"}, {"row": 38, "code_raw": "5315", "concept": "Gastos extraordinarios", "fill": "theme:5:0.7999816888943144", "fill_class": "detail"}, {"row": 39, "code_raw": "5395", "concept": "Gastos diversos", "fill": "theme:5:0.7999816888943144", "fill_class": "detail"}, {"row": 40, "code_raw": "", "concept": "Otros gastos no operacionales", "fill": null, "fill_class": "group"}, {"row": 41, "code_raw": "", "concept": "Excedente no operacional", "fill": "theme:0:-0.1499984740745262", "fill_class": "subtotal"}, {"row": 42, "code_raw": "", "concept": "Resultado del periodo", "fill": "theme:0:-0.249977111117893", "fill_class": "total"}]};
+
+const STORAGE_KEY = "bg-er-custom-mappings-v1";
+const STORAGE_ROWS_KEY = "bg-er-custom-rows-v1";
+let customMappings = [];
+let customRows = [];
+
+// ===== util =====
+const $ = (id)=>document.getElementById(id);
+const statusText = $("statusText");
+function setStatus(msg){ statusText.textContent = msg; }
+function safeStr(x){ return (x===undefined || x===null) ? "" : String(x).trim(); }
+function normHeader(s){ return safeStr(s).toUpperCase().replace(/\u00A0/g," ").replace(/[^A-Z0-9]/g,""); }
+function parseYearFromName(name){ const m=String(name).match(/(19|20)\d{2}/); return m?parseInt(m[0],10):null; }
+function downloadText(filename, content, mime="text/plain"){
+  const blob=new Blob([content],{type:mime});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a"); a.href=url; a.download=filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+}
+function normalizeExpr(raw){
+  let s=safeStr(raw);
+  s=s.replace(/\(\s*sin\s+la\s+(\d{6,8})\s*\)/ig," menos $1 ");
+  s=s.replace(/sin\s+la\s+(\d{6,8})/ig," menos $1 ");
+  return s.replace(/\s+/g," ").trim();
+}
+function replaceLastDigits(base,suffix){
+  const b=String(base), s=String(suffix);
+  if(b.length<s.length) return null;
+  return b.slice(0,b.length-s.length)+s;
+}
+function matcherFromDigits(digits){
+  if(!digits) return null;
+  const val=String(digits);
+  if(val.length===8) return {type:"exact", val};
+  return {type:"prefix", val};
+}
+function addMatcher(list, matcher){
+  if(!matcher) return;
+  list.push(matcher);
+}
+function expandBaseWithSuffixes(includes, base, suffixes){
+  const baseMatcher = matcherFromDigits(base);
+  addMatcher(includes, baseMatcher);
+  for(const sf of suffixes){
+    const ex=replaceLastDigits(base, sf);
+    addMatcher(includes, matcherFromDigits(ex));
+  }
+}
+function loadCustomMappings(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return [];
+    const parsed = JSON.parse(raw);
+    if(!Array.isArray(parsed)) return [];
+    return parsed.filter((m)=>m && m.code8 && m.targetSheet && Number.isFinite(m.targetIndex));
+  } catch (err){
+    console.warn("No se pudo cargar mappings.", err);
+    return [];
+  }
+}
+function loadCustomRows(){
+  try{
+    const raw = localStorage.getItem(STORAGE_ROWS_KEY);
+    if(!raw) return [];
+    const parsed = JSON.parse(raw);
+    if(!Array.isArray(parsed)) return [];
+    return parsed.filter((r)=>r && r.targetSheet && r.rowData && Number.isFinite(r.insertAfterIndex));
+  } catch (err){
+    console.warn("No se pudo cargar filas personalizadas.", err);
+    return [];
+  }
+}
+function saveCustomMappings(list){
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+  } catch (err){
+    console.warn("No se pudo guardar mappings.", err);
+  }
+}
+function saveCustomRows(list){
+  try{
+    localStorage.setItem(STORAGE_ROWS_KEY, JSON.stringify(list));
+  } catch (err){
+    console.warn("No se pudo guardar filas personalizadas.", err);
+  }
+}
+function clearCustomMappings(){
+  customMappings = [];
+  try{
+    localStorage.removeItem(STORAGE_KEY);
+  } catch (err){
+    console.warn("No se pudo limpiar mappings.", err);
+  }
+}
+function clearCustomRows(){
+  customRows = [];
+  try{
+    localStorage.removeItem(STORAGE_ROWS_KEY);
+  } catch (err){
+    console.warn("No se pudo limpiar filas personalizadas.", err);
+  }
+}
+function removeCustomMappingByCode(code8){
+  const next = customMappings.filter((m)=>m.code8 !== code8);
+  customMappings = next;
+  saveCustomMappings(customMappings);
+}
+function mergeCodeExpr(existing, code8){
+  const base = safeStr(existing);
+  const digits = base.match(/\d{6,8}/g) || [];
+  if(digits.includes(code8)) return base;
+  if(!base) return code8;
+  return `${base} + ${code8}`;
+}
+function isLineEligibleForMapping(line){
+  const cls = (line.fill_class || "").toLowerCase();
+  if(["subtotal","total","section","subheader"].includes(cls)) return false;
+  if(line.isTitle) return false;
+  return true;
+}
+function buildModelWithCustomMappings(model, mappings){
+  const cloneRows = (rows)=>rows.map(r=>({ ...r }));
+  const nextModel = { balance: cloneRows(model.balance), er: cloneRows(model.er) };
+  for(const mapping of mappings){
+    const targetList = mapping.targetSheet === "balance" ? nextModel.balance : nextModel.er;
+    const row = targetList[mapping.targetIndex];
+    if(!row) continue;
+    if(!isLineEligibleForMapping(row)) continue;
+    row.code_raw = mergeCodeExpr(row.code_raw, mapping.code8);
+  }
+  return nextModel;
+}
+function buildModelWithCustomRows(model, rows){
+  const cloneRows = (list)=>list.map(r=>({ ...r }));
+  const nextModel = { balance: cloneRows(model.balance), er: cloneRows(model.er) };
+  const grouped = { balance: [], er: [] };
+  for(const row of rows || []){
+    if(row.targetSheet === "er") grouped.er.push(row);
+    else grouped.balance.push(row);
+  }
+  const insertRows = (baseRows, inserts)=>{
+    const sorted = inserts.slice().sort((a,b)=>a.insertAfterIndex - b.insertAfterIndex);
+    let output = baseRows.slice();
+    let offset = 0;
+    for(const ins of sorted){
+      const idx = Math.max(0, Math.min(output.length, ins.insertAfterIndex + 1 + offset));
+      output.splice(idx, 0, ins.rowData);
+      offset += 1;
+    }
+    return output;
+  };
+  nextModel.balance = insertRows(nextModel.balance, grouped.balance);
+  nextModel.er = insertRows(nextModel.er, grouped.er);
+  return nextModel;
+}
+function customMappingsSnippet(){
+  const payload = JSON.stringify(customMappings, null, 2);
+  return `const CUSTOM_MAPPINGS = ${payload};\n`;
+}
+function refreshCustomMappingsOutput(){
+  const output = $("customMappingsOutput");
+  if(output){
+    output.value = customMappingsSnippet();
+  }
+}
+
+// ===== xlsx read =====
+async function readXlsx(file){
+  const data=await file.arrayBuffer();
+  return XLSX.read(data,{type:"array"});
+}
+function sheetToAOA(wb, sheetName){
+  const ws=wb.Sheets[sheetName];
+  if(!ws) return [];
+  return XLSX.utils.sheet_to_json(ws,{header:1,defval:"",raw:true});
+}
+function detectHeaderRow(aoa){
+  for(let i=0;i<Math.min(40,aoa.length);i++){
+    const hn=(aoa[i]||[]).map(normHeader);
+    if(hn.includes("CODICTA") && hn.includes("SDACCTA")) return i;
+  }
+  return -1;
+}
+function parseFiguresSheet(wb, sheetName){
+  const aoa=sheetToAOA(wb,sheetName);
+  if(!aoa.length) return {rows:[], meta:{headerRow:-1, warnings:["Hoja vacía."]}};
+  const headerRow=detectHeaderRow(aoa);
+  if(headerRow===-1) return {rows:[], meta:{headerRow:-1, warnings:["No se detectó encabezado con CODICTA y SDACCTA."]}};
+
+  const header=(aoa[headerRow]||[]).map(safeStr);
+  const hn=header.map(normHeader);
+  const idx={
+    CODICTA: hn.indexOf("CODICTA"),
+    DESCCTA: hn.indexOf("DESCCTA"),
+    SDACCTA: hn.indexOf("SDACCTA"),
+  };
+  const warnings=[];
+  if(idx.CODICTA<0) warnings.push("No se encontró CODICTA.");
+  if(idx.SDACCTA<0) warnings.push("No se encontró SDACCTA.");
+  if(idx.CODICTA<0 || idx.SDACCTA<0) return {rows:[], meta:{headerRow, idx, warnings}};
+
+  const rows=[];
+  let ignoredNon8=0;
+  let ignoredSmall=0;
+  for(let r=headerRow+1;r<aoa.length;r++){
+    const row=aoa[r]||[];
+    const codeRaw=safeStr(row[idx.CODICTA]);
+    if(!codeRaw) continue;
+    const digits=codeRaw.replace(/\D/g,"");
+    if(digits.length!==8){ ignoredNon8++; continue; }
+
+    const desc= idx.DESCCTA>=0 ? safeStr(row[idx.DESCCTA]) : "";
+    let sda=Number(String(row[idx.SDACCTA]).replace(/,/g,"").trim());
+    if(!Number.isFinite(sda)) sda=0;
+    if(Math.abs(sda) <= 1){
+      ignoredSmall++;
+      continue;
+    }
+    rows.push({code8:digits, desc, sda});
+  }
+  return {rows, meta:{headerRow, idx, ignored_non8_digit_codicta:ignoredNon8, ignored_small_values:ignoredSmall, warnings}};
+}
+
+// ===== model levels by fill_class =====
+function rowLevelByFillClass(fillClass, hasGuide){
+  const k=(fillClass||"none");
+  if(k==="section"||k==="subheader") return -1;
+  if(k==="total") return 0;
+  if(k==="subtotal") return 1;
+  if(k==="detail") return 4;
+  // "none" (sin color) se divide en:
+  // - filas con código (hoja guía sin color) => se tratan como nivel hijo para poder ser sumadas
+  // - filas sin código => son agrupadores
+  return hasGuide ? 3 : 2;
+}
+function isTitleRow(mrow){
+  const k=(mrow.fill_class||"none");
+  if(k==="section"||k==="subheader") return true;
+  const code=safeStr(mrow.code_raw);
+  const c=safeStr(mrow.concept).toUpperCase();
+  if(!code && (c==="ACTIVO"||c==="PASIVO"||c==="PATRIMONIO"||c==="INGRESOS"||c==="GASTOS"||c==="COSTOS")) return true;
+  return false;
+}
+
+// ===== model expression parser =====
+function parseModelMatchers(codeExpr){
+  const raw0=normalizeExpr(codeExpr);
+  if(!raw0) return {includes:[], excludes:[]};
+  const parts=raw0.split(/\s+menos\s+/i);
+  const left=parts[0].trim();
+  const right=parts.slice(1).join(" ").trim();
+
+  const includes=[], excludes=[];
+  if(right){
+    const nums=right.match(/\d{6,8}/g) || [];
+    for(const n of nums) excludes.push({type:"exact", val:n});
+  }
+
+  const tokens=left.split(/[;,]/).map(x=>x.trim()).filter(Boolean);
+  for(const tok0 of tokens){
+    const tok=tok0.replace(/\s+/g,"").trim();
+
+    if(/^\d{6,8}-\d{6}\.\d{2}(\.\d{2})+$/.test(tok)){
+      const [basePrefix, dottedPart] = tok.split("-");
+      addMatcher(includes, matcherFromDigits(basePrefix));
+      const parts = dottedPart.split(".");
+      const base = parts[0];
+      expandBaseWithSuffixes(includes, base, parts.slice(1));
+      continue;
+    }
+
+    if(/^\d{6,8}-\d{2}(-\d{2})+$/.test(tok)){
+      const ps=tok.split("-");
+      const base=ps[0];
+      expandBaseWithSuffixes(includes, base, ps.slice(1));
+      continue;
+    }
+
+    if(/^\d{6}\.\d{2}$/.test(tok0.replace(/\s+/g,""))){
+      const ps=tok0.replace(/\s+/g,"").split(".");
+      const base=ps[0];
+      expandBaseWithSuffixes(includes, base, ps.slice(1));
+      continue;
+    }
+
+    if(/^\d{6}\.\d{2}(\.\d{2})+$/.test(tok0.replace(/\s+/g,""))){
+      const ps=tok0.replace(/\s+/g,"").split(".");
+      const base=ps[0];
+      expandBaseWithSuffixes(includes, base, ps.slice(1));
+      continue;
+    }
+
+    if(tok.includes(".") && tok.includes("-")){
+      const ps=tok.split("-").filter(Boolean);
+      let lastBase=null;
+      for(const seg of ps){
+        if(/^\d{6,8}$/.test(seg)){
+          lastBase=seg;
+          addMatcher(includes, matcherFromDigits(seg));
+          continue;
+        }
+        if(/^\d{2}(\.\d{2})+$/.test(seg) && lastBase){
+          const subs=seg.split(".");
+          expandBaseWithSuffixes(includes, lastBase, subs);
+          continue;
+        }
+        if(/^\d{2}$/.test(seg) && lastBase){
+          expandBaseWithSuffixes(includes, lastBase, [seg]);
+          continue;
+        }
+        if(/^\d+$/.test(seg)){
+          addMatcher(includes, matcherFromDigits(seg));
+        }
+      }
+      continue;
+    }
+
+    // dash list (NOT range)
+    if(/^\d{1,8}-\d{1,8}(-\d{1,8})*$/.test(tok)){
+      const ps=tok.split("-").filter(Boolean);
+      if(ps.length >= 2 && /^\d{6,8}$/.test(ps[0]) && ps.slice(1).every(p=>/^\d{2}$/.test(p))){
+        expandBaseWithSuffixes(includes, ps[0], ps.slice(1));
+        continue;
+      }
+      const allSameLen=ps.every(p=>/^\d+$/.test(p) && p.length===ps[0].length);
+      if(allSameLen){
+        for(const p of ps){
+          addMatcher(includes, matcherFromDigits(p));
+        }
+      } else {
+        for(const p of ps){
+          addMatcher(includes, matcherFromDigits(p));
+        }
+      }
+      continue;
+    }
+
+    if(/^\d+$/.test(tok)){
+      addMatcher(includes, matcherFromDigits(tok));
+      continue;
+    }
+
+    const nums=tok0.match(/\d{1,8}/g) || [];
+    for(const n of nums){
+      addMatcher(includes, matcherFromDigits(n));
+    }
+  }
+
+  return {includes, excludes};
+}
+function matchCode(code8, matcher){
+  if(matcher.type==="exact") return code8===matcher.val;
+  if(matcher.type==="prefix") return code8.startsWith(matcher.val);
+  return false;
+}
+
+// ===== mapping =====
+function buildLineDefs(modelRows){
+  modelRows = Array.isArray(modelRows) ? modelRows : [];
+  return modelRows.map((mr, idx)=>{
+    const code=safeStr(mr.code_raw);
+    const matchers=code ? parseModelMatchers(code) : {includes:[], excludes:[]};
+    return {...mr, idx, level:rowLevelByFillClass(mr.fill_class, !!code), isTitle:isTitleRow(mr), hasGuide:!!code, matchers};
+  });
+}
+function buildAccounts(curRows, prevRows){
+  const m=new Map();
+  for(const r of curRows){
+    if(!m.has(r.code8)) m.set(r.code8,{desc:r.desc||"", cur:0, prev:0});
+    const x=m.get(r.code8); x.cur += (r.sda||0); if(!x.desc) x.desc=r.desc||"";
+  }
+  for(const r of prevRows){
+    if(!m.has(r.code8)) m.set(r.code8,{desc:r.desc||"", cur:0, prev:0});
+    const x=m.get(r.code8); x.prev += (r.sda||0); if(!x.desc) x.desc=r.desc||"";
+  }
+  return m;
+}
+function mapAccountsToModel(lines, accounts, remaining0){
+  // remaining0: optional Set of code8 pending to assign (global consumption)
+  const remaining = remaining0 ? new Set(remaining0) : new Set(accounts.keys());
+  const vals = lines.map(()=>({current_raw:0, previous_raw:0, assigned_codes:[]}));
+
+  for(const line of lines){
+    if(!line.hasGuide) continue;
+    const incAll=line.matchers.includes||[];
+    if(!incAll.length) continue;
+
+    // Prioridad de consumo por jerarquía: prefijos 2 → 4 → 6 → exactos 8
+    const inc2=[], inc4=[], inc6=[], inc8=[], incOther=[];
+    for(const m of incAll){
+      if(m.type==="exact" && String(m.val||"").length===8) inc8.push(m);
+      else if(m.type==="prefix"){
+        const L=String(m.val||"").length;
+        if(L===2) inc2.push(m);
+        else if(L===4) inc4.push(m);
+        else if(L===6) inc6.push(m);
+        else incOther.push(m);
+      } else {
+        incOther.push(m);
+      }
+    }
+    const inc=[...inc2, ...inc4, ...inc6, ...inc8, ...incOther];
+
+    for(const code8 of Array.from(remaining)){
+      let ok=false;
+      for(const m of inc){ if(matchCode(code8,m)){ ok=true; break; } }
+      if(!ok) continue;
+
+      for(const ex of line.matchers.excludes){ if(matchCode(code8,ex)){ ok=false; break; } }
+      if(!ok) continue;
+
+      const a=accounts.get(code8);
+      vals[line.idx].current_raw += a.cur;
+      vals[line.idx].previous_raw += a.prev;
+      vals[line.idx].assigned_codes.push(code8);
+      remaining.delete(code8);
+    }
+  }
+  return {vals, remaining};
+}
+
+// ===== totals by levels =====
+function computeTotalsByColors(lines, vals, options={}){
+  const isIncomeStatement = !!options.isIncomeStatement;
+  const expenseWord = /\bCOSTO\b|\bCOSTOS\b|\bGASTO\b|\bGASTOS\b/i;
+
+  function rowType(line){
+    const cls=(line.fill_class||"").toLowerCase();
+    if(line.isTitle || cls==="section" || cls==="subheader") return "title";
+    if(cls==="detail") return "detail";
+    if(cls==="subtotal") return "subtotal";
+    if(cls==="total") return "total";
+    return "group";
+  }
+  function isExpenseGroup(line){
+    if(!isIncomeStatement) return false;
+    const concept=safeStr(line.concept);
+    return expenseWord.test(concept);
+  }
+  function signedValue(line, value){
+    if(isExpenseGroup(line)) return value * -1;
+    return value;
+  }
+  function sumBack(i, acceptFn, stopFn, useSigned){
+    let cur=0, prev=0;
+    for(let j=i-1;j>=0;j--){
+      const lj=lines[j];
+      if(stopFn(lj, j)) break;
+      if(!acceptFn(lj, j)) continue;
+      const v=vals[lj.idx] || {current_raw:0, previous_raw:0};
+      if(useSigned){
+        cur += signedValue(lj, v.current_raw||0);
+        prev += signedValue(lj, v.previous_raw||0);
+      } else {
+        cur += (v.current_raw||0);
+        prev += (v.previous_raw||0);
+      }
+    }
+    return {cur, prev};
+  }
+  function isResultLine(line){
+    const concept=safeStr(line.concept);
+    return /RESULTADO\s+DEL\s+(EJERCICIO|PERIODO)|EXCEDENTE|DEFICIT|DÉFICIT/i.test(concept);
+  }
+  function findLastSubtotalIndex(i){
+    for(let j=i-1;j>=0;j--){
+      const t=rowType(lines[j]);
+      if(t==="title" || t==="total") return -1;
+      if(t==="subtotal") return j;
+    }
+    return -1;
+  }
+  function findSectionStartIndex(i){
+    for(let j=i-1;j>=0;j--){
+      if(rowType(lines[j])==="title") return j;
+    }
+    return -1;
+  }
+  function hasRowTypeBetween(startIdx, endIdx, type){
+    for(let j=endIdx;j>startIdx;j--){
+      if(rowType(lines[j])===type) return true;
+    }
+    return false;
+  }
+
+  for(let i=0;i<lines.length;i++){
+    const line=lines[i];
+    const idx=line.idx ?? i;
+    const type=rowType(line);
+
+    if(type==="title") continue;
+    if(line.hasGuide) continue;
+
+    if(type==="group"){
+      if(isResultLine(line)){
+        continue;
+      }
+      const {cur, prev} = sumBack(
+        i,
+        (lj)=>rowType(lj)==="detail",
+        (lj)=>rowType(lj)!=="detail",
+        false
+      );
+      if(!vals[idx]) vals[idx]={current_raw:0, previous_raw:0, assigned_codes:[]};
+      vals[idx].current_raw = cur;
+      vals[idx].previous_raw = prev;
+      continue;
+    }
+
+    if(type==="subtotal"){
+      if(isIncomeStatement){
+        const lastSubtotalIndex=findLastSubtotalIndex(i);
+        let baseCur=0, basePrev=0;
+        if(lastSubtotalIndex >= 0){
+          const baseVals=vals[lines[lastSubtotalIndex].idx] || {current_raw:0, previous_raw:0};
+          baseCur = baseVals.current_raw||0;
+          basePrev = baseVals.previous_raw||0;
+        }
+        const {cur, prev} = sumBack(
+          i,
+          (lj)=>rowType(lj)==="group",
+          (lj, j)=>{
+            if(rowType(lj)==="title" || rowType(lj)==="total") return true;
+            return lastSubtotalIndex >= 0 && j <= lastSubtotalIndex;
+          },
+          true
+        );
+        if(!vals[idx]) vals[idx]={current_raw:0, previous_raw:0, assigned_codes:[]};
+        vals[idx].current_raw = baseCur + cur;
+        vals[idx].previous_raw = basePrev + prev;
+        continue;
+      }
+
+      const {cur, prev} = sumBack(
+        i,
+        (lj)=>rowType(lj)==="group",
+        (lj)=>{
+          const t=rowType(lj);
+          return t==="subtotal" || t==="total" || t==="title";
+        },
+        true
+      );
+      if(!vals[idx]) vals[idx]={current_raw:0, previous_raw:0, assigned_codes:[]};
+      vals[idx].current_raw = cur;
+      vals[idx].previous_raw = prev;
+      continue;
+    }
+
+    if(type==="total"){
+      if(isIncomeStatement){
+        const lastSubtotalIndex=findLastSubtotalIndex(i);
+        let baseCur=0, basePrev=0;
+        if(lastSubtotalIndex >= 0){
+          const baseVals=vals[lines[lastSubtotalIndex].idx] || {current_raw:0, previous_raw:0};
+          baseCur = baseVals.current_raw||0;
+          basePrev = baseVals.previous_raw||0;
+        }
+        const {cur, prev} = sumBack(
+          i,
+          (lj)=>rowType(lj)==="group",
+          (lj, j)=>{
+            if(rowType(lj)==="title" || rowType(lj)==="total") return true;
+            return lastSubtotalIndex >= 0 && j <= lastSubtotalIndex;
+          },
+          true
+        );
+        if(!vals[idx]) vals[idx]={current_raw:0, previous_raw:0, assigned_codes:[]};
+        vals[idx].current_raw = baseCur + cur;
+        vals[idx].previous_raw = basePrev + prev;
+        continue;
+      }
+
+      if(/TOTAL\s+PATRIMONIO/i.test(safeStr(line.concept))){
+        const {cur, prev} = sumBack(
+          i,
+          (lj)=>rowType(lj)==="group",
+          (lj)=>rowType(lj)==="title",
+          true
+        );
+        if(!vals[idx]) vals[idx]={current_raw:0, previous_raw:0, assigned_codes:[]};
+        vals[idx].current_raw = cur;
+        vals[idx].previous_raw = prev;
+        continue;
+      }
+
+      const sectionStartIndex=findSectionStartIndex(i);
+      let acceptType="subtotal";
+      if(!hasRowTypeBetween(sectionStartIndex, i, "subtotal")){
+        if(hasRowTypeBetween(sectionStartIndex, i, "total")){
+          acceptType="total";
+        } else {
+          acceptType="group";
+        }
+      }
+      if(/PASIVO\s+Y\s+PATRIMONIO/i.test(safeStr(line.concept))){
+        let cur=0, prev=0, found=0;
+        for(let j=i-1;j>=0;j--){
+          if(rowType(lines[j])!=="total") continue;
+          const v=vals[lines[j].idx] || {current_raw:0, previous_raw:0};
+          cur += (v.current_raw||0);
+          prev += (v.previous_raw||0);
+          found += 1;
+          if(found >= 2) break;
+        }
+        if(!vals[idx]) vals[idx]={current_raw:0, previous_raw:0, assigned_codes:[]};
+        vals[idx].current_raw = cur;
+        vals[idx].previous_raw = prev;
+        continue;
+      }
+      const {cur, prev} = sumBack(
+        i,
+        (lj)=>rowType(lj)===acceptType,
+        (lj)=>{
+          const t=rowType(lj);
+          if(acceptType==="total") return t==="title";
+          return t==="total" || t==="title";
+        },
+        true
+      );
+      if(!vals[idx]) vals[idx]={current_raw:0, previous_raw:0, assigned_codes:[]};
+      vals[idx].current_raw = cur;
+      vals[idx].previous_raw = prev;
+      continue;
+    }
+  }
+
+  return vals;
+}
+
+// Compatibilidad: si tu UI sigue llamando computeTotalsByLevels, no rompe.
+function computeTotalsByLevels(lines, vals){
+  return computeTotalsByColors(lines, vals);
+}
+
+// ===== result injection =====
+function findResultRowIndex(lines){
+  const exactRe=/^RESULTADO\s+DEL\s+(PERIODO|PERÍODO|EJERCICIO)$/i;
+  const broadRe=/RESULTADO\s+DEL\s+(EJERCICIO|PERIODO|PERÍODO)|EXCEDENTE|DEFICIT|DÉFICIT/i;
+  for(let i=0;i<(lines?.length||0);i++){
+    const line=lines[i];
+    if(exactRe.test(safeStr(line.concept))) return Number.isFinite(line.idx) ? line.idx : i;
+  }
+  for(let i=0;i<(lines?.length||0);i++){
+    const line=lines[i];
+    if(broadRe.test(safeStr(line.concept))) return Number.isFinite(line.idx) ? line.idx : i;
+  }
+  return -1;
+}
+function injectResultIntoBalance(balLines, balVals, erLines, erVals){
+  const idxBal=findResultRowIndex(balLines);
+  const idxEr=findResultRowIndex(erLines);
+  if(idxBal>=0 && idxEr>=0){
+    balVals[idxBal].current_raw = erVals[idxEr].current_raw || 0;
+    balVals[idxBal].previous_raw = erVals[idxEr].previous_raw || 0;
+  }
+}
+
+// ===== out rows / % basis =====
+function buildOutRows(lines, vals, totalCur, totalPrev, scale=1000){
+  const out=[];
+  for(const line of lines){
+    const v=vals[line.idx] || {current_raw:0, previous_raw:0, assigned_codes:[]};
+    const curRaw=v.current_raw||0, prevRaw=v.previous_raw||0;
+    const diffRaw=curRaw-prevRaw;
+    const pctVar = (prevRaw===0) ? null : (diffRaw/prevRaw)*100;
+    const pctCur = (totalCur===0) ? null : (curRaw/totalCur)*100;
+    const pctPrev = (totalPrev===0) ? null : (prevRaw/totalPrev)*100;
+    out.push({
+      ...line,
+      guide: safeStr(line.code_raw),
+      concept: safeStr(line.concept),
+      cur: curRaw/scale,
+      prev: prevRaw/scale,
+      pctCur, pctPrev,
+      diff: diffRaw/scale,
+      pctVar,
+      curRaw, prevRaw,
+      assigned_codes: v.assigned_codes || []
+    });
+  }
+  return out;
+}
+function findBaseBalance(outRows){
+  const cand=outRows.filter(r=>r.level===0 && /TOTAL/i.test(r.concept));
+  if(cand.length){
+    cand.sort((a,b)=>Math.abs(b.curRaw)-Math.abs(a.curRaw));
+    return {cur:cand[0].curRaw, prev:cand[0].prevRaw};
+  }
+  const ta=outRows.find(r=>/TOTAL\s+ACTIVO/i.test(r.concept));
+  if(ta) return {cur:ta.curRaw, prev:ta.prevRaw};
+  let cur=0, prev=0;
+  for(const r of outRows){ cur+=r.curRaw||0; prev+=r.prevRaw||0; }
+  return {cur, prev};
+}
+function findBaseIncome(outRows){
+  const ti=outRows.find(r=>/TOTAL\s+INGRESOS/i.test(r.concept));
+  if(ti) return {cur:ti.curRaw, prev:ti.prevRaw};
+  const cand=outRows.filter(r=>r.level===0 && /TOTAL/i.test(r.concept));
+  if(cand.length) return {cur:cand[0].curRaw, prev:cand[0].prevRaw};
+  let cur=0, prev=0;
+  for(const r of outRows){ cur+=r.curRaw||0; prev+=r.prevRaw||0; }
+  return {cur, prev};
+}
+
+// ===== excel export (styled) =====
+function makeStyles(){
+  const headerFill="104862";
+  return {
+    title:{font:{bold:true, sz:14, color:{rgb:"FFFFFF"}}, alignment:{horizontal:"center", vertical:"center"}, fill:{patternType:"solid", fgColor:{rgb:headerFill}}},
+    colHeader:{font:{bold:true, color:{rgb:"FFFFFF"}}, alignment:{horizontal:"center", vertical:"center", wrapText:true},
+      fill:{patternType:"solid", fgColor:{rgb:headerFill}},
+      border:{top:{style:"thin",color:{rgb:"FFFFFF"}},bottom:{style:"thin",color:{rgb:"FFFFFF"}},left:{style:"thin",color:{rgb:"FFFFFF"}},right:{style:"thin",color:{rgb:"FFFFFF"}}}},
+    text:{font:{sz:11}, alignment:{horizontal:"left", vertical:"center", wrapText:true},
+      border:{bottom:{style:"thin",color:{rgb:"E2E8F0"}},left:{style:"thin",color:{rgb:"E2E8F0"}},right:{style:"thin",color:{rgb:"E2E8F0"}}}},
+    num:{font:{sz:11}, alignment:{horizontal:"right", vertical:"center"}, numFmt:"#,##0",
+      border:{bottom:{style:"thin",color:{rgb:"E2E8F0"}},left:{style:"thin",color:{rgb:"E2E8F0"}},right:{style:"thin",color:{rgb:"E2E8F0"}}}},
+    pct:{font:{sz:11}, alignment:{horizontal:"right", vertical:"center"}, numFmt:"0.0%",
+      border:{bottom:{style:"thin",color:{rgb:"E2E8F0"}},left:{style:"thin",color:{rgb:"E2E8F0"}},right:{style:"thin",color:{rgb:"E2E8F0"}}}},
+    varianceAlert:{font:{sz:11, color:{rgb:"991B1B"}, bold:true}, alignment:{horizontal:"right", vertical:"center"},
+      fill:{patternType:"solid", fgColor:{rgb:"FEE2E2"}},
+      border:{bottom:{style:"thin",color:{rgb:"E2E8F0"}},left:{style:"thin",color:{rgb:"E2E8F0"}},right:{style:"thin",color:{rgb:"E2E8F0"}}}},
+    // Nuevos estilos basados en fill_class
+    section:{
+      font:{bold:true, sz:11, color:{rgb:"FFFFFF"}}, 
+      alignment:{horizontal:"center", vertical:"center"}, 
+      fill:{patternType:"solid", fgColor:{rgb:"0B4DA0"}}
+    },
+    subheader:{
+      font:{bold:true, sz:11}, 
+      alignment:{horizontal:"left", vertical:"center"}, 
+      fill:{patternType:"solid", fgColor:{rgb:"DEEAF6"}}
+    },
+    detail:{
+      font:{sz:11}, 
+      alignment:{horizontal:"left", vertical:"center"}, 
+      fill:{patternType:"solid", fgColor:{rgb:"FBE4D5"}}
+    },
+    subtotal:{
+      font:{bold:true, sz:11}, 
+      alignment:{horizontal:"left", vertical:"center"}, 
+      fill:{patternType:"solid", fgColor:{rgb:"D9D9D9"}}
+    },
+    total:{
+      font:{bold:true, sz:11}, 
+      alignment:{horizontal:"left", vertical:"center"}, 
+      fill:{patternType:"solid", fgColor:{rgb:"BFBFBF"}}
+    },
+    // Legacy styles (mantener por compatibilidad)
+    grayLight:{font:{bold:true, sz:11}, alignment:{horizontal:"left", vertical:"center"}, fill:{patternType:"solid", fgColor:{rgb:"D9D9D9"}}},
+    grayDark:{font:{bold:true, sz:11}, alignment:{horizontal:"left", vertical:"center"}, fill:{patternType:"solid", fgColor:{rgb:"BFBFBF"}}},
+    guayaba:{fill:{patternType:"solid", fgColor:{rgb:"FBE3D6"}}}
+  };
+}
+function applyRowFillStyle(cell, fillHex, fillClass, styles){
+  if(!cell) return;
+  
+  // Priorizar fill_class (más confiable que theme values)
+  const cls = (fillClass || "").toLowerCase();
+  
+  if(cls === "detail") {
+    cell.s = Object.assign({}, cell.s||{}, styles.detail);
+    return;
+  }
+  
+  if(cls === "subtotal") {
+    cell.s = Object.assign({}, cell.s||{}, styles.subtotal);
+    return;
+  }
+  
+  if(cls === "total") {
+    cell.s = Object.assign({}, cell.s||{}, styles.total);
+    return;
+  }
+  
+  if(cls === "section") {
+    cell.s = Object.assign({}, cell.s||{}, styles.section);
+    return;
+  }
+  
+  if(cls === "subheader") {
+    cell.s = Object.assign({}, cell.s||{}, styles.subheader);
+    return;
+  }
+  
+  // Fallback: intentar con fill hexadecimal (compatibilidad)
+  const f = (fillHex||"").toUpperCase();
+  if(f.startsWith("FBE")) cell.s = Object.assign({}, cell.s||{}, styles.detail);
+  else if(f==="D9D9D9") cell.s = Object.assign({}, cell.s||{}, styles.subtotal);
+  else if(f==="BFBFBF") cell.s = Object.assign({}, cell.s||{}, styles.total);
+  else if(f==="CFECF7") cell.s = Object.assign({}, cell.s||{}, styles.section);
+}
+function buildSheetAOA(outRows, labelCur, labelPrev){
+  // Agregar 6 filas de encabezado + 1 fila de nombres de columna
+  const head=[
+    ["","","","","","","",""],  // Fila 1: para título (se llena en styleSheet)
+    ["","","","","","","",""],  // Fila 2: para subtítulo (se llena en styleSheet)
+    ["","","","","","","",""],  // Fila 3: para período (se llena en styleSheet)
+    ["","","","","","","",""],  // Fila 4: para escala (se llena en styleSheet)
+    ["","","","","","","",""],  // Fila 5: vacía
+    ["","","","","","","",""],  // Fila 6: vacía
+    ["Codigo cuenta","Nombre Rubro",labelCur,"%",labelPrev,"%", "Var.","%"]  // Fila 7: encabezados de columna
+  ];
+  const body=outRows.map(r=>[
+    r.guide||"",
+    r.concept||"",
+    (r.cur ?? null),
+    (r.pctCur==null ? null : r.pctCur/100),
+    (r.prev ?? null),
+    (r.pctPrev==null ? null : r.pctPrev/100),
+    (r.diff ?? null),
+    (r.pctVar==null ? null : r.pctVar/100),
+  ]);
+  return head.concat(body);
+}
+function styleSheet(ws, outRows, title, styles, options={}){
+  ws["!cols"]=[{wch:31},{wch:43},{wch:10},{wch:8},{wch:10},{wch:8},{wch:10},{wch:8}];
+  ws["!merges"]=ws["!merges"]||[];
+  ws["!rows"]=ws["!rows"]||[];
+  ws["!outline"]={summaryBelow:true, summaryRight:true};
+  const thresholdPct = Number(options.thresholdPct) || 0;
+  
+  // Fila 1: Nombre de la empresa
+  ws["A1"]={t:"s", v:"CONJUNTO RECREACIONAL CAMPESTRE MESA DE YEGUAS PROPIEDAD HORIZONTAL"};
+  ws["A1"].s={font:{bold:true, sz:11}, alignment:{horizontal:"center", vertical:"center"}};
+  ws["!merges"].push({s:{r:0,c:0}, e:{r:0,c:7}});
+  
+  // Fila 2: Título del reporte (Balance o ER)
+  const reportTitle = (options.sheetKey==="balance") ? "BALANCE" : "ESTADO DE RESULTADOS";
+  ws["A2"]={t:"s", v:reportTitle};
+  ws["A2"].s={font:{bold:true, sz:11}, alignment:{horizontal:"center", vertical:"center"}};
+  ws["!merges"].push({s:{r:1,c:0}, e:{r:1,c:7}});
+  
+  // Fila 3: Período
+  const labelCur = safeStr(options.labelCur) || "2024";
+  const labelPrev = safeStr(options.labelPrev) || "2023";
+  const periodText = (options.sheetKey==="balance")
+    ? `AL 31 DE DICIEMBRE DE ${labelCur} COMPARATIVO CON DICIEMBRE DE ${labelPrev}`
+    : `DEL 1 DE ENERO AL 30 DE DICIEMBRE DE ${labelCur} COMPARATIVO CON ${labelPrev}`;
+  ws["A3"]={t:"s", v:periodText};
+  ws["A3"].s={font:{bold:true, sz:11}, alignment:{horizontal:"center", vertical:"center"}};
+  ws["!merges"].push({s:{r:2,c:0}, e:{r:2,c:7}});
+  
+  // Fila 4: Escala
+  ws["A4"]={t:"s", v:"Cifras expresadas en miles de pesos"};
+  ws["A4"].s={font:{bold:true, sz:11}, alignment:{horizontal:"center", vertical:"center"}};
+  ws["!merges"].push({s:{r:3,c:0}, e:{r:3,c:7}});
+  
+  // Filas 5 y 6: vacías (ya vienen vacías del AOA)
+  
+  // Fila 7: Encabezados de columna
+  for(const c of ["A7","B7","C7","D7","E7","F7","G7","H7"]){ if(ws[c]) ws[c].s=styles.colHeader; }
+
+  const startRow=8;
+  for(let i=0;i<outRows.length;i++){
+    const r=startRow+i;
+    const row=outRows[i];
+    const addr=(c)=>XLSX.utils.encode_cell({r:r-1,c});
+    if(row.fill_class === "detail"){
+      ws["!rows"][r-1] = Object.assign({}, ws["!rows"][r-1], {
+        outlineLevel: 1,
+        level: 1,
+        hidden: false
+      });
+    }
+    if(row.isTitle){
+      ws["!merges"].push({s:{r:r-1,c:0}, e:{r:r-1,c:7}});
+      ws[addr(0)]={t:"s", v: row.concept || ""};
+      ws[addr(0)].s=styles.section;
+      for(let c=1;c<=7;c++){ const a=addr(c); if(ws[a]) delete ws[a]; }
+      continue;
+    }
+
+    for(const c of [0,1]){
+      const a=addr(c);
+      if(ws[a]) ws[a].s=styles.text;
+      applyRowFillStyle(ws[a], row.fill, row.fill_class, styles);
+    }
+    for(const c of [2,4,6]){
+      const a=addr(c);
+      if(ws[a]) ws[a].s=styles.num;
+      applyRowFillStyle(ws[a], row.fill, row.fill_class, styles);
+    }
+    for(const c of [3,5,7]){
+      const a=addr(c);
+      if(ws[a]) ws[a].s=styles.pct;
+      applyRowFillStyle(ws[a], row.fill, row.fill_class, styles);
+    }
+    if(Math.abs(row.pctVar || 0) >= thresholdPct){
+      for(const c of [6,7]){
+        const a=addr(c);
+        if(ws[a]) ws[a].s = Object.assign({}, ws[a].s || {}, styles.varianceAlert);
+      }
+    }
+  }
+  ws["!freeze"]={xSplit:0, ySplit:7};
+}
+function buildExcel(proc){
+  const styles=makeStyles();
+  const wb=XLSX.utils.book_new();
+
+  const wsBal=XLSX.utils.aoa_to_sheet(buildSheetAOA(proc.balanceOut, proc.labelCur, proc.labelPrev));
+  styleSheet(wsBal, proc.balanceOut, "BALANCE GENERAL", styles, {thresholdPct: proc.thresholdPct, sheetKey:"balance", labelCur: proc.labelCur, labelPrev: proc.labelPrev});
+  applyRollupFormulas(wsBal, proc.balanceOut);
+  applyBalanceTotalsFormulas(wsBal, proc.balanceOut);
+  XLSX.utils.book_append_sheet(wb, wsBal, "Balance");
+
+  const incomeSheetName = "EstadoResultados";
+  const wsEr=XLSX.utils.aoa_to_sheet(buildSheetAOA(proc.incomeOut, proc.labelCur, proc.labelPrev));
+  styleSheet(wsEr, proc.incomeOut, "ESTADO DE RESULTADOS", styles, {thresholdPct: proc.thresholdPct, sheetKey:"er", labelCur: proc.labelCur, labelPrev: proc.labelPrev});
+  applyRollupFormulas(wsEr, proc.incomeOut, {isIncomeStatement:true});
+  applyIncomeStatementFormulas(wsEr, proc.incomeOut);
+  XLSX.utils.book_append_sheet(wb, wsEr, incomeSheetName);
+  applyBalanceResultFormula(wsBal, proc.balanceOut, proc.incomeOut, incomeSheetName);
+
+  const unm=proc.unmappedList;
+  const aoaUnm=[
+    ["CUENTAS NO INCLUIDAS (8 dígitos con saldo)"],
+    ["Cifras en miles de pesos (÷ 1.000)"],
+    ["CODICTA","DESCCTA",proc.labelCur, proc.labelPrev]
+  ].concat(unm.slice(0,5000).map(x=>[x.code8, x.desc, x.cur/1000, x.prev/1000]));
+  const wsUnm=XLSX.utils.aoa_to_sheet(aoaUnm);
+  wsUnm["!cols"]=[{wch:14},{wch:52},{wch:16},{wch:16}];
+  XLSX.utils.book_append_sheet(wb, wsUnm, "NoIncluidas");
+
+  const aoaVal=[
+    ["VALIDACIONES / TRAZABILIDAD"],
+    ["Cuentas 8 dígitos leídas (Actual)", proc.kpiCur],
+    ["Cuentas 8 dígitos leídas (Anterior)", proc.kpiPrev],
+    ["No incluidas (saldo ≠ 0)", proc.kpiUnm],
+    ["Modelo: filas Balance", MODEL.balance.length],
+    ["Modelo: filas ER", MODEL.er.length],
+    ["Nota", "Totales por niveles de color de columna B (guayaba FBE3D6; grises D9D9D9/BFBFBF)."]
+  ];
+  const wsVal=XLSX.utils.aoa_to_sheet(aoaVal);
+  wsVal["!cols"]=[{wch:34},{wch:70}];
+  XLSX.utils.book_append_sheet(wb, wsVal, "Validaciones");
+
+  return wb;
+}
+
+// === fórmulas de Excel ===
+// Ajusta estos helpers cuando quieras cambiar el cálculo o los rangos en el Excel final.
+function applyRollupFormulas(ws, outRows, options={}){
+  const isIncomeStatement=!!options.isIncomeStatement;
+  const rowType=(row)=>{
+    const cls=(row.fill_class||"").toLowerCase();
+    if(row.isTitle || cls==="section" || cls==="subheader") return "title";
+    if(cls==="detail") return "detail";
+    if(cls==="subtotal") return "subtotal";
+    if(cls==="total") return "total";
+    return "group";
+  };
+  const rowNum = (idx)=> 8 + idx;
+  const isSubheader = (row)=> (row.fill_class||"").toLowerCase()==="subheader";
+  const isExactTotalPasivo = (r)=>/^TOTAL\s+PASIVO$/i.test(safeStr(r.concept));
+  const isExactTotalPatrimonio = (r)=>/^TOTAL\s+PATRIMONIO$/i.test(safeStr(r.concept));
+  const isExactTotalPasivoPatrimonio = (r)=>/^TOTAL\s+PASIVO\s+Y\s+PATRIMONIO$/i.test(safeStr(r.concept));
+  const isTotalActivo = (r)=>/^TOTAL\s+ACTIVO$/i.test(safeStr(r.concept));
+  const isTotalIngresosOperacionales = (r)=>/TOTAL\s+INGRESOS\s+OPERACIONALES/i.test(safeStr(r.concept));
+  const isResultadoPeriodo = (r)=>/RESULTADO\s+DEL\s+PERIODO|RESULTADO\s+DEL\s+EJERCICIO/i.test(safeStr(r.concept));
+  const isTotalActivoCorriente = (r)=>/TOTAL\s+ACTIVO\s+CORRIENTE/i.test(safeStr(r.concept));
+  const isTotalActivoNoCorriente = (r)=>/TOTAL\s+ACTIVO\s+NO\s+CORRIENTE/i.test(safeStr(r.concept));
+  const isTotalPasivoCorriente = (r)=>/TOTAL\s+PASIVO\s+CORRIENTE/i.test(safeStr(r.concept));
+  const isTotalPasivoNoCorriente = (r)=>/TOTAL\s+PASIVO\s+NO\s+CORRIENTE/i.test(safeStr(r.concept));
+  const baseTotalIndex = ()=>{
+    if(isIncomeStatement){
+      const idx = outRows.findIndex((r)=>/TOTAL\s+INGRESOS/i.test(safeStr(r.concept)));
+      if(idx >= 0) return idx;
+    }
+    const idxAct = outRows.findIndex((r)=>isTotalActivo(r));
+    if(idxAct >= 0) return idxAct;
+    return outRows.findIndex((r)=>rowType(r)==="total");
+  };
+  const baseIdx = baseTotalIndex();
+  const baseRow = baseIdx >= 0 ? rowNum(baseIdx) : null;
+  const totalIngresosIdx = isIncomeStatement
+    ? outRows.findIndex((r)=>isTotalIngresosOperacionales(r))
+    : -1;
+  const totalActivoIdx = !isIncomeStatement
+    ? outRows.findIndex((r)=>isTotalActivo(r))
+    : -1;
+  const totalPasivoIdx = !isIncomeStatement
+    ? outRows.findIndex((r)=>isExactTotalPasivo(r))
+    : -1;
+  const setFormula = (col, idx, formula)=>{
+    const addr = `${col}${rowNum(idx)}`;
+    if(!ws[addr]) ws[addr] = {t:"n", v:0};
+    ws[addr].f = formula;
+  };
+  const setPctFormula = (idx, denomRow)=>{
+    if(!denomRow) return;
+    setFormula("D", idx, `IF(C${denomRow}=0,\"\",C${rowNum(idx)}/C${denomRow})`);
+    setFormula("F", idx, `IF(E${denomRow}=0,\"\",E${rowNum(idx)}/E${denomRow})`);
+  };
+  const setVarFormulas = (idx)=>{
+    const r=rowNum(idx);
+    setFormula("G", idx, `C${r}-E${r}`);
+    setFormula("H", idx, `IF(E${r}=0,\"\",G${r}/E${r})`);
+  };
+  const sumListFormula = (col, rows)=>{
+    if(!rows.length) return null;
+    if(rows.length===1) return `${col}${rows[0]}`;
+    const refs = rows.map(r=>`${col}${r}`).join(",");
+    return `SUM(${refs})`;
+  };
+  const nextRowOfType = (idx, types)=>{
+    for(let j=idx+1;j<outRows.length;j++){
+      if(types.includes(rowType(outRows[j]))) return j;
+    }
+    return -1;
+  };
+  const prevRowOfType = (idx, types)=>{
+    for(let j=idx-1;j>=0;j--){
+      if(types.includes(rowType(outRows[j]))) return j;
+    }
+    return -1;
+  };
+  const pctDenomIndex = (idx)=>{
+    const row = outRows[idx];
+    const type = rowType(row);
+
+    if(isIncomeStatement){
+      if(isTotalIngresosOperacionales(row) || isResultadoPeriodo(row)){
+        return null;
+      }
+      if(type==="subtotal" || type==="total"){
+        return totalIngresosIdx >= 0 ? totalIngresosIdx : baseIdx;
+      }
+    } else {
+      if(isTotalActivo(row) || isExactTotalPasivo(row) || isExactTotalPatrimonio(row) || isExactTotalPasivoPatrimonio(row)){
+        return null;
+      }
+      if(isTotalActivoCorriente(row) || isTotalActivoNoCorriente(row)){
+        return totalActivoIdx >= 0 ? totalActivoIdx : baseIdx;
+      }
+      if(isTotalPasivoCorriente(row) || isTotalPasivoNoCorriente(row)){
+        return totalPasivoIdx >= 0 ? totalPasivoIdx : baseIdx;
+      }
+    }
+
+    if(type==="detail"){
+      const nextGroup = nextRowOfType(idx, ["group"]);
+      return nextGroup >= 0 ? nextGroup : baseIdx;
+    }
+    if(type==="group"){
+      const nextSubtotal = nextRowOfType(idx, ["subtotal"]);
+      return nextSubtotal >= 0 ? nextSubtotal : baseIdx;
+    }
+    if(type==="subtotal"){
+      if(isIncomeStatement){
+        const prevSubtotal = prevRowOfType(idx, ["subtotal"]);
+        if(prevSubtotal >= 0) return prevSubtotal;
+        const prevGroup = prevRowOfType(idx, ["group"]);
+        return prevGroup >= 0 ? prevGroup : baseIdx;
+      }
+      return baseIdx;
+    }
+    if(type==="total") return baseIdx;
+    return baseIdx;
+  };
+  for(let i=0;i<outRows.length;i++){
+    const row=outRows[i];
+    const type=rowType(row);
+    if(type==="title") continue;
+    if(type==="detail"){
+      const denomIdx = pctDenomIndex(i);
+      const denomRow = Number.isFinite(denomIdx) ? rowNum(denomIdx) : null;
+      if(denomRow) setPctFormula(i, denomRow);
+      setVarFormulas(i);
+      continue;
+    }
+
+    if(type==="group"){
+      const denomIdx = pctDenomIndex(i);
+      const denomRow = Number.isFinite(denomIdx) ? rowNum(denomIdx) : null;
+      let start=i-1;
+      const rows=[];
+      while(start>=0 && rowType(outRows[start])==="detail"){
+        rows.push(rowNum(start));
+        start--;
+      }
+      const formulaC=sumListFormula("C", rows.reverse());
+      const formulaE=sumListFormula("E", rows.reverse());
+      if(formulaC && formulaE){
+        setFormula("C", i, formulaC);
+        setFormula("E", i, formulaE);
+        setVarFormulas(i);
+      }
+      if(denomRow) setPctFormula(i, denomRow);
+      continue;
+    }
+
+    if(type==="subtotal"){
+      const denomIdx = pctDenomIndex(i);
+      const denomRow = Number.isFinite(denomIdx) ? rowNum(denomIdx) : null;
+      const rows=[];
+      for(let j=i-1;j>=0;j--){
+        const t=rowType(outRows[j]);
+        if(t==="subtotal" || t==="total" || t==="title") break;
+        if(t==="group") rows.push(rowNum(j));
+      }
+      const formulaC=sumListFormula("C", rows.reverse());
+      const formulaE=sumListFormula("E", rows.reverse());
+      if(formulaC && formulaE){
+        setFormula("C", i, formulaC);
+        setFormula("E", i, formulaE);
+        setVarFormulas(i);
+      }
+      if(denomRow) setPctFormula(i, denomRow);
+      continue;
+    }
+
+    if(type==="total"){
+      if(/TOTAL\s+ACTIVO/i.test(safeStr(row.concept))){
+        const rows=[];
+        for(let j=i-1;j>=0;j--){
+          const t=rowType(outRows[j]);
+          if(t==="title" && !isSubheader(outRows[j])) break;
+          if(t==="subtotal") rows.push(rowNum(j));
+        }
+        const formulaC=sumListFormula("C", rows.reverse());
+        const formulaE=sumListFormula("E", rows.reverse());
+        if(formulaC && formulaE){
+          setFormula("C", i, formulaC);
+          setFormula("E", i, formulaE);
+          setVarFormulas(i);
+          const denomIdx = pctDenomIndex(i);
+          const denomRow = Number.isFinite(denomIdx) ? rowNum(denomIdx) : null;
+          if(denomRow) setPctFormula(i, denomRow);
+        }
+        continue;
+      }
+      if(isExactTotalPasivo(row)){
+        const rows=[];
+        for(let j=i-1;j>=0;j--){
+          const t=rowType(outRows[j]);
+          if(t==="title" && !isSubheader(outRows[j])) break;
+          if(t==="subtotal") rows.push(rowNum(j));
+        }
+        const formulaC=sumListFormula("C", rows.reverse());
+        const formulaE=sumListFormula("E", rows.reverse());
+        if(formulaC && formulaE){
+          setFormula("C", i, formulaC);
+          setFormula("E", i, formulaE);
+          setVarFormulas(i);
+          const denomIdx = pctDenomIndex(i);
+          const denomRow = Number.isFinite(denomIdx) ? rowNum(denomIdx) : null;
+          if(denomRow) setPctFormula(i, denomRow);
+        }
+        continue;
+      }
+      if(isExactTotalPatrimonio(row)){
+        const rows=[];
+        for(let j=i-1;j>=0;j--){
+          if(rowType(outRows[j])==="title") break;
+          if(rowType(outRows[j])==="group") rows.push(rowNum(j));
+        }
+        const formulaC=sumListFormula("C", rows.reverse());
+        const formulaE=sumListFormula("E", rows.reverse());
+        if(formulaC && formulaE){
+          setFormula("C", i, formulaC);
+          setFormula("E", i, formulaE);
+          setVarFormulas(i);
+          const denomIdx = pctDenomIndex(i);
+          const denomRow = Number.isFinite(denomIdx) ? rowNum(denomIdx) : null;
+          if(denomRow) setPctFormula(i, denomRow);
+        }
+        continue;
+      }
+
+      if(isExactTotalPasivoPatrimonio(row)){
+        const idxPasivo = outRows.findIndex((r)=>isExactTotalPasivo(r));
+        const idxPatrimonio = outRows.findIndex((r)=>isExactTotalPatrimonio(r));
+        if(idxPasivo >= 0 && idxPatrimonio >= 0){
+          const rowPasivo = rowNum(idxPasivo);
+          const rowPatrimonio = rowNum(idxPatrimonio);
+          setFormula("C", i, `C${rowPasivo}+C${rowPatrimonio}`);
+          setFormula("E", i, `E${rowPasivo}+E${rowPatrimonio}`);
+          setVarFormulas(i);
+          const denomIdx = pctDenomIndex(i);
+          const denomRow = Number.isFinite(denomIdx) ? rowNum(denomIdx) : null;
+          if(denomRow) setPctFormula(i, denomRow);
+        }
+        continue;
+      }
+
+      const rows=[];
+      for(let j=i-1;j>=0;j--){
+        const t=rowType(outRows[j]);
+        if(t==="total" || t==="title") break;
+        if(t==="subtotal") rows.push(rowNum(j));
+      }
+      if(!rows.length){
+        for(let j=i-1;j>=0;j--){
+          const t=rowType(outRows[j]);
+          if(t==="total" || t==="title") break;
+          if(t==="group") rows.push(rowNum(j));
+        }
+      }
+      const formulaC=sumListFormula("C", rows.reverse());
+      const formulaE=sumListFormula("E", rows.reverse());
+      if(formulaC && formulaE){
+        setFormula("C", i, formulaC);
+        setFormula("E", i, formulaE);
+        setVarFormulas(i);
+        const denomIdx = pctDenomIndex(i);
+        const denomRow = Number.isFinite(denomIdx) ? rowNum(denomIdx) : null;
+        if(denomRow) setPctFormula(i, denomRow);
+      }
+    }
+  }
+}
+
+function applyIncomeStatementFormulas(ws, outRows){
+  const rowByConcept = (re)=> outRows.findIndex(r=>re.test(safeStr(r.concept)));
+  const idxIngresos = rowByConcept(/INGRESOS\s+OPERACIONALES/i);
+  const idxCosto = rowByConcept(/COSTO\s+DE\s+VENTAS/i);
+  const idxUtilidad = rowByConcept(/UTILIDAD\s+BRUTA/i);
+  const idxGastos = rowByConcept(/GASTOS\s+OPERACIONALES/i);
+  const idxResultadoOp = rowByConcept(/RESULTADO\s+OPERACIONAL/i);
+  const idxOtrosIng = rowByConcept(/OTROS\s+INGRESOS\s+NO\s+OPERACIONALES/i);
+  const idxOtrosGas = rowByConcept(/OTROS\s+GASTOS\s+NO\s+OPERACIONALES/i);
+  const idxResultadoNoOp = rowByConcept(/RESULTADO\s+NO\s+OPERACIONAL/i);
+  const idxImpuestos = rowByConcept(/GASTO\s+DE\s+IMPUESTOS/i);
+  const idxResultado = rowByConcept(/RESULTADO\s+DEL\s+PERIODO|RESULTADO\s+DEL\s+EJERCICIO/i);
+
+  const rowNum = (idx)=> (idx >= 0 ? 8 + idx : null);
+  const cellAddr = (col, idx)=> idx !== null ? `${col}${idx}` : null;
+  const setFormula = (col, idx, formula)=>{
+    if(idx === null) return;
+    const addr = cellAddr(col, idx);
+    if(!addr) return;
+    if(!ws[addr]) ws[addr] = {t:"n", v:0};
+    ws[addr].f = formula;
+  };
+
+  const utilidadRow = rowNum(idxUtilidad);
+  const ingresosRow = rowNum(idxIngresos);
+  const costoRow = rowNum(idxCosto);
+  if(utilidadRow && ingresosRow && costoRow){
+    setFormula("C", utilidadRow, `C${ingresosRow}+C${costoRow}`);
+    setFormula("E", utilidadRow, `E${ingresosRow}+E${costoRow}`);
+    setFormula("G", utilidadRow, `C${utilidadRow}-E${utilidadRow}`);
+    setFormula("H", utilidadRow, `IF(E${utilidadRow}=0,\"\",G${utilidadRow}/E${utilidadRow})`);
+  }
+
+  const resultadoOpRow = rowNum(idxResultadoOp);
+  const gastosRow = rowNum(idxGastos);
+  if(resultadoOpRow && utilidadRow && gastosRow){
+    setFormula("C", resultadoOpRow, `C${utilidadRow}+C${gastosRow}`);
+    setFormula("E", resultadoOpRow, `E${utilidadRow}+E${gastosRow}`);
+    setFormula("G", resultadoOpRow, `C${resultadoOpRow}-E${resultadoOpRow}`);
+    setFormula("H", resultadoOpRow, `IF(E${resultadoOpRow}=0,\"\",G${resultadoOpRow}/E${resultadoOpRow})`);
+  }
+
+  const resultadoNoOpRow = rowNum(idxResultadoNoOp);
+  const otrosIngRow = rowNum(idxOtrosIng);
+  const otrosGasRow = rowNum(idxOtrosGas);
+  if(resultadoNoOpRow && resultadoOpRow && otrosIngRow && otrosGasRow){
+    setFormula("C", resultadoNoOpRow, `C${resultadoOpRow}+C${otrosIngRow}+C${otrosGasRow}`);
+    setFormula("E", resultadoNoOpRow, `E${resultadoOpRow}+E${otrosIngRow}+E${otrosGasRow}`);
+    setFormula("G", resultadoNoOpRow, `C${resultadoNoOpRow}-E${resultadoNoOpRow}`);
+    setFormula("H", resultadoNoOpRow, `IF(E${resultadoNoOpRow}=0,\"\",G${resultadoNoOpRow}/E${resultadoNoOpRow})`);
+  }
+
+  const resultadoRow = rowNum(idxResultado);
+  const impuestosRow = rowNum(idxImpuestos);
+  if(resultadoRow && resultadoNoOpRow && impuestosRow){
+    setFormula("C", resultadoRow, `C${resultadoNoOpRow}-C${impuestosRow}`);
+    setFormula("E", resultadoRow, `E${resultadoNoOpRow}-E${impuestosRow}`);
+    setFormula("G", resultadoRow, `C${resultadoRow}-E${resultadoRow}`);
+    setFormula("H", resultadoRow, `IF(E${resultadoRow}=0,\"\",G${resultadoRow}/E${resultadoRow})`);
+  }
+}
+
+function applyBalanceTotalsFormulas(ws, outRows){
+  const isExactTotalPasivo = (r)=>/^TOTAL\s+PASIVO$/i.test(safeStr(r.concept));
+  const isExactTotalPatrimonio = (r)=>/^TOTAL\s+PATRIMONIO$/i.test(safeStr(r.concept));
+  const isExactTotalPasivoPatrimonio = (r)=>/^TOTAL\s+PASIVO\s+Y\s+PATRIMONIO$/i.test(safeStr(r.concept));
+  const idxPasivo = outRows.findIndex((r)=>isExactTotalPasivo(r));
+  const idxPatrimonio = outRows.findIndex((r)=>isExactTotalPatrimonio(r));
+  const idxPasivoPatrimonio = outRows.findIndex((r)=>isExactTotalPasivoPatrimonio(r));
+  if(idxPasivo < 0 || idxPatrimonio < 0 || idxPasivoPatrimonio < 0) return;
+  const rowNum = (idx)=> 8 + idx;
+  const rowPasivo = rowNum(idxPasivo);
+  const rowPatrimonio = rowNum(idxPatrimonio);
+  const rowTotal = rowNum(idxPasivoPatrimonio);
+  const setFormula = (col, formula)=>{
+    const addr = `${col}${rowTotal}`;
+    if(!ws[addr]) ws[addr] = {t:"n", v:0};
+    ws[addr].f = formula;
+  };
+  setFormula("C", `C${rowPasivo}+C${rowPatrimonio}`);
+  setFormula("E", `E${rowPasivo}+E${rowPatrimonio}`);
+  setFormula("G", `C${rowTotal}-E${rowTotal}`);
+  setFormula("H", `IF(E${rowTotal}=0,\"\",G${rowTotal}/E${rowTotal})`);
+}
+
+function applyBalanceResultFormula(ws, balanceOut, incomeOut, incomeSheetName){
+  const idxBal=findResultRowIndex(balanceOut);
+  const idxEr=findResultRowIndex(incomeOut);
+  if(idxBal < 0 || idxEr < 0) return;
+  const balRow = 8 + idxBal;
+  const erRow = 8 + idxEr;
+  const setFormula = (col, formula)=>{
+    const addr = `${col}${balRow}`;
+    if(!ws[addr]) ws[addr] = {t:"n", v:0};
+    ws[addr].f = formula;
+  };
+  setFormula("C", `'${incomeSheetName}'!C${erRow}`);
+  setFormula("E", `'${incomeSheetName}'!E${erRow}`);
+  setFormula("G", `C${balRow}-E${balRow}`);
+  setFormula("H", `IF(E${balRow}=0,\"\",G${balRow}/E${balRow})`);
+}
+
+
+// ===== preview rendering =====
+function fmtNum(x){
+  if(x===null || x===undefined) return "";
+  const n=Number(x);
+  if(!isFinite(n)) return "";
+  return n.toLocaleString("es-CO", {maximumFractionDigits:0});
+}
+function fmtPct(x){
+  if(x===null || x===undefined) return "";
+  const n=Number(x);
+  if(!isFinite(n)) return "";
+  return (n).toFixed(2) + "%";
+}
+function esc(s){ return String(s??"").replace(/[&<>"]/g, ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[ch])); }
+
+function buildUnmappedPlacementTable(unmapped, balanceLines, incomeLines, mappings){
+  if(!unmapped || !unmapped.length){
+    return `<div class="hint">No hay cuentas no incluidas para ubicar.</div>`;
+  }
+  const lookup = new Map((mappings || []).map(m=>[m.code8, m]));
+  const balanceOptions = balanceLines.map((l, idx)=>`<option value="balance:${idx}">${idx+1}. ${esc(l.concept||"")}</option>`).join("");
+  const incomeOptions = incomeLines.map((l, idx)=>`<option value="er:${idx}">${idx+1}. ${esc(l.concept||"")}</option>`).join("");
+  const rows = unmapped.map((u, i)=>{
+    const saved = lookup.get(u.code8);
+    const defaultSheet = saved ? saved.targetSheet : "balance";
+    const defaultLineIndex = saved ? saved.targetIndex : 0;
+    const lineOptions = defaultSheet === "er" ? incomeOptions : balanceOptions;
+    const defaultConcept = esc(u.desc || `Cuenta ${u.code8}`);
+    return `
+    <tr>
+      <td class="code">${esc(u.code8)}</td>
+      <td>${esc(u.desc||"")}</td>
+      <td class="num">${fmtNum(u.cur/1000)}</td>
+      <td class="num">${fmtNum(u.prev/1000)}</td>
+      <td>
+        <select data-unmapped-sheet="${i}" class="unmapped-sheet">
+          <option value="balance" ${defaultSheet === "balance" ? "selected" : ""}>Balance</option>
+          <option value="er" ${defaultSheet === "er" ? "selected" : ""}>ER</option>
+        </select>
+      </td>
+      <td>
+        <select data-unmapped-action="${i}" class="unmapped-action">
+          <option value="existing" selected>Asignar a línea</option>
+          <option value="new">Crear nueva fila</option>
+        </select>
+      </td>
+      <td>
+        <div class="unmapped-controls existing-line">
+          <select data-unmapped-line="${i}" class="unmapped-line">
+            ${lineOptions}
+          </select>
+          <span class="unmapped-muted">Elige una línea existente.</span>
+        </div>
+        <div class="unmapped-controls new-row" style="display:none;">
+          <select data-unmapped-insert="${i}" class="unmapped-insert">
+            ${lineOptions}
+          </select>
+          <select data-unmapped-type="${i}" class="unmapped-type">
+            <option value="detail">Detalle (durazno)</option>
+            <option value="group">Grupo (sin color)</option>
+            <option value="subtotal">Subtotal</option>
+            <option value="total">Total</option>
+            <option value="section">Sección</option>
+            <option value="subheader">Subencabezado</option>
+          </select>
+          <input data-unmapped-concept="${i}" class="unmapped-concept" type="text" value="${defaultConcept}" />
+          <span class="unmapped-muted">Inserta la nueva fila después de la línea elegida.</span>
+        </div>
+      </td>
+      <td>
+        ${saved ? `<button type="button" class="btn-clear-mapping" data-clear-code="${esc(u.code8)}">Revertir</button>` : ""}
+      </td>
+    </tr>
+  `;
+  }).join("");
+  return `
+    <table>
+      <thead>
+        <tr>
+          <th style="width:120px;">Código</th>
+          <th>Descripción</th>
+          <th class="num" style="width:110px;">Actual</th>
+          <th class="num" style="width:110px;">Anterior</th>
+          <th style="width:120px;">Hoja</th>
+          <th style="width:160px;">Acción</th>
+          <th style="width:380px;">Ubicación / Nueva fila</th>
+          <th style="width:120px;">Guardado</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>
+  `;
+}
+
+function renderUnmappedPlacements(proc){
+  const table = $("unmappedPlacementTable");
+  if(!table || !proc) return;
+  table.innerHTML = buildUnmappedPlacementTable(proc.unmappedList, proc.balanceLines, proc.incomeLines, customMappings);
+  const hasUnmapped = !!proc.unmappedList && proc.unmappedList.length > 0;
+  const hasMappings = customMappings.length > 0;
+  const hasSavedPlacements = !!(lastPlacements && (lastPlacements.extraMappings.length || lastPlacements.extraRows.length));
+  $("btnApplyUnmapped").disabled = !hasUnmapped;
+  $("btnSaveMappings").disabled = !hasUnmapped && !hasSavedPlacements;
+  $("btnDownloadMappings").disabled = !hasUnmapped;
+  $("btnCopyMappings").disabled = !hasUnmapped;
+  $("btnClearMappings").disabled = !hasMappings;
+  const lineSelects = table.querySelectorAll(".unmapped-line");
+  const sheetSelects = table.querySelectorAll(".unmapped-sheet");
+  const insertSelects = table.querySelectorAll(".unmapped-insert");
+  const actionSelects = table.querySelectorAll(".unmapped-action");
+  const typeSelects = table.querySelectorAll(".unmapped-type");
+  sheetSelects.forEach((sheetSelect, idx)=>{
+    sheetSelect.addEventListener("change", (e)=>{
+      const target = e.target.value;
+      const lineSelect = lineSelects[idx];
+      const insertSelect = insertSelects[idx];
+      if(!lineSelect || !insertSelect) return;
+      const options = target === "er"
+        ? proc.incomeLines.map((l, i)=>`<option value="er:${i}">${i+1}. ${esc(l.concept||"")}</option>`).join("")
+        : proc.balanceLines.map((l, i)=>`<option value="balance:${i}">${i+1}. ${esc(l.concept||"")}</option>`).join("");
+      lineSelect.innerHTML = options;
+      insertSelect.innerHTML = options;
+    });
+  });
+  actionSelects.forEach((actionSelect, idx)=>{
+    actionSelect.addEventListener("change", (e)=>{
+      const val = e.target.value;
+      const row = e.target.closest("tr");
+      if(!row) return;
+      const existing = row.querySelector(".existing-line");
+      const newRow = row.querySelector(".new-row");
+      if(existing && newRow){
+        existing.style.display = val === "new" ? "none" : "flex";
+        newRow.style.display = val === "new" ? "flex" : "none";
+      }
+    });
+  });
+  typeSelects.forEach((typeSelect)=>{
+    typeSelect.addEventListener("change", (e)=>{
+      const row = e.target.closest("tr");
+      const input = row?.querySelector(".unmapped-concept");
+      if(input && !input.value){
+        input.value = "Nueva fila";
+      }
+    });
+  });
+  lineSelects.forEach((lineSelect, idx)=>{
+    const code = proc.unmappedList[idx]?.code8;
+    if(!code) return;
+    const saved = customMappings.find(m=>m.code8 === code);
+    if(saved){
+      const value = `${saved.targetSheet}:${saved.targetIndex}`;
+      if(lineSelect.querySelector(`option[value="${value}"]`)){
+        lineSelect.value = value;
+      }
+    }
+  });
+  table.querySelectorAll(".btn-clear-mapping").forEach((btn)=>{
+    btn.addEventListener("click", (e)=>{
+      const code = e.currentTarget?.dataset?.clearCode;
+      if(!code) return;
+      removeCustomMappingByCode(code);
+      refreshCustomMappingsOutput();
+      runProcessing();
+      setStatus(`Asignación revertida para ${code}.`);
+    });
+  });
+  refreshCustomMappingsOutput();
+}
+// ===== UI =====
+let figuresWB=null;
+let processed=null;
+let lastPlacements=null;
+function fillSelect(sel, options, preferredIndex=0){
+  sel.innerHTML="";
+  options.forEach((opt,i)=>{
+    const o=document.createElement("option");
+    o.value=opt; o.textContent=opt;
+    if(i===preferredIndex) o.selected=true;
+    sel.appendChild(o);
+  });
+}
+$("figuresFile").addEventListener("change", async (e)=>{
+  const f=e.target.files?.[0];
+  if(!f) return;
+  setStatus("Leyendo cifras…");
+  try{
+    figuresWB = await readXlsx(f);
+    const names = figuresWB.SheetNames || [];
+    let bestCur=0, bestPrev=Math.max(0,names.length-2);
+    const years = names.map(n=>parseYearFromName(n) ?? -1);
+    const sorted = years.map((y,i)=>({y,i})).filter(x=>x.y>0).sort((a,b)=>b.y-a.y);
+    if(sorted.length>=2){ bestCur=sorted[0].i; bestPrev=sorted[1].i; }
+    fillSelect($("figCurrentSheet"), names, bestCur);
+    fillSelect($("figPrevSheet"), names, bestPrev);
+    $("labelCurrent").value = parseYearFromName(names[bestCur]) ?? "Actual";
+    $("labelPrev").value = parseYearFromName(names[bestPrev]) ?? "Anterior";
+    $("btnProcess").disabled=false;
+    setStatus("Cifras cargadas.");
+  } catch(err){
+    console.error(err);
+    figuresWB=null;
+    $("btnProcess").disabled=true;
+    setStatus("Error leyendo cifras.");
+  }
+});
+
+function computeStatement(modelRows, accounts, remaining0, options={}){
+  const lines=buildLineDefs(modelRows);
+  const {vals, remaining}=mapAccountsToModel(lines, accounts, remaining0);
+  computeTotalsByColors(lines, vals, options);
+  return {lines, vals, remaining};
+}
+
+function cloneVals(vals){
+  return vals.map(v=>({current_raw:v.current_raw||0, previous_raw:v.previous_raw||0, assigned_codes:[...(v.assigned_codes||[])]}));
+}
+
+function applyOverridesAndProcess(params={}){
+  if(!figuresWB) return null;
+  const {extraMappings=[], extraRows=[]} = params;
+  const curSheet=$("figCurrentSheet").value;
+  const prevSheet=$("figPrevSheet").value;
+  const labelCur=safeStr($("labelCurrent").value)||"Actual";
+  const labelPrev=safeStr($("labelPrev").value)||"Anterior";
+  const thresholdPct=Number(safeStr($("thresholdPct").value)) || 0;
+
+  const curParsed=parseFiguresSheet(figuresWB, curSheet);
+  const prevParsed=parseFiguresSheet(figuresWB, prevSheet);
+
+  if(!curParsed.rows.length || !prevParsed.rows.length){
+    alert("No se pudieron leer filas con CODICTA y SDACCTA en una o ambas hojas.");
+    setStatus("Error.");
+    return null;
+  }
+
+  const accounts=buildAccounts(curParsed.rows, prevParsed.rows);
+  const mergedMappings = [...customMappings, ...extraMappings];
+  let effectiveModel = buildModelWithCustomMappings(MODEL, mergedMappings);
+  effectiveModel = buildModelWithCustomRows(effectiveModel, extraRows);
+
+  const bal=computeStatement(effectiveModel.balance, accounts);
+  const er=computeStatement(effectiveModel.er, accounts, bal.remaining, {isIncomeStatement:true});
+
+  // Resultado del ejercicio (Balance <- ER), luego recalcular totales
+  injectResultIntoBalance(bal.lines, bal.vals, er.lines, er.vals);
+  computeTotalsByLevels(bal.lines, bal.vals);
+
+  // Bases % participación
+  const balOutPre=buildOutRows(bal.lines, bal.vals, 1, 1);
+  const balBase=findBaseBalance(balOutPre);
+  const erOutPre=buildOutRows(er.lines, er.vals, 1, 1);
+  const erBase=findBaseIncome(erOutPre);
+
+  const balanceOut=buildOutRows(bal.lines, bal.vals, balBase.cur, balBase.prev);
+  const incomeOut=buildOutRows(er.lines, er.vals, erBase.cur, erBase.prev);
+
+  // No incluidas: lo que quedó sin asignar (del consumo por modelo)
+  const unmapped=[];
+  for(const code8 of er.remaining){
+    const a=accounts.get(code8);
+    if(!a) continue;
+    const cur = Number(a.cur) || 0;
+    const prev = Number(a.prev) || 0;
+    if(Math.abs(cur) <= 1 && Math.abs(prev) <= 1) continue;
+    if(cur !== 0 || prev !== 0){
+      unmapped.push({code8, desc:a.desc||"", cur, prev});
+    }
+  }
+  unmapped.sort((a,b)=> (Math.abs(b.cur)+Math.abs(b.prev)) - (Math.abs(a.cur)+Math.abs(a.prev)));
+
+  $("kpiCur").textContent=String(curParsed.rows.length);
+  $("kpiPrev").textContent=String(prevParsed.rows.length);
+  $("kpiUnm").textContent=String(unmapped.length);
+  $("runMeta").textContent=`Cifras: ${curSheet} vs ${prevSheet} · SDACCTA · miles (÷1000)`;
+
+  const jsonOut={
+    metadata:{
+      period_current_label: labelCur,
+      period_previous_label: labelPrev,
+      figures_current_sheet: curSheet,
+      figures_previous_sheet: prevSheet,
+      amount_column: "SDACCTA",
+      scale_divisor: 1000,
+      threshold_pct: thresholdPct,
+      generated_at: new Date().toISOString(),
+      model_notes:{
+        detail_fill_hex_reference: "#FBE2D5 (resuelto cercano: FBE3D6)",
+        prefix_dash_is_list: true,
+        result_of_exercise_from_income_statement: true
+      },
+      header_detection:{current:curParsed.meta, previous:prevParsed.meta},
+      percent_basis:{
+        balance: "Participación sobre Total Activo (detectado por 'TOTAL' nivel 0 o fallback)",
+        income_statement: "Participación sobre Total Ingresos (detectado por 'TOTAL INGRESOS' o fallback)"
+      },
+      custom_mappings: customMappings,
+      custom_rows: extraRows
+    },
+    balance:{lines: balanceOut},
+    income_statement:{lines: incomeOut},
+    unmapped_accounts: unmapped
+  };
+
+  return {
+    labelCur,
+    labelPrev,
+    thresholdPct,
+    balanceOut,
+    incomeOut,
+    unmappedList:unmapped,
+    jsonOut,
+    kpiCur:curParsed.rows.length,
+    kpiPrev:prevParsed.rows.length,
+    kpiUnm:unmapped.length,
+    balanceLines: bal.lines,
+    incomeLines: er.lines,
+    accounts,
+    curParsed,
+    prevParsed
+  };
+}
+
+function gatherPlacements(){
+  if(!processed) return {extraMappings:[], extraRows:[]};
+  const table=$("unmappedPlacementTable");
+  if(!table) return {extraMappings:[], extraRows:[]};
+  const sheetSelects=table.querySelectorAll(".unmapped-sheet");
+  const lineSelects=table.querySelectorAll(".unmapped-line");
+  const actionSelects=table.querySelectorAll(".unmapped-action");
+  const insertSelects=table.querySelectorAll(".unmapped-insert");
+  const typeSelects=table.querySelectorAll(".unmapped-type");
+  const conceptInputs=table.querySelectorAll(".unmapped-concept");
+  const extraMappings=[];
+  const extraRows=[];
+  processed.unmappedList.forEach((u, i)=>{
+    const sheetSel=sheetSelects[i];
+    const lineSel=lineSelects[i];
+    const actionSel=actionSelects[i];
+    const insertSel=insertSelects[i];
+    const typeSel=typeSelects[i];
+    const conceptInput=conceptInputs[i];
+    if(!sheetSel || !actionSel) return;
+    const target=sheetSel.value;
+    if(actionSel.value === "new"){
+      const [sheetKey, idxRaw]=(insertSel?.value||"").split(":");
+      const idx=Number(idxRaw);
+      const fillClass = safeStr(typeSel?.value || "detail");
+      const concept = safeStr(conceptInput?.value || u.desc || `Cuenta ${u.code8}`);
+      if(!Number.isFinite(idx)) return;
+      extraRows.push({
+        targetSheet: target === "er" ? "er" : "balance",
+        insertAfterIndex: idx,
+        rowData: {
+          row: idx + 2,
+          code_raw: u.code8,
+          concept,
+          fill: null,
+          fill_class: fillClass
+        }
+      });
+      return;
+    }
+    const [sheetKey, idxRaw]=(lineSel?.value||"").split(":");
+    const idx=Number(idxRaw);
+    if(!Number.isFinite(idx)) return;
+    extraMappings.push({
+      code8: u.code8,
+      targetSheet: target === "er" ? "er" : "balance",
+      targetIndex: idx
+    });
+  });
+  return {extraMappings, extraRows};
+}
+
+function applySavedMappingsToModel(){
+  return buildModelWithCustomMappings(MODEL, customMappings);
+}
+
+function runProcessing(){
+  if(!figuresWB) return;
+  setStatus("Procesando…");
+  const result = applyOverridesAndProcess({extraMappings:[], extraRows:customRows});
+  if(!result) return;
+  processed = result;
+  renderUnmappedPlacements(processed);
+
+  $("btnExcel").disabled=false;
+  $("btnJSON").disabled=false;
+  setStatus("OK. Listo para exportar.");
+}
+
+$("btnProcess").addEventListener("click", runProcessing);
+
+$("btnApplyUnmapped").addEventListener("click", ()=>{
+  if(!processed) return;
+  const {extraMappings, extraRows} = gatherPlacements();
+  customRows = extraRows;
+  lastPlacements = {extraMappings, extraRows};
+  const result = applyOverridesAndProcess({extraMappings, extraRows: customRows});
+  if(!result) return;
+  processed = result;
+  renderUnmappedPlacements(processed);
+  processed.jsonOut.metadata.unmapped_target = {
+    sheet: "manual",
+    row: null,
+    placements: {extraMappings, extraRows}
+  };
+  setStatus("Ubicaciones aplicadas. Listo para exportar.");
+});
+
+$("btnSaveMappings").addEventListener("click", ()=>{
+  if(!processed) return;
+  let {extraMappings, extraRows} = gatherPlacements();
+  if(!extraMappings.length && !extraRows.length && lastPlacements){
+    ({extraMappings, extraRows} = lastPlacements);
+  }
+  const nextMappings = new Map(customMappings.map(m=>[m.code8, m]));
+  const nextRows = new Map(
+    customRows.map((row)=>[
+      `${row.targetSheet}:${row.insertAfterIndex}:${row.rowData?.code_raw ?? ""}`,
+      row
+    ])
+  );
+  for(const placement of extraMappings){
+    const targetSheet = placement.targetSheet === "balance" ? "balance" : "er";
+    const lines = targetSheet === "balance" ? processed.balanceLines : processed.incomeLines;
+    const line = lines[placement.targetIndex];
+    if(!line || !isLineEligibleForMapping(line)){
+      console.warn("Línea no elegible para guardar mapping", line);
+      continue;
+    }
+    nextMappings.set(placement.code8, {
+      code8: placement.code8,
+      targetSheet,
+      targetIndex: placement.targetIndex,
+      updatedAt: new Date().toISOString()
+    });
+  }
+  for(const row of extraRows){
+    const key = `${row.targetSheet}:${row.insertAfterIndex}:${row.rowData?.code_raw ?? ""}`;
+    nextRows.set(key, row);
+  }
+  customMappings = Array.from(nextMappings.values());
+  saveCustomMappings(customMappings);
+  customRows = Array.from(nextRows.values());
+  saveCustomRows(customRows);
+  refreshCustomMappingsOutput();
+  runProcessing();
+  setStatus("Asignaciones guardadas como base. Modelo actualizado en memoria.");
+});
+
+$("btnDownloadMappings").addEventListener("click", ()=>{
+  refreshCustomMappingsOutput();
+  const content = customMappingsSnippet();
+  downloadText("custom-mappings.js", content, "text/javascript");
+});
+
+$("btnCopyMappings").addEventListener("click", async ()=>{
+  try{
+    refreshCustomMappingsOutput();
+    await navigator.clipboard.writeText(customMappingsSnippet());
+    setStatus("Snippet copiado al portapapeles.");
+  } catch (err){
+    console.error(err);
+    setStatus("No se pudo copiar el snippet.");
+  }
+});
+
+$("btnClearMappings").addEventListener("click", ()=>{
+  if(customMappings.length === 0) return;
+  clearCustomMappings();
+  clearCustomRows();
+  refreshCustomMappingsOutput();
+  runProcessing();
+  setStatus("Asignaciones guardadas revertidas.");
+});
+
+$("btnJSON").addEventListener("click", ()=>{
+  if(!processed) return;
+  downloadText(`BG_ER_${processed.labelCur}_vs_${processed.labelPrev}.json`, JSON.stringify(processed.jsonOut,null,2), "application/json");
+});
+$("btnExcel").addEventListener("click", ()=>{
+  if(!processed) return;
+  try{
+    const wb=buildExcel(processed);
+    XLSX.writeFile(wb, `BG_ER_${processed.labelCur}_vs_${processed.labelPrev}.xlsx`);
+  } catch(err){
+    console.error(err);
+    alert("Error generando Excel: " + (err && err.message ? err.message : err));
+  }
+});
+
+customMappings = loadCustomMappings();
+customRows = loadCustomRows();
+refreshCustomMappingsOutput();
+</script>
+</body>
+</html>
