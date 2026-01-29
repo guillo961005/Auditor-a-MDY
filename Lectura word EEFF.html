@@ -1,0 +1,1470 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>EEFF (Word .docx) → JSON trazable + Pruebas de integridad</title>
+  <style>
+    :root { color-scheme: light; }
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 18px; }
+    h1 { margin: 0 0 12px 0; font-size: 20px; }
+    h2 { margin: 18px 0 10px 0; font-size: 16px; }
+    .grid { display: grid; grid-template-columns: 1.2fr 1fr; gap: 14px; }
+    .card { border: 1px solid #d0d0d0; border-radius: 10px; padding: 12px; }
+    label { display:block; font-size: 12px; color:#333; margin-top: 10px; }
+    input[type="text"], input[type="number"], select {
+      width: 100%; padding: 8px 10px; border: 1px solid #c8c8c8; border-radius: 8px;
+      font-size: 13px;
+    }
+    input[type="file"] { width: 100%; }
+    button {
+      padding: 9px 12px; border: 1px solid #2f2f2f; background:#fff; border-radius: 9px;
+      cursor: pointer; font-size: 13px;
+    }
+    button:disabled { opacity: .5; cursor: not-allowed; }
+    .row { display:flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+    .muted { color: #666; font-size: 12px; }
+    .ok { color: #0a6; font-weight: 600; }
+    .bad { color: #b00; font-weight: 700; }
+    .warn { color: #a60; font-weight: 700; }
+    .pill { display:inline-block; padding: 2px 8px; border-radius: 999px; border: 1px solid #d0d0d0; font-size: 12px; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { border: 1px solid #ddd; padding: 6px 8px; font-size: 12px; vertical-align: top; }
+    th { background: #f5f5f5; }
+    #exceptionsTable { overflow-x: auto; }
+    #exceptionsTable table { table-layout: fixed; width: auto; display: inline-table; max-width: 100%; }
+    #exceptionsTable th:nth-child(1),
+    #exceptionsTable td:nth-child(1) { width: 70px; }
+    #exceptionsTable th:nth-child(2),
+    #exceptionsTable td:nth-child(2) { width: 120px; }
+    #exceptionsTable th:nth-child(3),
+    #exceptionsTable td:nth-child(3) { width: 280px; }
+    #exceptionsTable th:nth-child(4),
+    #exceptionsTable td:nth-child(4) { width: 320px; }
+    #exceptionsTable td { overflow-wrap: anywhere; word-break: break-word; }
+    #reconstructed, #headerDiagnostics { overflow-x: auto; }
+    #reconstructed table, #headerDiagnostics table {
+      table-layout: fixed;
+      width: auto;
+      display: inline-table;
+      max-width: 100%;
+    }
+    pre { background:#fafafa; border:1px solid #e2e2e2; padding:10px; border-radius: 10px; overflow:auto; max-height: 520px; }
+    details summary { cursor: pointer; }
+    .split { display:grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .small { font-size: 12px; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    .sticky-actions { position: sticky; top: 8px; background: #fff; padding: 10px; border: 1px solid #e6e6e6; border-radius: 10px; }
+    .kpi { display:flex; gap:10px; flex-wrap: wrap; }
+    .kpi > div { border:1px solid #e1e1e1; border-radius: 10px; padding: 8px 10px; min-width: 150px; }
+    .kpi .label { font-size: 11px; color:#666; }
+    .kpi .value { font-weight: 700; font-size: 14px; margin-top: 2px; }
+    .hr { height:1px; background:#eee; margin: 12px 0; }
+    .hint { background:#fff7e6; border:1px solid #ffe2a8; padding:10px; border-radius: 10px; font-size: 12px; }
+    .hidden { display:none; }
+    .diag-table { border:1px solid #ddd; border-radius: 10px; padding: 10px; margin: 10px 0; }
+    .diag-table h3 { margin: 0 0 8px 0; font-size: 13px; }
+  </style>
+</head>
+
+<body>
+  <h1>EEFF (Word .docx) → JSON trazable + Pruebas de integridad (reproducible)</h1>
+  <div class="hint">
+    <div><b>Uso recomendado</b></div>
+    <ol style="margin:8px 0 0 18px; padding:0;">
+      <li>Carga el archivo <span class="mono">.docx</span> (EEFF en Word).</li>
+      <li>Configura entidad, unidad, tolerancia y mapeo de columnas (2025/2024 o actual/anterior).</li>
+      <li>Ejecuta <b>Procesar y validar</b>. Revisa el panel de <b>Pruebas</b> y la <b>Reconstrucción</b>.</li>
+      <li>Descarga el <b>JSON trazable</b> y el <b>JSON de excepciones</b>.</li>
+    </ol>
+    <div class="muted" style="margin-top:6px;">
+      Nota: Esta herramienta procesa localmente en el navegador. Para leer .docx usa Mammoth.js.
+      Si tu entorno bloquea CDNs, descarga <span class="mono">mammoth.browser.min.js</span> y referencia localmente.
+    </div>
+  </div>
+
+  <div class="grid" style="margin-top:12px;">
+    <div class="card">
+      <h2>1) Carga y configuración</h2>
+
+      <label>Archivo Word (.docx)</label>
+      <input id="file" type="file" accept=".docx" />
+
+      <div class="row">
+        <div style="flex:1; min-width: 240px;">
+          <label>Unidad monetaria</label>
+          <select id="unit">
+            <option value="COP">COP</option>
+            <option value="COP_MILES">COP (miles)</option>
+            <option value="COP_MILLONES">COP (millones)</option>
+            <option value="OTRA">Otra (sin escalamiento)</option>
+          </select>
+        </div>
+        <div style="flex:1; min-width: 240px;">
+          <label>Tolerancia por redondeo (valor absoluto)</label>
+          <input id="tolAbs" type="number" min="0" step="1" value="1" />
+        </div>
+      </div>
+
+      <div class="row">
+        <div style="flex:1; min-width: 240px;">
+          <label>Tolerancia porcentual (0.01 = 1%)</label>
+          <input id="tolPct" type="number" min="0" step="0.0001" value="0.0000" />
+        </div>
+        <div style="flex:1; min-width: 240px;">
+          <label>Separador decimal esperado (solo para parseo)</label>
+          <select id="decimalSep">
+            <option value=",">,</option>
+            <option value=".">.</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="hr"></div>
+
+      <h2 style="margin-top:0;">2) Tablas a omitir</h2>
+      <div class="muted">Selecciona las tablas que quieres excluir del análisis y del JSON trazable.</div>
+      <div id="tableOmitList" class="small" style="margin-top:8px;">—</div>
+
+      <div class="hr"></div>
+
+      <h2 style="margin-top:0;">3) Mapeo de columnas de periodo</h2>
+      <div class="muted">
+        Esta herramienta extrae todas las tablas del Word y luego intenta identificar columnas numéricas.
+        Aquí defines cómo detectar la columna del período <b>Actual</b> y <b>Anterior</b> por texto de encabezado.
+      </div>
+
+      <div class="row" style="margin-top:10px;">
+        <div style="flex:1; min-width: 240px;">
+          <label>Texto/regex para columna "Actual" (encabezado)</label>
+          <input id="hdrCurrent" type="text" value="2025|actual" />
+          <div class="muted small">Ej: <span class="mono">2025|Actual</span> o <span class="mono">Periodo\s*Actual</span></div>
+        </div>
+        <div style="flex:1; min-width: 240px;">
+          <label>Texto/regex para columna "Anterior" (encabezado)</label>
+          <input id="hdrPrior" type="text" value="2024|anterior" />
+          <div class="muted small">Ej: <span class="mono">2024|Anterior</span></div>
+        </div>
+      </div>
+
+      <div class="row" style="margin-top:12px;">
+        <button id="btnProcess" disabled>Procesar y validar</button>
+        <button id="btnDownloadData" disabled>Descargar JSON trazable</button>
+        <button id="btnDownloadEx" disabled>Descargar JSON excepciones</button>
+        <button id="btnDownloadExCsv" disabled>Descargar excepciones (CSV)</button>
+        <span id="status" class="pill muted">Sin archivo.</span>
+      </div>
+
+      <div class="hr"></div>
+
+      <h2>4) KPIs de control (reproducibilidad)</h2>
+      <div class="kpi">
+        <div><div class="label">Tablas detectadas</div><div id="kTables" class="value">—</div></div>
+        <div><div class="label">Registros JSON</div><div id="kRecords" class="value">—</div></div>
+        <div><div class="label">Excepciones</div><div id="kEx" class="value">—</div></div>
+        <div><div class="label">Hash del documento (normalizado)</div><div id="kHash" class="value mono">—</div></div>
+      </div>
+
+      <div class="hr"></div>
+
+      <details>
+        <summary><b>Ver HTML extraído del Word (para auditoría visual)</b></summary>
+        <div class="muted small">Esto es el HTML generado desde el .docx (no editado). Útil para contrastar con reconstrucción desde JSON.</div>
+        <div id="extractedHtml" style="margin-top:10px;"></div>
+      </details>
+
+      <div id="hiddenHtml" class="hidden"></div>
+    </div>
+
+    <div class="card">
+      <div class="sticky-actions">
+        <h2 style="margin:0 0 8px 0;">5) Pruebas y resultados</h2>
+        <div class="muted">Las pruebas están diseñadas para que puedas <b>detener el proceso</b> si la transformación no es confiable.</div>
+      </div>
+
+      <div style="margin-top:10px;">
+        <details open>
+          <summary><b>Excepciones (listado)</b></summary>
+          <div class="muted small">Incluye: integridad (filas/columnas), parseo numérico, encabezados, duplicados, reconstrucción vs origen.</div>
+          <div id="exceptionsTable" style="margin-top:10px;"></div>
+        </details>
+
+        <div class="hr"></div>
+
+        <details>
+          <summary><b>Reconstrucción desde JSON (comparación)</b></summary>
+          <div class="muted small">Se reconstruyen tablas a partir del JSON y se comparan celdas contra el HTML extraído. Si difiere, se reporta.</div>
+          <div id="reconstructed" style="margin-top:10px;"></div>
+        </details>
+
+        <div class="hr"></div>
+
+        <details>
+          <summary><b>Diagnóstico de encabezados (multi-fila)</b></summary>
+          <div class="muted small">Muestra filas consideradas encabezado, rutas por columna y periodos detectados.</div>
+          <div id="headerDiagnostics" style="margin-top:10px;"></div>
+        </details>
+
+        <div class="hr"></div>
+
+        <details open>
+          <summary><b>Vista del JSON trazable (para corroboración)</b></summary>
+          <div class="row" style="margin-top:10px;">
+            <div style="flex:1; min-width: 240px;">
+              <label>Filtro (contiene)</label>
+              <input id="jsonFilter" type="text" placeholder="Ej: Nota 7 | Propiedades | TBL_003 | 2025" />
+            </div>
+            <div style="flex:1; min-width: 240px;">
+              <label>Límite de registros en vista (no afecta descarga)</label>
+              <input id="jsonLimit" type="number" min="50" step="50" value="500" />
+            </div>
+          </div>
+          <pre id="jsonPreview" class="mono" style="margin-top:10px;">—</pre>
+        </details>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/mammoth/mammoth.browser.min.js"></script>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+
+    const state = {
+      file: null,
+      docxName: null,
+      extractedHtml: "",
+      tables: [],
+      notes: [],
+      records: [],
+      exceptions: [],
+      normHash: null,
+      reconstructed: [],
+      headerDiagnostics: [],
+      excludedTables: new Set(),
+      activeTables: []
+    };
+
+    function setStatus(text, kind = "muted") {
+      const el = $("status");
+      el.textContent = text;
+      el.className = "pill " + (kind === "ok" ? "ok" : kind === "bad" ? "bad" : kind === "warn" ? "warn" : "muted");
+    }
+
+    function escapeHtml(s) {
+      return String(s)
+        .replaceAll("&", "&amp;").replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;").replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function scaleFactor(unit) {
+      if (unit === "COP_MILES") return 1000;
+      if (unit === "COP_MILLONES") return 1000000;
+      return 1;
+    }
+
+    function isDateLike(text) {
+      const t = String(text || "").trim();
+      if (!t) return false;
+      const s = t.toLowerCase();
+
+      if (/\b(19|20)\d{2}[\/\-\.]\d{1,2}[\/\-\.]\d{1,2}\b/.test(s)) return true;
+      if (/\b\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4}\b/.test(s)) return true;
+      if (/\b\d{1,2}\s+de\s+(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|setiembre|octubre|noviembre|diciembre)\s+de\s+\d{2,4}\b/.test(s)) return true;
+      if (/\b\d{1,2}\s+(ene|feb|mar|abr|may|jun|jul|ago|sep|set|oct|nov|dic)\.?\s+\d{2,4}\b/.test(s)) return true;
+
+      return false;
+    }
+
+    function looksNumericLike(text) {
+      const t = String(text || "").trim();
+      if (!t) return false;
+      if (/^(n\/a|na|no aplica|no disponible|—|-)$/.test(t.toLowerCase())) return false;
+      if (isDateLike(t)) return false;
+      const hasDigit = /\d/.test(t);
+      const letters = (t.match(/[A-Za-zÁÉÍÓÚáéíóúÑñ]/g) || []).length;
+      return hasDigit && letters <= 2;
+    }
+
+    function normalizeNumericText(raw) {
+      let s = String(raw ?? "").trim();
+      if (!s) return { text: "", isNull: true };
+      const lower = s.toLowerCase();
+      if (/(^n\/a$|^na$|^no aplica$|^no disponible$|^—$|^-$)/.test(lower)) {
+        return { text: "", isNull: true };
+      }
+      s = s.replace(/\s*\((nota|ver nota|see note)[^)]*\)/gi, "");
+      s = s.replace(/\s*nota\s*\d+(\s*[a-z])?/gi, "");
+      s = s.replace(/\s*\[[^\]]*\]\s*/g, "");
+      s = s.replace(/\s*\*+\s*$/g, "");
+      return { text: s.trim(), isNull: false };
+    }
+
+    function parseMoney(text, decimalSep, unit) {
+      const raw = String(text ?? "").trim();
+      const normalized = normalizeNumericText(raw);
+      if (normalized.isNull) return { ok: true, value: null, raw };
+      if (!normalized.text) return { ok: true, value: null, raw };
+      if (isDateLike(normalized.text)) return { ok: true, value: null, raw, date_like: true };
+
+      let s = normalized.text.replace(/\s+/g, " ");
+      let negative = false;
+
+      if (/^\(.*\)$/.test(s)) {
+        negative = true;
+        s = s.slice(1, -1).trim();
+      }
+
+      s = s.replace(/COP|COL\$|\$|USD|EUR/gi, "").trim();
+
+      if (s.startsWith("-")) {
+        negative = true;
+        s = s.slice(1).trim();
+      }
+      if (s.endsWith("-")) {
+        negative = true;
+        s = s.slice(0, -1).trim();
+      }
+
+      const ds = decimalSep;
+      const other = ds === "," ? "." : ",";
+
+      s = s.replace(/\s/g, "");
+      s = s.split(other).join("");
+
+      if (ds === ",") s = s.replace(/,/g, ".");
+
+      if (!/^\d+(\.\d+)?$/.test(s)) {
+        return { ok: false, value: null, raw, normalized: s };
+      }
+
+      let val = Number(s);
+      if (!Number.isFinite(val)) return { ok: false, value: null, raw, normalized: s };
+
+      if (negative) val = -val;
+
+      val = val * scaleFactor(unit);
+
+      return { ok: true, value: val, raw, normalized: s, negative };
+    }
+
+    async function docxToHtml(arrayBuffer) {
+      const result = await mammoth.convertToHtml({ arrayBuffer });
+      return { html: result.value, messages: result.messages || [] };
+    }
+
+    function tableToGrid(tableEl) {
+      const rows = Array.from(tableEl.querySelectorAll("tr"));
+      const grid = [];
+      const spans = [];
+
+      for (let r = 0; r < rows.length; r++) {
+        const row = [];
+        const cells = Array.from(rows[r].children).filter(el => el.tagName === "TD" || el.tagName === "TH");
+        let cIndex = 0;
+
+        function fillSpansUntil(col) {
+          while (spans[col] && spans[col].rowspanLeft > 0) {
+            row[col] = spans[col].text;
+            spans[col].rowspanLeft -= 1;
+            col++;
+          }
+          return col;
+        }
+
+        for (const cell of cells) {
+          cIndex = fillSpansUntil(cIndex);
+
+          const colspan = parseInt(cell.getAttribute("colspan") || "1", 10);
+          const rowspan = parseInt(cell.getAttribute("rowspan") || "1", 10);
+          const text = cell.innerText.replace(/\u00A0/g, " ").trim();
+
+          for (let k = 0; k < colspan; k++) {
+            row[cIndex + k] = text;
+
+            if (rowspan > 1) {
+              spans[cIndex + k] = { rowspanLeft: rowspan - 1, text };
+            }
+          }
+          cIndex += colspan;
+        }
+
+        cIndex = fillSpansUntil(cIndex);
+        grid.push(row);
+      }
+
+      const maxCols = grid.reduce((m, r) => Math.max(m, r.length), 0);
+      for (const r of grid) while (r.length < maxCols) r.push("");
+
+      return grid;
+    }
+
+    async function sha256(text) {
+      const enc = new TextEncoder();
+      const data = enc.encode(text);
+      const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
+    }
+
+    function normalizeForHash(tables) {
+      const lines = [];
+      for (let ti = 0; ti < tables.length; ti++) {
+        const g = tables[ti].grid;
+        for (let r = 0; r < g.length; r++) {
+          for (let c = 0; c < g[r].length; c++) {
+            const cell = (g[r][c] ?? "").toString().trim().replace(/\s+/g, " ");
+            lines.push(`${ti}|${r}|${c}|${cell}`);
+          }
+        }
+      }
+      return lines.join("\n");
+    }
+
+    function stableString(v) {
+      return (v ?? "").toString().trim().replace(/\s+/g, " ");
+    }
+
+    function detectDecimalSeparator(grid, periodColumns, fallback) {
+      let comma = 0;
+      let dot = 0;
+      const maxRows = Math.min(30, grid.length);
+      const periodCols = [...(periodColumns.current || []), ...(periodColumns.prior || [])];
+      for (let r = 0; r < maxRows; r++) {
+        const row = grid[r] || [];
+        const cols = periodCols.length ? periodCols : row.map((_, idx) => idx);
+        for (const c of cols) {
+          const text = String(row[c] ?? "").trim();
+          if (!text) continue;
+          const match = text.match(/\d+[.,]\d{2}\b/);
+          if (!match) continue;
+          const candidate = match[0];
+          if (candidate.includes(",") && candidate.includes(".")) {
+            const lastComma = candidate.lastIndexOf(",");
+            const lastDot = candidate.lastIndexOf(".");
+            if (lastComma > lastDot) comma += 2;
+            else dot += 2;
+          } else if (candidate.includes(",")) {
+            comma += 1;
+          } else if (candidate.includes(".")) {
+            dot += 1;
+          }
+        }
+      }
+      if (comma === 0 && dot === 0) return fallback;
+      return comma >= dot ? "," : ".";
+    }
+
+    function rowStats(row) {
+      const cells = row.map(stableString);
+      const nonEmpty = cells.filter(x => x).length;
+      const numeric = cells.filter(looksNumericLike).length;
+      const text = nonEmpty - numeric;
+      return { nonEmpty, numeric, text };
+    }
+
+    function detectDataStart(grid, maxScan = 12) {
+      let bestRow = 0;
+      for (let r = 0; r < Math.min(maxScan, grid.length); r++) {
+        const stats = rowStats(grid[r]);
+        if (stats.numeric >= 2 && stats.numeric >= stats.text) {
+          bestRow = r;
+          break;
+        }
+      }
+      return bestRow;
+    }
+
+    function isMergedTitleRow(row) {
+      const cells = row.map(stableString);
+      const nonEmpty = cells.filter(x => x);
+      if (nonEmpty.length < 2) return false;
+      const uniq = Array.from(new Set(nonEmpty));
+      if (uniq.length !== 1) return false;
+      const text = uniq[0];
+      if (looksNumericLike(text) || isDateLike(text)) return false;
+      const ratio = nonEmpty.length / Math.max(1, cells.length);
+      return ratio >= 0.6;
+    }
+
+    function detectHeaderRows(grid) {
+      const candidates = [];
+      const maxScan = Math.min(12, grid.length);
+      const periodHint = /(20\d{2}|actual|anterior|periodo|corriente|comparativo)/i;
+      const yearHint = /\b(19|20)\d{2}\b/;
+      const dataStart = detectDataStart(grid, maxScan);
+      const periodHintRows = [];
+      const yearRows = [];
+      const titleRows = [];
+
+      for (let r = 0; r < maxScan; r++) {
+        const row = grid[r].map(stableString);
+        const stats = rowStats(row);
+        const hasPeriodHint = row.some(cell => periodHint.test(cell));
+        const hasYearHint = row.some(cell => yearHint.test(cell));
+        const isTitle = isMergedTitleRow(row);
+        const textHeavy = stats.text >= Math.max(1, stats.numeric);
+
+        if (isTitle) titleRows.push(r);
+        if (hasPeriodHint) periodHintRows.push(r);
+        if (hasYearHint) yearRows.push(r);
+
+        if (stats.nonEmpty >= 1 && (hasPeriodHint || hasYearHint || textHeavy || isTitle)) {
+          candidates.push(r);
+        }
+      }
+
+      const beforeData = candidates.filter(r => r <= dataStart);
+      const periodBeforeData = periodHintRows.filter(r => r <= dataStart);
+      const yearBeforeData = yearRows.filter(r => r <= dataStart);
+
+      let headerEnd = null;
+      if (periodBeforeData.length) headerEnd = periodBeforeData[periodBeforeData.length - 1];
+      else if (yearBeforeData.length) headerEnd = yearBeforeData[yearBeforeData.length - 1];
+      else if (beforeData.length) headerEnd = beforeData[beforeData.length - 1];
+      else if (periodHintRows.length) headerEnd = periodHintRows[periodHintRows.length - 1];
+      else if (yearRows.length) headerEnd = yearRows[yearRows.length - 1];
+      else headerEnd = 0;
+
+      const headerSet = new Set();
+      const headerStart = Math.max(0, headerEnd - 2);
+      for (let r = headerStart; r <= headerEnd; r++) headerSet.add(r);
+      for (const tr of titleRows) {
+        if (tr <= headerEnd && tr >= headerStart - 2) headerSet.add(tr);
+      }
+
+      const headerRows = Array.from(headerSet).sort((a, b) => a - b);
+      return headerRows.length ? headerRows : [0];
+    }
+
+    function buildHeaderPaths(grid, headerRows) {
+      const maxCols = grid.reduce((m, r) => Math.max(m, r.length), 0);
+      const paths = Array.from({ length: maxCols }, () => []);
+
+      for (const r of headerRows) {
+        for (let c = 0; c < maxCols; c++) {
+          const text = stableString(grid[r][c]);
+          if (text) paths[c].push(text);
+        }
+      }
+
+      return paths.map(parts => parts.join(" | "));
+    }
+
+    function detectPeriodColumnsFromHeaders(headerPaths, regexCurrent, regexPrior) {
+      const curRe = new RegExp(regexCurrent, "i");
+      const priRe = new RegExp(regexPrior, "i");
+
+      const current = [];
+      const prior = [];
+
+      for (let i = 0; i < headerPaths.length; i++) {
+        const h = headerPaths[i] ?? "";
+        if (curRe.test(h)) current.push(i);
+        if (priRe.test(h)) prior.push(i);
+      }
+
+      return { current, prior };
+    }
+
+    function detectPeriodByRow(grid, startDataRow) {
+      const yearRe = /\b(19|20)\d{2}\b/;
+      let hits = 0;
+      for (let r = startDataRow; r < grid.length; r++) {
+        const first = stableString(grid[r][0]);
+        if (yearRe.test(first)) hits++;
+      }
+      return hits >= 2;
+    }
+
+    function pushEx(code, severity, message, source) {
+      state.exceptions.push({
+        code, severity, message,
+        source: source || null,
+        ts: new Date().toISOString()
+      });
+    }
+
+    function classifyStateByContext(tableText) {
+      const t = (tableText || "").toLowerCase();
+      if (t.includes("estado de resultados") || t.includes("resultado integral") || t.includes("ingresos") && t.includes("gastos")) return "ER";
+      if (t.includes("balance") || t.includes("estado de situacion financiera") || t.includes("activo") && t.includes("pasivo")) return "BALANCE";
+      if (t.includes("nota")) return "NOTA";
+      return "NO_DETERMINADO";
+    }
+
+    function detectNoteLabel(nearText) {
+      const m = String(nearText || "").match(/nota\s+(\d+|[ivxlcdm]+)/i);
+      return m ? `Nota ${m[1]}` : null;
+    }
+
+    function detectNoteHeading(text) {
+      const t = String(text || "").trim();
+      const m = t.match(/^nota\s*(?:no\.?|num\.?)?\s*([0-9]+|[ivxlcdm]+)\b/i);
+      if (!m) return null;
+      return { label: `Nota ${m[1]}`, title: t };
+    }
+
+    function extractNotesFromHtml(root) {
+      if (!root) return [];
+      const elements = Array.from(root.querySelectorAll("h1,h2,h3,h4,h5,h6,p,div,li"));
+      const blocks = [];
+      for (const el of elements) {
+        if (el.closest("table")) continue;
+        const text = stableString(el.innerText || "");
+        if (!text) continue;
+        blocks.push({ text, tag: el.tagName });
+      }
+
+      const notes = [];
+      let current = null;
+
+      for (const b of blocks) {
+        const heading = detectNoteHeading(b.text);
+        if (heading) {
+          if (current) {
+            current.text = current.text_parts.join("\n\n").trim();
+            current.text_length = current.text.length;
+            delete current.text_parts;
+            notes.push(current);
+          }
+          current = {
+            note_label: heading.label,
+            title: heading.title,
+            text_parts: []
+          };
+          continue;
+        }
+        if (current) current.text_parts.push(b.text);
+      }
+
+      if (current) {
+        current.text = current.text_parts.join("\n\n").trim();
+        current.text_length = current.text.length;
+        delete current.text_parts;
+        notes.push(current);
+      }
+
+      return notes;
+    }
+
+    function tableNearText(tableEl) {
+      const parts = [];
+      let node = tableEl.previousElementSibling;
+      let steps = 0;
+      while (node && steps < 3) {
+        const tag = node.tagName || "";
+        const txt = (node.innerText || "").trim();
+        if (txt && (tag.startsWith("H") || tag === "P" || tag === "DIV")) {
+          parts.push(txt);
+        }
+        node = node.previousElementSibling;
+        steps++;
+      }
+      return parts.reverse().join(" | ");
+    }
+
+    function makeTableId(idx) {
+      return "TBL_" + String(idx + 1).padStart(3, "0");
+    }
+
+    function isMetaRow(text) {
+      const t = text.toLowerCase();
+      return /cifras expresadas|cifras en|expresadas en|miles de pesos|millones de pesos|valores en|unidad monetaria/.test(t);
+    }
+
+    function isSubtitleRow(row, periodByRow, periodColumns = { current: [], prior: [] }) {
+      const cells = row.map(stableString);
+      const stats = rowStats(cells);
+      if (stats.nonEmpty === 0) return false;
+      if (stats.numeric === 0 && stats.text >= 1) return true;
+
+      const concept = (cells[0] || "").toLowerCase();
+      if (/total|subtotal|sum(a|as)|resultado del ejercicio|utilidad|pérdida/.test(concept)) return false;
+
+      if (periodByRow) {
+        const first = cells[0] || "";
+        if (/\b(19|20)\d{2}\b/.test(first)) return false;
+      }
+
+      if (!periodByRow && periodColumns) {
+        const periodCols = [...(periodColumns.current || []), ...(periodColumns.prior || [])];
+        const hasNumericInPeriod = periodCols.some((col) => looksNumericLike(cells[col] || ""));
+        if (!hasNumericInPeriod && stats.text >= 2) return true;
+      }
+
+      const nonFirstNumeric = cells.slice(1).some(looksNumericLike);
+      if (!nonFirstNumeric && stats.text >= 2) return true;
+
+      const isAllCaps = cells[0] && cells[0].toUpperCase() === cells[0] && cells[0].length >= 6;
+      if (isAllCaps && !nonFirstNumeric) return true;
+
+      return false;
+    }
+
+    function isDataRow(row, periodByRow, periodColumns = { current: [], prior: [] }) {
+      const cells = row.map(stableString);
+      if (periodByRow) {
+        const first = cells[0] || "";
+        const hasYear = /\b(19|20)\d{2}\b/.test(first);
+        const hasNumeric = cells.slice(1).some(looksNumericLike);
+        return hasYear && hasNumeric;
+      }
+
+      const periodCols = [...(periodColumns.current || []), ...(periodColumns.prior || [])];
+      if (periodCols.length) {
+        return periodCols.some((col) => looksNumericLike(cells[col] || ""));
+      }
+
+      return cells.slice(1).some(looksNumericLike);
+    }
+
+    function buildTrazableRecordsFromTables(tables, opts) {
+      state.records = [];
+      state.exceptions = [];
+      state.reconstructed = [];
+      state.headerDiagnostics = [];
+
+      const { entity, docId, unit, decimalSep, tolAbs, tolPct, hdrCurrent, hdrPrior, notes } = opts;
+      const notesList = Array.isArray(notes) ? notes : [];
+      const noteIndex = new Map();
+      for (const n of notesList) {
+        if (n && n.note_label) noteIndex.set(String(n.note_label).toLowerCase(), n);
+      }
+
+      for (const n of notesList) {
+        if (!n || !n.note_label) continue;
+        if (!n.text || !String(n.text).trim()) {
+          pushEx("NOTE_TEXT_EMPTY", "WARN", `Nota sin texto: ${n.note_label}`, { note_label: n.note_label });
+        }
+      }
+
+
+      if (opts.mammothMessages?.length) {
+        for (const msg of opts.mammothMessages) {
+          pushEx("DOCX_CONVERT_MSG", "WARN", `Mammoth: ${msg.message || JSON.stringify(msg)}`, { scope: "DOCX" });
+        }
+      }
+
+      for (let ti = 0; ti < tables.length; ti++) {
+        const t = tables[ti];
+        const tableId = t.tableId;
+        const grid = t.grid;
+        const context = t.contextText;
+        const tableTextFlat = grid.map(r => r.join(" | ")).join("\n");
+        const inferredState = classifyStateByContext(context + " " + tableTextFlat);
+        const inferredNote = detectNoteLabel(context) || detectNoteLabel(tableTextFlat);
+        const noteKey = inferredNote ? inferredNote.toLowerCase() : null;
+        const noteObj = noteKey ? noteIndex.get(noteKey) : null;
+
+        if (grid.length === 0) {
+          pushEx("TBL_EMPTY", "ERROR", "Tabla sin filas.", { tableId });
+          continue;
+        }
+        const maxCols = grid.reduce((m, r) => Math.max(m, r.length), 0);
+        if (maxCols < 2) pushEx("TBL_TOO_FEW_COLS", "WARN", "Tabla con menos de 2 columnas.", { tableId, cols: maxCols });
+
+        const headerRows = detectHeaderRows(grid);
+        const headerRowIdx = headerRows[headerRows.length - 1] ?? 0;
+        const headers = grid[headerRowIdx].map(stableString);
+        const headerPaths = buildHeaderPaths(grid, headerRows);
+        let periodColumns = detectPeriodColumnsFromHeaders(headerPaths, hdrCurrent, hdrPrior);
+        const tableDecimalSep = detectDecimalSeparator(grid, periodColumns, decimalSep);
+
+        const startDataRow = headerRowIdx + 1;
+        const periodByRowDetected = detectPeriodByRow(grid, startDataRow);
+        const periodByRow = (periodColumns.current.length === 0 && periodColumns.prior.length === 0)
+          ? periodByRowDetected
+          : false;
+
+        const rowClassMap = new Map();
+        for (let r = 0; r <= headerRowIdx; r++) {
+          rowClassMap.set(r, "HEADER");
+        }
+        for (let r = startDataRow; r < grid.length; r++) {
+          const row = grid[r].map(stableString);
+          const rowText = row.join(" ");
+          if (isMetaRow(rowText)) {
+            rowClassMap.set(r, "META");
+          } else if (!isDataRow(row, periodByRow, periodColumns)) {
+            rowClassMap.set(r, "NON_DATA");
+          } else if (isSubtitleRow(row, periodByRow, periodColumns)) {
+            rowClassMap.set(r, "SUBTITLE");
+          }
+        }
+
+        const hasCurrent = periodColumns.current.length > 0;
+        const hasPrior = periodColumns.prior.length > 0;
+        if (hasCurrent && !hasPrior) {
+          pushEx("HDR_PRI_NOT_FOUND", "INFO", `No se detectó columna "Anterior" con regex: ${hdrPrior}`, { tableId, headers, headerRows, headerPaths });
+        }
+        if (hasPrior && !hasCurrent) {
+          pushEx("HDR_CUR_NOT_FOUND", "INFO", `No se detectó columna "Actual" con regex: ${hdrCurrent}`, { tableId, headers, headerRows, headerPaths });
+        }
+        if (periodByRow) {
+          pushEx("HDR_PERIOD_BY_ROW", "INFO", "Se detectó periodo por fila (años en columna 0).", { tableId, startDataRow });
+        }
+        if (inferredNote && !noteObj) {
+          pushEx("NOTE_TEXT_MISSING", "WARN", `No se encontró texto para ${inferredNote}`, { tableId, inferred_note: inferredNote });
+        }
+
+        state.records.push({
+          _type: "table_meta",
+          entity, doc_id: docId, unit,
+          table_id: tableId,
+          inferred_state: inferredState,
+          inferred_note: inferredNote,
+          note_text_present: !!noteObj,
+          note_text_length: noteObj ? (noteObj.text_length || 0) : 0,
+          header_row_index: headerRowIdx,
+          header_rows: headerRows,
+          headers,
+          header_paths: headerPaths,
+          period_columns: periodColumns,
+          period_by_row: periodByRow,
+          table_decimal_sep: tableDecimalSep,
+          source: { file_name: state.docxName, table_index: ti, context }
+        });
+
+        state.headerDiagnostics.push({
+          tableId,
+          headerRows,
+          headerRowIdx,
+          headers,
+          headerPaths,
+          periodColumns,
+          periodByRow
+        });
+
+        for (let r = 0; r < grid.length; r++) {
+          for (let c = 0; c < grid[r].length; c++) {
+            const text = stableString(grid[r][c]);
+            let parsed = null;
+            const rowClass = rowClassMap.get(r);
+            const periodCols = [...(periodColumns.current || []), ...(periodColumns.prior || [])];
+            const shouldParse = periodCols.length ? periodCols.includes(c) : false;
+            if (!rowClass && shouldParse && looksNumericLike(text)) {
+              const pm = parseMoney(text, tableDecimalSep, unit);
+              if (!pm.ok) {
+                pushEx("NUM_PARSE_FAIL", "WARN", `No se pudo parsear valor numérico: "${text}"`, {
+                  tableId, row: r, col: c, headers, headerRows
+                });
+              } else {
+                parsed = pm.value;
+              }
+            }
+
+            state.records.push({
+              _type: "cell",
+              entity, doc_id: docId, unit,
+              table_id: tableId,
+              inferred_state: inferredState,
+              inferred_note: inferredNote,
+              row_index: r,
+              col_index: c,
+              header: (r === headerRowIdx ? "__HEADER_ROW__" : (headers[c] || null)),
+              header_path: headerPaths[c] || null,
+              raw_text: text,
+              value: parsed,
+              source: {
+                file_name: state.docxName,
+                table_index: ti,
+                header_row_index: headerRowIdx,
+                header_rows: headerRows,
+                context
+              }
+            });
+          }
+        }
+
+        let emptyRows = 0;
+        for (let r = startDataRow; r < grid.length; r++) {
+          const row = grid[r].map(stableString);
+          const nonEmpty = row.filter(x => x).length;
+          if (nonEmpty === 0) emptyRows++;
+        }
+        if (emptyRows > 0) {
+          pushEx("TBL_EMPTY_ROWS", "INFO", `Se detectaron filas totalmente vacías: ${emptyRows}`, { tableId, fromRow: startDataRow });
+        }
+
+        const conceptMap = new Map();
+
+        for (let r = startDataRow; r < grid.length; r++) {
+          const row = grid[r].map(stableString);
+          const concept = row[0] || "";
+          const rowText = row.join(" ");
+
+          if (!concept) continue;
+          const rowClass = rowClassMap.get(r);
+          if (rowClass === "META") {
+            state.records.push({
+              _type: "row_meta",
+              entity, doc_id: docId, unit,
+              table_id: tableId,
+              inferred_state: inferredState,
+              inferred_note: inferredNote,
+              row_index: r,
+              concept,
+              row_type: "META",
+              source: {
+                file_name: state.docxName,
+                table_index: ti,
+                header_row_index: headerRowIdx,
+                context
+              }
+            });
+            continue;
+          }
+          if (rowClass === "SUBTITLE" || rowClass === "NON_DATA") {
+            state.records.push({
+              _type: "row_meta",
+              entity, doc_id: docId, unit,
+              table_id: tableId,
+              inferred_state: inferredState,
+              inferred_note: inferredNote,
+              row_index: r,
+              concept,
+              row_type: rowClass === "SUBTITLE" ? "SUBTITLE" : "NON_DATA",
+              source: {
+                file_name: state.docxName,
+                table_index: ti,
+                header_row_index: headerRowIdx,
+                context
+              }
+            });
+            continue;
+          }
+
+          const conceptLower = concept.toLowerCase();
+          let rowType = "DETAIL";
+          if (/total|subtotal|sum(a|as)|resultado del ejercicio|utilidad|pérdida/.test(conceptLower)) rowType = "TOTAL_OR_SUBTOTAL";
+
+          const key = conceptLower.replace(/\s+/g, " ").trim();
+          if (conceptMap.has(key)) {
+            pushEx("DUP_CONCEPT", "WARN", `Concepto duplicado dentro de la misma tabla: "${concept}"`, { tableId, row: r, prevRow: conceptMap.get(key) });
+          } else {
+            conceptMap.set(key, r);
+          }
+
+          if (periodByRow) {
+            const yearMatch = concept.match(/\b(19|20)\d{2}\b/);
+            const rowPeriod = yearMatch ? yearMatch[0] : null;
+            const cells = [];
+            for (let c = 1; c < row.length; c++) {
+              const pm = parseMoney(row[c], tableDecimalSep, unit);
+              if (pm.ok && pm.value !== null) {
+                cells.push({ col: c, value: pm.value, raw: row[c], header_path: headerPaths[c] || null });
+              } else if (!pm.ok && stableString(row[c])) {
+                pushEx("ROW_PERIOD_PARSE_FAIL", "WARN", `Fila: no se pudo parsear valor en periodo por fila`, { tableId, row: r, col: c, raw: row[c] });
+              }
+            }
+
+            state.records.push({
+              _type: "row_fact",
+              entity, doc_id: docId, unit,
+              table_id: tableId,
+              inferred_state: inferredState,
+              inferred_note: inferredNote,
+              row_index: r,
+              concept,
+              row_type: rowType,
+              period_by_row: true,
+              row_period: rowPeriod,
+              values: {
+                cells
+              },
+              source: {
+                file_name: state.docxName,
+                table_index: ti,
+                header_row_index: headerRowIdx,
+                header_rows: headerRows,
+                period_columns: periodColumns,
+                context
+              }
+            });
+
+            continue;
+          }
+
+          const valuesCurrent = [];
+          const valuesPrior = [];
+
+          for (const col of periodColumns.current) {
+            if (col >= 0 && col < row.length) {
+              const pm = parseMoney(row[col], tableDecimalSep, unit);
+              if (pm.ok) {
+                valuesCurrent.push({ col, value: pm.value, raw: row[col], header_path: headerPaths[col] || null });
+              } else if (stableString(row[col])) {
+                pushEx("ROW_CUR_PARSE_FAIL", "WARN", `Fila: no se pudo parsear columna Actual en "${concept}"`, { tableId, row: r, col, raw: row[col] });
+              }
+            }
+          }
+
+          for (const col of periodColumns.prior) {
+            if (col >= 0 && col < row.length) {
+              const pm = parseMoney(row[col], tableDecimalSep, unit);
+              if (pm.ok) {
+                valuesPrior.push({ col, value: pm.value, raw: row[col], header_path: headerPaths[col] || null });
+              } else if (stableString(row[col])) {
+                pushEx("ROW_PRI_PARSE_FAIL", "WARN", `Fila: no se pudo parsear columna Anterior en "${concept}"`, { tableId, row: r, col, raw: row[col] });
+              }
+            }
+          }
+
+          const currentTotal = valuesCurrent.reduce((sum, v) => sum + (v.value ?? 0), 0);
+          const priorTotal = valuesPrior.reduce((sum, v) => sum + (v.value ?? 0), 0);
+
+          state.records.push({
+            _type: "row_fact",
+            entity, doc_id: docId, unit,
+            table_id: tableId,
+            inferred_state: inferredState,
+            inferred_note: inferredNote,
+            row_index: r,
+            concept,
+            row_type: rowType,
+            period_by_row: false,
+            values: {
+              current: valuesCurrent,
+              prior: valuesPrior,
+              current_total: valuesCurrent.length ? currentTotal : null,
+              prior_total: valuesPrior.length ? priorTotal : null
+            },
+            source: {
+              file_name: state.docxName,
+              table_index: ti,
+              header_row_index: headerRowIdx,
+              header_rows: headerRows,
+              period_columns: periodColumns,
+              context
+            }
+          });
+        }
+      }
+
+      if (state.records.length === 0) pushEx("NO_RECORDS", "ERROR", "No se generaron registros. Verifica que el Word tenga tablas.", { scope: "GLOBAL" });
+
+      reconstructAndCompare(opts);
+
+      $("kTables").textContent = String(tables.length);
+      $("kRecords").textContent = String(state.records.length);
+      $("kEx").textContent = String(state.exceptions.length);
+    }
+
+    function reconstructAndCompare() {
+      const cells = state.records.filter(r => r._type === "cell");
+      const byTable = new Map();
+      for (const c of cells) {
+        if (!byTable.has(c.table_id)) byTable.set(c.table_id, []);
+        byTable.get(c.table_id).push(c);
+      }
+
+      for (const t of state.tables) {
+        const tableId = t.tableId;
+        const list = byTable.get(tableId) || [];
+
+        let maxR = -1, maxC = -1;
+        for (const c of list) {
+          if (c.row_index > maxR) maxR = c.row_index;
+          if (c.col_index > maxC) maxC = c.col_index;
+        }
+        if (maxR < 0 || maxC < 0) {
+          pushEx("RECON_NO_CELLS", "WARN", "No se encontraron celdas para reconstrucción.", { tableId });
+          continue;
+        }
+
+        const recon = Array.from({ length: maxR + 1 }, () => Array.from({ length: maxC + 1 }, () => ""));
+        for (const c of list) {
+          recon[c.row_index][c.col_index] = stableString(c.raw_text);
+        }
+
+        const orig = t.grid;
+        const maxRows = Math.max(orig.length, recon.length);
+        const maxCols = Math.max(
+          orig.reduce((m, r) => Math.max(m, r.length), 0),
+          recon.reduce((m, r) => Math.max(m, r.length), 0)
+        );
+
+        let diffs = 0;
+        for (let r = 0; r < maxRows; r++) {
+          for (let c = 0; c < maxCols; c++) {
+            const o = stableString((orig[r] && orig[r][c]) || "");
+            const x = stableString((recon[r] && recon[r][c]) || "");
+            if (o !== x) {
+              diffs++;
+              if (diffs <= 25) {
+                pushEx("RECON_DIFF", "ERROR",
+                  `Diferencia reconstrucción vs origen en ${tableId} [r${r},c${c}]: origen="${o}" vs recon="${x}"`,
+                  { tableId, row: r, col: c }
+                );
+              }
+            }
+          }
+        }
+
+        state.reconstructed.push({ tableId, grid: recon, diffs });
+        if (diffs !== 0) {
+          pushEx("RECON_TABLE_SUMMARY", "ERROR", `Reconstrucción con diferencias: ${diffs} celdas distintas en ${tableId}`, { tableId, diffs });
+        }
+      }
+    }
+
+    function renderExceptions() {
+      if (!state.exceptions.length) {
+        $("exceptionsTable").innerHTML = `<div class="ok">Sin excepciones reportadas.</div>`;
+        return;
+      }
+
+      const rows = state.exceptions.map(ex => {
+        const sev = ex.severity;
+        const sevClass = sev === "ERROR" ? "bad" : sev === "WARN" ? "warn" : "muted";
+        return `
+          <tr>
+            <td><span class="${sevClass}">${escapeHtml(sev)}</span></td>
+            <td class="mono">${escapeHtml(ex.code)}</td>
+            <td>${escapeHtml(ex.message)}</td>
+            <td class="mono">${escapeHtml(JSON.stringify(ex.source || {}))}</td>
+          </tr>`;
+      }).join("");
+
+      $("exceptionsTable").innerHTML = `
+        <table>
+          <thead><tr><th>Severidad</th><th>Código</th><th>Mensaje</th><th>Fuente</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      `;
+    }
+
+    function renderJsonPreview() {
+      const filter = ($("jsonFilter").value || "").trim().toLowerCase();
+      const limit = Math.max(50, parseInt($("jsonLimit").value || "500", 10));
+
+      let data = state.records;
+      let notes = state.notes || [];
+
+      if (filter) {
+        data = data.filter(r => JSON.stringify(r).toLowerCase().includes(filter));
+        notes = notes.filter(n => JSON.stringify(n).toLowerCase().includes(filter));
+      }
+
+      const sliced = data.slice(0, limit);
+      const obj = {
+        meta: {
+          generated_at: new Date().toISOString(),
+          file_name: state.docxName,
+          unit: $("unit").value,
+          decimal_sep: $("decimalSep").value,
+          tol_abs: Number($("tolAbs").value || 0),
+          tol_pct: Number($("tolPct").value || 0),
+          normalized_hash: state.normHash,
+          records_total: state.records.length,
+          records_shown: sliced.length,
+          exceptions_total: state.exceptions.length,
+          notes_total: state.notes.length,
+          notes_shown: notes.length
+        },
+        records: sliced,
+        notes
+      };
+
+      $("jsonPreview").textContent = JSON.stringify(obj, null, 2);
+    }
+
+    function renderReconstructed() {
+      if (!state.reconstructed.length) {
+        $("reconstructed").innerHTML = `<div class="muted">Aún no hay reconstrucción.</div>`;
+        return;
+      }
+
+      const blocks = state.reconstructed.map(t => {
+        const maxRows = Math.min(12, t.grid.length);
+        const maxCols = Math.min(8, t.grid.reduce((m, r) => Math.max(m, r.length), 0));
+
+        const head = `<div class="row"><span class="pill mono">${t.tableId}</span> <span class="pill ${t.diffs ? "bad" : "ok"}">${t.diffs ? ("Differences: " + t.diffs) : "OK (idéntica)"}</span></div>`;
+
+        const rows = [];
+        for (let r = 0; r < maxRows; r++) {
+          const tds = [];
+          for (let c = 0; c < maxCols; c++) tds.push(`<td>${escapeHtml(t.grid[r][c] ?? "")}</td>`);
+          rows.push(`<tr>${tds.join("")}</tr>`);
+        }
+
+        return `
+          <div style="margin:10px 0;">
+            ${head}
+            <div class="muted small">Vista parcial (primeras ${maxRows} filas, ${maxCols} columnas).</div>
+            <table style="margin-top:8px;">
+              <tbody>${rows.join("")}</tbody>
+            </table>
+          </div>
+        `;
+      }).join("");
+
+      $("reconstructed").innerHTML = blocks;
+    }
+
+    function renderTableOmitList() {
+      if (!state.tables.length) {
+        $("tableOmitList").innerHTML = "—";
+        return;
+      }
+      const rows = state.tables.map(t => {
+        const checked = state.excludedTables.has(t.tableId) ? "checked" : "";
+        return `
+          <label style="display:flex; gap:8px; align-items:center; margin-bottom:6px;">
+            <input type="checkbox" data-table-id="${t.tableId}" ${checked} />
+            <span class="mono">${t.tableId}</span>
+          </label>
+        `;
+      }).join("");
+      $("tableOmitList").innerHTML = rows;
+      $("tableOmitList").querySelectorAll("input[type=\"checkbox\"]").forEach(input => {
+        input.addEventListener("change", () => {
+          const id = input.getAttribute("data-table-id");
+          if (input.checked) state.excludedTables.add(id);
+          else state.excludedTables.delete(id);
+        });
+      });
+    }
+
+    function renderHeaderDiagnostics() {
+      if (!state.headerDiagnostics.length) {
+        $("headerDiagnostics").innerHTML = `<div class="muted">Aún no hay diagnósticos.</div>`;
+        return;
+      }
+
+      const blocks = state.headerDiagnostics.map(d => {
+        const headerRows = d.headerRows.map(r => `<span class="pill mono">${r}</span>`).join(" ");
+        const cols = d.headerPaths.map((path, idx) => {
+          const curMark = d.periodColumns.current.includes(idx) ? "<span class=\"pill ok\">Actual</span>" : "";
+          const priMark = d.periodColumns.prior.includes(idx) ? "<span class=\"pill warn\">Anterior</span>" : "";
+          return `
+            <tr>
+              <td class="mono">${idx}</td>
+              <td>${escapeHtml(path || "—")}</td>
+              <td>${curMark} ${priMark}</td>
+            </tr>
+          `;
+        }).join("");
+
+        return `
+          <div class="diag-table">
+            <h3>${d.tableId}</h3>
+            <div class="muted small">Header rows: ${headerRows || "—"} | Header row idx: <span class="mono">${d.headerRowIdx}</span> | Periodo por fila: <span class="mono">${d.periodByRow ? "sí" : "no"}</span></div>
+            <table style="margin-top:8px;">
+              <thead>
+                <tr><th>Col</th><th>Header path</th><th>Periodo</th></tr>
+              </thead>
+              <tbody>${cols}</tbody>
+            </table>
+          </div>
+        `;
+      }).join("");
+
+      $("headerDiagnostics").innerHTML = blocks;
+    }
+
+    function downloadJson(filename, obj) {
+      const blob = new Blob([JSON.stringify(obj, null, 2)], { type: "application/json;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    function downloadCsv(filename, rows) {
+      const csv = rows.map(row => row.map(cell => {
+        const val = String(cell ?? "");
+        return `"${val.replace(/"/g, '""')}"`;
+      }).join(",")).join("\n");
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    function buildExportPayload() {
+      return {
+        meta: {
+          generated_at: new Date().toISOString(),
+          file_name: state.docxName,
+          unit: $("unit").value,
+          decimal_sep: $("decimalSep").value,
+          tol_abs: Number($("tolAbs").value || 0),
+          tol_pct: Number($("tolPct").value || 0),
+          hdr_current: $("hdrCurrent").value.trim(),
+          hdr_prior: $("hdrPrior").value.trim(),
+          normalized_hash: state.normHash,
+          tables_detected: state.activeTables.length || state.tables.length,
+          tables_excluded: state.tables.length ? (state.tables.length - (state.activeTables.length || state.tables.length)) : 0,
+          records_total: state.records.length,
+          exceptions_total: state.exceptions.length,
+          notes_total: state.notes.length
+        },
+        records: state.records,
+        notes: state.notes
+      };
+    }
+
+    function buildExceptionsPayload() {
+      return {
+        meta: {
+          generated_at: new Date().toISOString(),
+          file_name: state.docxName,
+          normalized_hash: state.normHash,
+          exceptions_total: state.exceptions.length
+        },
+        exceptions: state.exceptions
+      };
+    }
+
+    function buildExceptionsCsvRows() {
+      const rows = [["severity", "code", "message", "source"]];
+      for (const ex of state.exceptions) {
+        rows.push([
+          ex.severity || "",
+          ex.code || "",
+          ex.message || "",
+          JSON.stringify(ex.source || {})
+        ]);
+      }
+      return rows;
+    }
+
+    async function processDocx() {
+      try {
+        setStatus("Procesando...", "muted");
+        $("btnProcess").disabled = true;
+
+        const file = state.file;
+        if (!file) {
+          setStatus("Selecciona un archivo .docx.", "bad");
+          return;
+        }
+
+        const entity = "";
+        const docId = "";
+        const unit = $("unit").value;
+        const decimalSep = $("decimalSep").value;
+        const tolAbs = Number($("tolAbs").value || 0);
+        const tolPct = Number($("tolPct").value || 0);
+        const hdrCurrent = $("hdrCurrent").value.trim() || "2025|actual";
+        const hdrPrior = $("hdrPrior").value.trim() || "2024|anterior";
+
+        const buf = await file.arrayBuffer();
+
+        const { html, messages } = await docxToHtml(buf);
+        state.extractedHtml = html;
+        $("extractedHtml").innerHTML = html;
+
+        $("hiddenHtml").innerHTML = html;
+        state.notes = extractNotesFromHtml($("hiddenHtml"));
+        const tables = Array.from($("hiddenHtml").querySelectorAll("table"));
+        state.tables = [];
+        for (let i = 0; i < tables.length; i++) {
+          const tbl = tables[i];
+          const grid = tableToGrid(tbl);
+          const contextText = tableNearText(tbl);
+
+          state.tables.push({
+            tableId: makeTableId(i),
+            grid,
+            contextText
+          });
+        }
+
+        renderTableOmitList();
+        const filteredTables = state.tables.filter(t => !state.excludedTables.has(t.tableId));
+        state.activeTables = filteredTables;
+        const normText = normalizeForHash(filteredTables);
+        state.normHash = await sha256(normText);
+        $("kHash").textContent = state.normHash.slice(0, 20) + "…";
+
+        buildTrazableRecordsFromTables(filteredTables, {
+          entity, docId, unit, decimalSep, tolAbs, tolPct,
+          hdrCurrent, hdrPrior,
+          notes: state.notes,
+          mammothMessages: messages
+        });
+
+        renderExceptions();
+        renderReconstructed();
+        renderHeaderDiagnostics();
+        renderJsonPreview();
+
+        $("btnDownloadData").disabled = false;
+        $("btnDownloadEx").disabled = false;
+        $("btnDownloadExCsv").disabled = false;
+
+        const errors = state.exceptions.filter(e => e.severity === "ERROR").length;
+        const warns = state.exceptions.filter(e => e.severity === "WARN").length;
+
+        if (errors > 0) setStatus(`Finalizado con ERRORES (${errors}) y WARN (${warns}).`, "bad");
+        else if (warns > 0) setStatus(`Finalizado con WARN (${warns}).`, "warn");
+        else setStatus("Finalizado OK (sin excepciones).", "ok");
+
+      } catch (err) {
+        console.error(err);
+        setStatus("Error procesando el documento. Revisa consola.", "bad");
+      } finally {
+        $("btnProcess").disabled = false;
+      }
+    }
+
+    $("file").addEventListener("change", (e) => {
+      const f = e.target.files && e.target.files[0];
+      state.file = f || null;
+      state.docxName = f ? f.name : null;
+      state.excludedTables = new Set();
+      state.activeTables = [];
+      state.notes = [];
+
+      if (f) {
+        setStatus(`Archivo cargado: ${f.name}`, "ok");
+        $("btnProcess").disabled = false;
+        $("tableOmitList").innerHTML = "—";
+      } else {
+        setStatus("Sin archivo.", "muted");
+        $("btnProcess").disabled = true;
+        $("tableOmitList").innerHTML = "—";
+      }
+    });
+
+    $("btnProcess").addEventListener("click", processDocx);
+
+    $("btnDownloadData").addEventListener("click", () => {
+      const payload = buildExportPayload();
+      const base = state.docxName ? state.docxName.replace(/\.[^.]+$/, "") : "EEFF";
+      const name = base + "_TRAZABLE.json";
+      downloadJson(name, payload);
+    });
+
+    $("btnDownloadEx").addEventListener("click", () => {
+      const payload = buildExceptionsPayload();
+      const base = state.docxName ? state.docxName.replace(/\.[^.]+$/, "") : "EEFF";
+      const name = base + "_EXCEPCIONES.json";
+      downloadJson(name, payload);
+    });
+
+    $("btnDownloadExCsv").addEventListener("click", () => {
+      const rows = buildExceptionsCsvRows();
+      const base = state.docxName ? state.docxName.replace(/\.[^.]+$/, "") : "EEFF";
+      const name = base + "_EXCEPCIONES.csv";
+      downloadCsv(name, rows);
+    });
+
+    $("jsonFilter").addEventListener("input", renderJsonPreview);
+    $("jsonLimit").addEventListener("input", renderJsonPreview);
+  </script>
+</body>
+</html>
