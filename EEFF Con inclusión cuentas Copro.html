@@ -161,6 +161,7 @@
 </div>
 
 <script>
+const SCALE_DIVISOR = 1000;
 const MODEL = {"balance": [{"row": 7, "code_raw": "", "concept": "ACTIVO", "fill": "theme:4:-0.249977111117893", "fill_class": "section"}, {"row": 8, "code_raw": "", "concept": "Activo corriente", "fill": "theme:7:0.7999816888943144", "fill_class": "subheader"}, {"row": 9, "code_raw": "1110-1120", "concept": "Bancos", "fill": "theme:5:0.7999816888943144", "fill_class": "detail"}, {"row": 10, "code_raw": "1105", "concept": "Caja", "fill": "theme:5:0.7999816888943144", "fill_class": "detail"}, {"row": 11, "code_raw": "", "concept": "Efectivo y equivalentes de efectivo", "fill": null, "fill_class": "group"}, {"row": 12, "code_raw": "1225", "concept": "Activos financieros (CDT)", "fill": null, "fill_class": "group"}, {"row": 13, "code_raw": "1245", "concept": "Fiduciaria Cuota Extraordinaria", "fill": null, "fill_class": "group"}, {"row": 14, "code_raw": "13250501-13250502-13250503-13250504-13250505-13250506-13250508-1390-1399", "concept": "Cuentas por cobrar copropietarios", "fill": "theme:5:0.7999816888943144", "fill_class": "detail"}, {"row": 15, "code_raw": "", "concept": "Cuentas por cobrar PLA (Control de obras)", "fill": "theme:5:0.7999816888943144", "fill_class": "detail"}, {"row": 16, "code_raw": "13809508", "concept": "Incapacidades", "fill": "theme:5:0.7999816888943144", "fill_class": "detail"}, {"row": 17, "code_raw": "1365", "concept": "Cuentas por cobrar trabajadores", "fill": "theme:5:0.7999816888943144", "fill_class": "detail"}, {"row": 18, "code_raw": "1330", "concept": "Anticipos y avances", "fill": "theme:5:0.7999816888943144", "fill_class": "detail"}, {"row": 19, "code_raw": "13101001", "concept": "Cuentas por cobrar Club", "fill": "theme:5:0.7999816888943144", "fill_class": "detail"}, {"row": 20, "code_raw": "1305-13250507-1335-1345", "concept": "Otros", "fill": "theme:5:0.7999816888943144", "fill_class": "detail"}, {"row": 21, "code_raw": "", "concept": "Deudores", "fill": null, "fill_class": "group"}, {"row": 22, "code_raw": "1710", "concept": "Seguros pagados por anticipados", "fill": null, "fill_class": "group"}, {"row": 23, "code_raw": "14", "concept": "Inventarios", "fill": null, "fill_class": "group"}, {"row": 24, "code_raw": "", "concept": "Total activo corriente", "fill": "theme:0:-0.1499984740745262", "fill_class": "subtotal"}, {"row": 25, "code_raw": "", "concept": "Activo no corriente", "fill": "theme:7:0.7999816888943144", "fill_class": "subheader"}, {"row": 26, "code_raw": "13809502", "concept": "Acreencias en UVR Promotora", "fill": "theme:5:0.7999816888943144", "fill_class": "detail"}, {"row": 27, "code_raw": "13809501", "concept": "Acreencias en Pesos Promotora", "fill": "theme:5:0.7999816888943144", "fill_class": "detail"}, {"row": 28, "code_raw": "13809509", "concept": "Cta por cobrar promotora - acuerdo", "fill": "theme:5:0.7999816888943144", "fill_class": "detail"}, {"row": 29, "code_raw": "13809510", "concept": "Cuentas por cobrar Otros", "fill": "theme:5:0.7999816888943144", "fill_class": "detail"}, {"row": 30, "code_raw": "13809511", "concept": "CxC Int.OtroSi Memo. Ente. PLA", "fill": "theme:5:0.7999816888943144", "fill_class": "detail"}, {"row": 31, "code_raw": "13809512", "concept": "CxC PLA Via Longitudinal Sector U", "fill": "rgb:FFFF00", "fill_class": "detail"}, {"row": 32, "code_raw": "13809513-13809514", "concept": "Préstamo e Intereses PLA Pagaré", "fill": "theme:5:0.7999816888943144", "fill_class": "detail"}, {"row": 33, "code_raw": "", "concept": "Acreencias PLA y otros", "fill": null, "fill_class": "group"}, {"row": 34, "code_raw": "1205", "concept": "Acciones", "fill": "theme:5:0.7999816888943144", "fill_class": "detail"}, {"row": 35, "code_raw": "1905", "concept": "Valorización acciones", "fill": "theme:5:0.7999816888943144", "fill_class": "detail"}, {"row": 36, "code_raw": "", "concept": "Inversiones PLA", "fill": null, "fill_class": "group"}, {"row": 37, "code_raw": "1516-159205", "concept": "Construcciones y edificaciones", "fill": "theme:5:0.7999816888943144", "fill_class": "detail"}, {"row": 38, "code_raw": "1556-159255", "concept": "Acueductos plantas y redes", "fill": "theme:5:0.7999816888943144", "fill_class": "detail"}, {"row": 39, "code_raw": "1520-159210", "concept": "Maquinaria y equipo", "fill": "theme:5:0.7999816888943144", "fill_class": "detail"}, {"row": 40, "code_raw": "1528-159220", "concept": "Equipo de computación y comunicación", "fill": "theme:5:0.7999816888943144", "fill_class": "detail"}, {"row": 41, "code_raw": "1524-159215", "concept": "Equipo de oficina", "fill": "theme:5:0.7999816888943144", "fill_class": "detail"}, {"row": 42, "code_raw": "1540-159235", "concept": "Flota y equipo de transporte", "fill": "theme:5:0.7999816888943144", "fill_class": "detail"}, {"row": 43, "code_raw": "1508", "concept": "Proyectos de inversión en curso", "fill": "theme:5:0.7999816888943144", "fill_class": "detail"}, {"row": 44, "code_raw": "", "concept": "Propiedad, planta y equipo", "fill": null, "fill_class": "group"}, {"row": 45, "code_raw": "1705", "concept": "Suscripciones", "fill": null, "fill_class": "group"}, {"row": 46, "code_raw": "", "concept": "Total activo no corriente", "fill": "theme:0:-0.1499984740745262", "fill_class": "subtotal"}, {"row": 47, "code_raw": "", "concept": "TOTAL ACTIVO", "fill": "theme:0:-0.249977111117893", "fill_class": "total"}, {"row": 48, "code_raw": "", "concept": "PASIVO", "fill": "theme:4:-0.249977111117893", "fill_class": "section"}, {"row": 49, "code_raw": "", "concept": "Pasivo corriente", "fill": "theme:7:0.7999816888943144", "fill_class": "subheader"}, {"row": 50, "code_raw": "22", "concept": "Proveedores", "fill": null, "fill_class": "group"}, {"row": 51, "code_raw": "2335", "concept": "Costos y gastos por pagar", "fill": "theme:5:0.7999816888943144", "fill_class": "detail"}, {"row": 52, "code_raw": "2370", "concept": "Retenciones y aportes de nomina", "fill": "theme:5:0.7999816888943144", "fill_class": "detail"}, {"row": 53, "code_raw": "2380", "concept": "Acreedores varios", "fill": "theme:5:0.7999816888943144", "fill_class": "detail"}, {"row": 54, "code_raw": "2368", "concept": "Industria y comercio retenido", "fill": "theme:5:0.7999816888943144", "fill_class": "detail"}, {"row": 55, "code_raw": "", "concept": "Costos y gastos por pagar", "fill": null, "fill_class": "group"}, {"row": 56, "code_raw": "24", "concept": "Pasivos por impuestos corrientes", "fill": null, "fill_class": "group"}, {"row": 57, "code_raw": "25", "concept": "Pasivos por beneficios a empleados", "fill": null, "fill_class": "group"}, {"row": 58, "code_raw": "2815", "concept": "Cuotas extraordinarias 2024", "fill": null, "fill_class": "group"}, {"row": 59, "code_raw": "2828", "concept": "Rete de Garatia a Terceros Contratos", "fill": null, "fill_class": "group"}, {"row": 60, "code_raw": "26-27-23050103", "concept": "Otros pasivos", "fill": null, "fill_class": "group"}, {"row": 61, "code_raw": "", "concept": "Total Pasivo Corriente", "fill": "theme:0:-0.1499984740745262", "fill_class": "subtotal"}, {"row": 62, "code_raw": "", "concept": "Pasivo no corriente", "fill": "theme:7:0.7999816888943144", "fill_class": "subheader"}, {"row": 63, "code_raw": "23050104-23050121", "concept": "Cuentas por pagar Club", "fill": null, "fill_class": "group"}, {"row": 64, "code_raw": "2810", "concept": "Cuotas extraordinarias", "fill": null, "fill_class": "group"}, {"row": 65, "code_raw": "", "concept": "Total Pasivo no Corriente", "fill": "theme:0:-0.1499984740745262", "fill_class": "subtotal"}, {"row": 66, "code_raw": "", "concept": "TOTAL PASIVO", "fill": "theme:0:-0.249977111117893", "fill_class": "total"}, {"row": 67, "code_raw": "", "concept": "PATRIMONIO", "fill": "theme:4:-0.249977111117893", "fill_class": "section"}, {"row": 68, "code_raw": "3310", "concept": "Reservas estatutarias", "fill": null, "fill_class": "group"}, {"row": 69, "code_raw": "38", "concept": "Superávit por valorizaciones", "fill": null, "fill_class": "group"}, {"row": 70, "code_raw": "3905", "concept": "Cuentas Nominales De Cierre", "fill": null, "fill_class": "group"}, {"row": 71, "code_raw": "3420-3610-3705", "concept": "Excedentes acumuladas", "fill": null, "fill_class": "group"}, {"row": 72, "code_raw": "3150", "concept": "Excedentes acumuladas por acreencias", "fill": null, "fill_class": "group"}, {"row": 73, "code_raw": "", "concept": "Resultado del periodo", "fill": null, "fill_class": "group"}, {"row": 74, "code_raw": "", "concept": "TOTAL PATRIMONIO", "fill": "theme:0:-0.249977111117893", "fill_class": "total"}, {"row": 75, "code_raw": "", "concept": "TOTAL PASIVO Y PATRIMONIO", "fill": "theme:0:-0.249977111117893", "fill_class": "total"}], "er": [{"row": 7, "code_raw": "", "concept": "INGRESOS", "fill": "theme:4:-0.249977111117893", "fill_class": "section"}, {"row": 8, "code_raw": "41", "concept": "Cuotas de administración", "fill": null, "fill_class": "group"}, {"row": 9, "code_raw": "4235", "concept": "Servicios", "fill": null, "fill_class": "group"}, {"row": 10, "code_raw": "", "concept": "Total Ingresos operacionales", "fill": "theme:0:-0.1499984740745262", "fill_class": "subtotal"}, {"row": 11, "code_raw": "612592", "concept": "SERVICIOS A COPROPIETARIOS CIF CONTABILI", "fill": "theme:5:0.7999816888943144", "fill_class": "detail"}, {"row": 12, "code_raw": "612590", "concept": "SERVICIOS A COPROPIETARIOS INV-MAT.PRIMA", "fill": "theme:5:0.7999816888943144", "fill_class": "detail"}, {"row": 13, "code_raw": "612591", "concept": "SERVICIOS A COPROPIETARIOS MANO DE OBRA", "fill": "theme:5:0.7999816888943144", "fill_class": "detail"}, {"row": 14, "code_raw": "", "concept": "Costo de servicios", "fill": null, "fill_class": "group"}, {"row": 15, "code_raw": "", "concept": "Excedente bruto", "fill": "theme:0:-0.1499984740745262", "fill_class": "subtotal"}, {"row": 16, "code_raw": "5135", "concept": "Servicios", "fill": "theme:5:0.7999816888943144", "fill_class": "detail"}, {"row": 17, "code_raw": "5105", "concept": "Gastos del personal", "fill": "theme:5:0.7999816888943144", "fill_class": "detail"}, {"row": 18, "code_raw": "5145", "concept": "Mantenimiento y reparaciones", "fill": "theme:5:0.7999816888943144", "fill_class": "detail"}, {"row": 19, "code_raw": "5160", "concept": "Depreciaciones", "fill": "theme:5:0.7999816888943144", "fill_class": "detail"}, {"row": 20, "code_raw": "5120", "concept": "Arrendamientos", "fill": "theme:5:0.7999816888943144", "fill_class": "detail"}, {"row": 21, "code_raw": "5195", "concept": "Diversos ", "fill": "theme:5:0.7999816888943144", "fill_class": "detail"}, {"row": 22, "code_raw": "5110", "concept": "Honorarios", "fill": "theme:5:0.7999816888943144", "fill_class": "detail"}, {"row": 23, "code_raw": "5130", "concept": "Seguros", "fill": "theme:5:0.7999816888943144", "fill_class": "detail"}, {"row": 24, "code_raw": "5140", "concept": "Gastos legales", "fill": "theme:5:0.7999816888943144", "fill_class": "detail"}, {"row": 25, "code_raw": "5199", "concept": "Provisiones", "fill": "theme:5:0.7999816888943144", "fill_class": "detail"}, {"row": 26, "code_raw": "5115", "concept": "Impuestos", "fill": "theme:5:0.7999816888943144", "fill_class": "detail"}, {"row": 27, "code_raw": "5150", "concept": "Adecuación e instalación", "fill": "theme:5:0.7999816888943144", "fill_class": "detail"}, {"row": 28, "code_raw": "5155", "concept": "Gastos de viaje", "fill": "theme:5:0.7999816888943144", "fill_class": "detail"}, {"row": 29, "code_raw": "", "concept": "Gastos de administración", "fill": null, "fill_class": "group"}, {"row": 30, "code_raw": "", "concept": "Déficit operacional", "fill": "theme:0:-0.1499984740745262", "fill_class": "subtotal"}, {"row": 31, "code_raw": "4295", "concept": "DIVERSOS", "fill": "theme:5:0.7999816888943144", "fill_class": "detail"}, {"row": 32, "code_raw": "4220", "concept": "ARRENDAMIENTOS", "fill": "theme:5:0.7999816888943144", "fill_class": "detail"}, {"row": 33, "code_raw": "4210", "concept": "FINANCIEROS", "fill": "theme:5:0.7999816888943144", "fill_class": "detail"}, {"row": 34, "code_raw": "4250", "concept": "RECUPERACIONES", "fill": "theme:5:0.7999816888943144", "fill_class": "detail"}, {"row": 35, "code_raw": "4230", "concept": "Honorarios", "fill": "theme:5:0.7999816888943144", "fill_class": "detail"}, {"row": 36, "code_raw": "", "concept": "Otros ingresos no operacionales", "fill": null, "fill_class": "group"}, {"row": 37, "code_raw": "5305", "concept": "Financieros", "fill": "theme:5:0.7999816888943144", "fill_class": "detail"}, {"row": 38, "code_raw": "5315", "concept": "Gastos extraordinarios", "fill": "theme:5:0.7999816888943144", "fill_class": "detail"}, {"row": 39, "code_raw": "5395", "concept": "Gastos diversos", "fill": "theme:5:0.7999816888943144", "fill_class": "detail"}, {"row": 40, "code_raw": "", "concept": "Otros gastos no operacionales", "fill": null, "fill_class": "group"}, {"row": 41, "code_raw": "", "concept": "Excedente no operacional", "fill": "theme:0:-0.1499984740745262", "fill_class": "subtotal"}, {"row": 42, "code_raw": "", "concept": "Resultado del periodo", "fill": "theme:0:-0.249977111117893", "fill_class": "total"}]};
 
 const STORAGE_KEY = "bg-er-custom-mappings-v1";
@@ -589,14 +590,6 @@ function computeTotalsByColors(lines, vals, options={}){
   const isIncomeStatement = !!options.isIncomeStatement;
   const expenseWord = /\bCOSTO\b|\bCOSTOS\b|\bGASTO\b|\bGASTOS\b/i;
 
-  function rowType(line){
-    const cls=(line.fill_class||"").toLowerCase();
-    if(line.isTitle || cls==="section" || cls==="subheader") return "title";
-    if(cls==="detail") return "detail";
-    if(cls==="subtotal") return "subtotal";
-    if(cls==="total") return "total";
-    return "group";
-  }
   function isExpenseGroup(line){
     if(!isIncomeStatement) return false;
     const concept=safeStr(line.concept);
@@ -629,7 +622,7 @@ function computeTotalsByColors(lines, vals, options={}){
   }
   function findLastSubtotalIndex(i){
     for(let j=i-1;j>=0;j--){
-      const t=rowType(lines[j]);
+      const t=getRowType(lines[j]);
       if(t==="title" || t==="total") return -1;
       if(t==="subtotal") return j;
     }
@@ -637,13 +630,13 @@ function computeTotalsByColors(lines, vals, options={}){
   }
   function findSectionStartIndex(i){
     for(let j=i-1;j>=0;j--){
-      if(rowType(lines[j])==="title") return j;
+      if(getRowType(lines[j])==="title") return j;
     }
     return -1;
   }
   function hasRowTypeBetween(startIdx, endIdx, type){
     for(let j=endIdx;j>startIdx;j--){
-      if(rowType(lines[j])===type) return true;
+      if(getRowType(lines[j])===type) return true;
     }
     return false;
   }
@@ -651,7 +644,7 @@ function computeTotalsByColors(lines, vals, options={}){
   for(let i=0;i<lines.length;i++){
     const line=lines[i];
     const idx=line.idx ?? i;
-    const type=rowType(line);
+    const type=getRowType(line);
 
     if(type==="title") continue;
     if(line.hasGuide) continue;
@@ -662,8 +655,8 @@ function computeTotalsByColors(lines, vals, options={}){
       }
       const {cur, prev} = sumBack(
         i,
-        (lj)=>rowType(lj)==="detail",
-        (lj)=>rowType(lj)!=="detail",
+        (lj)=>getRowType(lj)==="detail",
+        (lj)=>getRowType(lj)!=="detail",
         false
       );
       if(!vals[idx]) vals[idx]={current_raw:0, previous_raw:0, assigned_codes:[]};
@@ -683,9 +676,9 @@ function computeTotalsByColors(lines, vals, options={}){
         }
         const {cur, prev} = sumBack(
           i,
-          (lj)=>rowType(lj)==="group",
+          (lj)=>getRowType(lj)==="group",
           (lj, j)=>{
-            if(rowType(lj)==="title" || rowType(lj)==="total") return true;
+            if(getRowType(lj)==="title" || getRowType(lj)==="total") return true;
             return lastSubtotalIndex >= 0 && j <= lastSubtotalIndex;
           },
           true
@@ -698,9 +691,9 @@ function computeTotalsByColors(lines, vals, options={}){
 
       const {cur, prev} = sumBack(
         i,
-        (lj)=>rowType(lj)==="group",
+        (lj)=>getRowType(lj)==="group",
         (lj)=>{
-          const t=rowType(lj);
+          const t=getRowType(lj);
           return t==="subtotal" || t==="total" || t==="title";
         },
         true
@@ -722,9 +715,9 @@ function computeTotalsByColors(lines, vals, options={}){
         }
         const {cur, prev} = sumBack(
           i,
-          (lj)=>rowType(lj)==="group",
+          (lj)=>getRowType(lj)==="group",
           (lj, j)=>{
-            if(rowType(lj)==="title" || rowType(lj)==="total") return true;
+            if(getRowType(lj)==="title" || getRowType(lj)==="total") return true;
             return lastSubtotalIndex >= 0 && j <= lastSubtotalIndex;
           },
           true
@@ -738,8 +731,8 @@ function computeTotalsByColors(lines, vals, options={}){
       if(/TOTAL\s+PATRIMONIO/i.test(safeStr(line.concept))){
         const {cur, prev} = sumBack(
           i,
-          (lj)=>rowType(lj)==="group",
-          (lj)=>rowType(lj)==="title",
+          (lj)=>getRowType(lj)==="group",
+          (lj)=>getRowType(lj)==="title",
           true
         );
         if(!vals[idx]) vals[idx]={current_raw:0, previous_raw:0, assigned_codes:[]};
@@ -760,7 +753,7 @@ function computeTotalsByColors(lines, vals, options={}){
       if(/PASIVO\s+Y\s+PATRIMONIO/i.test(safeStr(line.concept))){
         let cur=0, prev=0, found=0;
         for(let j=i-1;j>=0;j--){
-          if(rowType(lines[j])!=="total") continue;
+          if(getRowType(lines[j])!=="total") continue;
           const v=vals[lines[j].idx] || {current_raw:0, previous_raw:0};
           cur += (v.current_raw||0);
           prev += (v.previous_raw||0);
@@ -774,9 +767,9 @@ function computeTotalsByColors(lines, vals, options={}){
       }
       const {cur, prev} = sumBack(
         i,
-        (lj)=>rowType(lj)===acceptType,
+        (lj)=>getRowType(lj)===acceptType,
         (lj)=>{
-          const t=rowType(lj);
+          const t=getRowType(lj);
           if(acceptType==="total") return t==="title";
           return t==="total" || t==="title";
         },
@@ -821,7 +814,7 @@ function injectResultIntoBalance(balLines, balVals, erLines, erVals){
 }
 
 // ===== out rows / % basis =====
-function buildOutRows(lines, vals, totalCur, totalPrev, scale=1000){
+function buildOutRows(lines, vals, totalCur, totalPrev, scale=SCALE_DIVISOR){
   const out=[];
   for(const line of lines){
     const v=vals[line.idx] || {current_raw:0, previous_raw:0, assigned_codes:[]};
@@ -1082,7 +1075,7 @@ function buildExcel(proc){
     ["CUENTAS NO INCLUIDAS (8 dígitos con saldo)"],
     ["Cifras en miles de pesos (÷ 1.000)"],
     ["CODICTA","DESCCTA",proc.labelCur, proc.labelPrev]
-  ].concat(unm.slice(0,5000).map(x=>[x.code8, x.desc, x.cur/1000, x.prev/1000]));
+  ].concat(unm.slice(0,5000).map(x=>[x.code8, x.desc, x.cur/SCALE_DIVISOR, x.prev/SCALE_DIVISOR]));
   const wsUnm=XLSX.utils.aoa_to_sheet(aoaUnm);
   wsUnm["!cols"]=[{wch:14},{wch:52},{wch:16},{wch:16}];
   XLSX.utils.book_append_sheet(wb, wsUnm, "NoIncluidas");
@@ -1105,6 +1098,215 @@ function buildExcel(proc){
 
 // === fórmulas de Excel ===
 // Ajusta estos helpers cuando quieras cambiar el cálculo o los rangos en el Excel final.
+function getRowType(row){
+  const cls=(row.fill_class||"").toLowerCase();
+  if(row.isTitle || cls==="section" || cls==="subheader") return "title";
+  if(cls==="detail") return "detail";
+  if(cls==="subtotal") return "subtotal";
+  if(cls==="total") return "total";
+  return "group";
+}
+function isSubheaderRow(row){
+  return (row.fill_class||"").toLowerCase()==="subheader";
+}
+function isExactTotalPasivo(row){
+  return /^TOTAL\s+PASIVO$/i.test(safeStr(row.concept));
+}
+function isExactTotalPatrimonio(row){
+  return /^TOTAL\s+PATRIMONIO$/i.test(safeStr(row.concept));
+}
+function isExactTotalPasivoPatrimonio(row){
+  return /^TOTAL\s+PASIVO\s+Y\s+PATRIMONIO$/i.test(safeStr(row.concept));
+}
+function isTotalActivo(row){
+  return /^TOTAL\s+ACTIVO$/i.test(safeStr(row.concept));
+}
+function isTotalIngresosOperacionales(row){
+  return /TOTAL\s+INGRESOS\s+OPERACIONALES/i.test(safeStr(row.concept));
+}
+function isResultadoPeriodo(row){
+  return /RESULTADO\s+DEL\s+PERIODO|RESULTADO\s+DEL\s+EJERCICIO/i.test(safeStr(row.concept));
+}
+function isTotalActivoCorriente(row){
+  return /TOTAL\s+ACTIVO\s+CORRIENTE/i.test(safeStr(row.concept));
+}
+function isTotalActivoNoCorriente(row){
+  return /TOTAL\s+ACTIVO\s+NO\s+CORRIENTE/i.test(safeStr(row.concept));
+}
+function isTotalPasivoCorriente(row){
+  return /TOTAL\s+PASIVO\s+CORRIENTE/i.test(safeStr(row.concept));
+}
+function isTotalPasivoNoCorriente(row){
+  return /TOTAL\s+PASIVO\s+NO\s+CORRIENTE/i.test(safeStr(row.concept));
+}
+function buildRollupContext(rows, options={}){
+  const isIncomeStatement=!!options.isIncomeStatement;
+  const rowTypes=rows.map(getRowType);
+  const findIndex=(pred)=>rows.findIndex(pred);
+  const baseIdx=(()=>{
+    if(isIncomeStatement){
+      const idx=findIndex((r)=>/TOTAL\s+INGRESOS/i.test(safeStr(r.concept)));
+      if(idx>=0) return idx;
+    }
+    const idxAct=findIndex(isTotalActivo);
+    if(idxAct>=0) return idxAct;
+    return rowTypes.findIndex(t=>t==="total");
+  })();
+  const totalIngresosIdx=isIncomeStatement ? findIndex(isTotalIngresosOperacionales) : -1;
+  const totalActivoIdx=!isIncomeStatement ? findIndex(isTotalActivo) : -1;
+  const totalPasivoIdx=!isIncomeStatement ? findIndex(isExactTotalPasivo) : -1;
+  const safeBaseIdx = baseIdx >= 0 ? baseIdx : null;
+  const nextRowOfType=(idx, types)=>{
+    for(let j=idx+1;j<rowTypes.length;j++){
+      if(types.includes(rowTypes[j])) return j;
+    }
+    return -1;
+  };
+  const prevRowOfType=(idx, types)=>{
+    for(let j=idx-1;j>=0;j--){
+      if(types.includes(rowTypes[j])) return j;
+    }
+    return -1;
+  };
+  const pctDenomIndex=(idx)=>{
+    if(idx < 0) return null;
+    const row=rows[idx];
+    const type=rowTypes[idx];
+
+    if(isIncomeStatement){
+      if(isTotalIngresosOperacionales(row) || isResultadoPeriodo(row)) return null;
+      if(type==="subtotal" || type==="total"){
+        return totalIngresosIdx >= 0 ? totalIngresosIdx : safeBaseIdx;
+      }
+    } else {
+      if(isTotalActivo(row) || isExactTotalPasivo(row) || isExactTotalPatrimonio(row) || isExactTotalPasivoPatrimonio(row)){
+        return null;
+      }
+      if(isTotalActivoCorriente(row) || isTotalActivoNoCorriente(row)){
+        return totalActivoIdx >= 0 ? totalActivoIdx : safeBaseIdx;
+      }
+      if(isTotalPasivoCorriente(row) || isTotalPasivoNoCorriente(row)){
+        return totalPasivoIdx >= 0 ? totalPasivoIdx : safeBaseIdx;
+      }
+    }
+
+    if(type==="detail"){
+      const nextGroup=nextRowOfType(idx, ["group"]);
+      return nextGroup >= 0 ? nextGroup : safeBaseIdx;
+    }
+    if(type==="group"){
+      const nextSubtotal=nextRowOfType(idx, ["subtotal"]);
+      return nextSubtotal >= 0 ? nextSubtotal : safeBaseIdx;
+    }
+    if(type==="subtotal"){
+      if(isIncomeStatement){
+        const prevSubtotal=prevRowOfType(idx, ["subtotal"]);
+        if(prevSubtotal >= 0) return prevSubtotal;
+        const prevGroup=prevRowOfType(idx, ["group"]);
+        return prevGroup >= 0 ? prevGroup : safeBaseIdx;
+      }
+      return safeBaseIdx;
+    }
+    if(type==="total") return safeBaseIdx;
+    return safeBaseIdx;
+  };
+  return {rows, rowTypes, isIncomeStatement, baseIdx, totalIngresosIdx, totalActivoIdx, totalPasivoIdx, pctDenomIndex};
+}
+function getRollupSpec(ctx, idx){
+  const type=ctx.rowTypes[idx];
+  if(type==="title" || type==="detail") return null;
+  if(type==="group"){
+    let start=idx-1;
+    const idxs=[];
+    while(start>=0 && ctx.rowTypes[start]==="detail"){
+      idxs.push(start);
+      start--;
+    }
+    idxs.reverse();
+    return idxs.length ? {kind:"list", idxs} : null;
+  }
+  if(type==="subtotal"){
+    const idxs=[];
+    for(let j=idx-1;j>=0;j--){
+      const t=ctx.rowTypes[j];
+      if(t==="subtotal" || t==="total" || t==="title") break;
+      if(t==="group") idxs.push(j);
+    }
+    idxs.reverse();
+    return idxs.length ? {kind:"list", idxs} : null;
+  }
+  if(type==="total"){
+    const row=ctx.rows[idx];
+    if(/TOTAL\s+ACTIVO/i.test(safeStr(row.concept))){
+      const idxs=[];
+      for(let j=idx-1;j>=0;j--){
+        const t=ctx.rowTypes[j];
+        if(t==="title" && !isSubheaderRow(ctx.rows[j])) break;
+        if(t==="subtotal") idxs.push(j);
+      }
+      idxs.reverse();
+      return idxs.length ? {kind:"list", idxs} : null;
+    }
+    if(isExactTotalPasivo(row)){
+      const idxs=[];
+      for(let j=idx-1;j>=0;j--){
+        const t=ctx.rowTypes[j];
+        if(t==="title" && !isSubheaderRow(ctx.rows[j])) break;
+        if(t==="subtotal") idxs.push(j);
+      }
+      idxs.reverse();
+      return idxs.length ? {kind:"list", idxs} : null;
+    }
+    if(isExactTotalPatrimonio(row)){
+      const idxs=[];
+      for(let j=idx-1;j>=0;j--){
+        if(ctx.rowTypes[j]==="title") break;
+        if(ctx.rowTypes[j]==="group") idxs.push(j);
+      }
+      idxs.reverse();
+      return idxs.length ? {kind:"list", idxs} : null;
+    }
+    if(isExactTotalPasivoPatrimonio(row)){
+      const idxPasivo=ctx.rows.findIndex(isExactTotalPasivo);
+      const idxPatrimonio=ctx.rows.findIndex(isExactTotalPatrimonio);
+      if(idxPasivo >= 0 && idxPatrimonio >= 0){
+        return {kind:"pair", idxs:[idxPasivo, idxPatrimonio]};
+      }
+      return null;
+    }
+    const idxs=[];
+    for(let j=idx-1;j>=0;j--){
+      const t=ctx.rowTypes[j];
+      if(t==="total" || t==="title") break;
+      if(t==="subtotal") idxs.push(j);
+    }
+    if(!idxs.length){
+      for(let j=idx-1;j>=0;j--){
+        const t=ctx.rowTypes[j];
+        if(t==="total" || t==="title") break;
+        if(t==="group") idxs.push(j);
+      }
+    }
+    idxs.reverse();
+    return idxs.length ? {kind:"list", idxs} : null;
+  }
+  return null;
+}
+function getIncomeStatementIndexes(rows){
+  const rowByConcept = (re)=> rows.findIndex(r=>re.test(safeStr(r.concept)));
+  return {
+    idxIngresos: rowByConcept(/INGRESOS\s+OPERACIONALES/i),
+    idxCosto: rowByConcept(/COSTO\s+DE\s+VENTAS/i),
+    idxUtilidad: rowByConcept(/UTILIDAD\s+BRUTA/i),
+    idxGastos: rowByConcept(/GASTOS\s+OPERACIONALES/i),
+    idxResultadoOp: rowByConcept(/RESULTADO\s+OPERACIONAL/i),
+    idxOtrosIng: rowByConcept(/OTROS\s+INGRESOS\s+NO\s+OPERACIONALES/i),
+    idxOtrosGas: rowByConcept(/OTROS\s+GASTOS\s+NO\s+OPERACIONALES/i),
+    idxResultadoNoOp: rowByConcept(/RESULTADO\s+NO\s+OPERACIONAL/i),
+    idxImpuestos: rowByConcept(/GASTO\s+DE\s+IMPUESTOS/i),
+    idxResultado: rowByConcept(/RESULTADO\s+DEL\s+PERIODO|RESULTADO\s+DEL\s+EJERCICIO/i)
+  };
+}
 function applyRollupFormulas(ws, outRows, options={}){
   const isIncomeStatement=!!options.isIncomeStatement;
   const reportMissing = options.reportMissing !== undefined
@@ -1112,61 +1314,39 @@ function applyRollupFormulas(ws, outRows, options={}){
     : (typeof window !== "undefined" && window.DEBUG_FORMULAS);
   const sheetName = options.sheetName || (isIncomeStatement ? "EstadoResultados" : "Balance");
   const missing = [];
-  const rowType=(row)=>{
-    const cls=(row.fill_class||"").toLowerCase();
-    if(row.isTitle || cls==="section" || cls==="subheader") return "title";
-    if(cls==="detail") return "detail";
-    if(cls==="subtotal") return "subtotal";
-    if(cls==="total") return "total";
-    return "group";
-  };
+  const ctx = buildRollupContext(outRows, {isIncomeStatement});
   const rowNum = (idx)=> 8 + idx;
-  const isSubheader = (row)=> (row.fill_class||"").toLowerCase()==="subheader";
-  const isExactTotalPasivo = (r)=>/^TOTAL\s+PASIVO$/i.test(safeStr(r.concept));
-  const isExactTotalPatrimonio = (r)=>/^TOTAL\s+PATRIMONIO$/i.test(safeStr(r.concept));
-  const isExactTotalPasivoPatrimonio = (r)=>/^TOTAL\s+PASIVO\s+Y\s+PATRIMONIO$/i.test(safeStr(r.concept));
-  const isTotalActivo = (r)=>/^TOTAL\s+ACTIVO$/i.test(safeStr(r.concept));
-  const isTotalIngresosOperacionales = (r)=>/TOTAL\s+INGRESOS\s+OPERACIONALES/i.test(safeStr(r.concept));
-  const isResultadoPeriodo = (r)=>/RESULTADO\s+DEL\s+PERIODO|RESULTADO\s+DEL\s+EJERCICIO/i.test(safeStr(r.concept));
-  const isTotalActivoCorriente = (r)=>/TOTAL\s+ACTIVO\s+CORRIENTE/i.test(safeStr(r.concept));
-  const isTotalActivoNoCorriente = (r)=>/TOTAL\s+ACTIVO\s+NO\s+CORRIENTE/i.test(safeStr(r.concept));
-  const isTotalPasivoCorriente = (r)=>/TOTAL\s+PASIVO\s+CORRIENTE/i.test(safeStr(r.concept));
-  const isTotalPasivoNoCorriente = (r)=>/TOTAL\s+PASIVO\s+NO\s+CORRIENTE/i.test(safeStr(r.concept));
-  const baseTotalIndex = ()=>{
-    if(isIncomeStatement){
-      const idx = outRows.findIndex((r)=>/TOTAL\s+INGRESOS/i.test(safeStr(r.concept)));
-      if(idx >= 0) return idx;
-    }
-    const idxAct = outRows.findIndex((r)=>isTotalActivo(r));
-    if(idxAct >= 0) return idxAct;
-    return outRows.findIndex((r)=>rowType(r)==="total");
-  };
-  const baseIdx = baseTotalIndex();
-  const baseRow = baseIdx >= 0 ? rowNum(baseIdx) : null;
-  const totalIngresosIdx = isIncomeStatement
-    ? outRows.findIndex((r)=>isTotalIngresosOperacionales(r))
-    : -1;
-  const totalActivoIdx = !isIncomeStatement
-    ? outRows.findIndex((r)=>isTotalActivo(r))
-    : -1;
-  const totalPasivoIdx = !isIncomeStatement
-    ? outRows.findIndex((r)=>isExactTotalPasivo(r))
-    : -1;
   const setFormula = (col, idx, formula, trackMissing=false, reason="")=>{
     const addr = `${col}${rowNum(idx)}`;
     const hadFormula = !!(ws[addr] && ws[addr].f);
     if(!ws[addr]) ws[addr] = {t:"n", v:0};
     ws[addr].f = formula;
+    if(trackMissing && reportMissing && !hadFormula){
+      missing.push({addr, reason});
+    }
   };
-  const setPctFormula = (idx, denomRow)=>{
-    if(!denomRow) return;
-    setFormula("D", idx, `IF(C${denomRow}=0,\"\",C${rowNum(idx)}/C${denomRow})`);
-    setFormula("F", idx, `IF(E${denomRow}=0,\"\",E${rowNum(idx)}/E${denomRow})`);
+  const formulaRules = {
+    detail: ["D","F","G","H"],
+    group: ["D","F","G","H"],
+    subtotal: ["D","F","G","H"],
+    total: ["D","F","G","H"]
   };
-  const setVarFormulas = (idx)=>{
+  const formulaByCol = {
+    D: (r, denomRow)=> denomRow ? `IF(C${denomRow}=0,\"\",C${r}/C${denomRow})` : '""',
+    F: (r, denomRow)=> denomRow ? `IF(E${denomRow}=0,\"\",E${r}/E${denomRow})` : '""',
+    G: (r)=> `C${r}-E${r}`,
+    H: (r)=> `IF(E${r}=0,\"\",G${r}/E${r})`
+  };
+  const applyRuleFormulas = (type, idx, denomRow)=>{
+    const cols = formulaRules[type];
+    if(!cols) return;
     const r=rowNum(idx);
-    setFormula("G", idx, `C${r}-E${r}`);
-    setFormula("H", idx, `IF(E${r}=0,\"\",G${r}/E${r})`);
+    for(const col of cols){
+      const build = formulaByCol[col];
+      if(!build) continue;
+      const reason = (col==="D" || col==="F") ? "pct" : "var";
+      setFormula(col, idx, build(r, denomRow), !!reportMissing, reason);
+    }
   };
   const sumListFormula = (col, rows)=>{
     if(!rows.length) return null;
@@ -1174,218 +1354,55 @@ function applyRollupFormulas(ws, outRows, options={}){
     const refs = rows.map(r=>`${col}${r}`).join(",");
     return `SUM(${refs})`;
   };
-  const nextRowOfType = (idx, types)=>{
-    for(let j=idx+1;j<outRows.length;j++){
-      if(types.includes(rowType(outRows[j]))) return j;
-    }
-    return -1;
-  };
-  const prevRowOfType = (idx, types)=>{
-    for(let j=idx-1;j>=0;j--){
-      if(types.includes(rowType(outRows[j]))) return j;
-    }
-    return -1;
-  };
-  const pctDenomIndex = (idx)=>{
-    const row = outRows[idx];
-    const type = rowType(row);
 
-    if(isIncomeStatement){
-      if(isTotalIngresosOperacionales(row) || isResultadoPeriodo(row)){
-        return null;
-      }
-      if(type==="subtotal" || type==="total"){
-        return totalIngresosIdx >= 0 ? totalIngresosIdx : baseIdx;
-      }
-    } else {
-      if(isTotalActivo(row) || isExactTotalPasivo(row) || isExactTotalPatrimonio(row) || isExactTotalPasivoPatrimonio(row)){
-        return null;
-      }
-      if(isTotalActivoCorriente(row) || isTotalActivoNoCorriente(row)){
-        return totalActivoIdx >= 0 ? totalActivoIdx : baseIdx;
-      }
-      if(isTotalPasivoCorriente(row) || isTotalPasivoNoCorriente(row)){
-        return totalPasivoIdx >= 0 ? totalPasivoIdx : baseIdx;
-      }
-    }
-
-    if(type==="detail"){
-      const nextGroup = nextRowOfType(idx, ["group"]);
-      return nextGroup >= 0 ? nextGroup : baseIdx;
-    }
-    if(type==="group"){
-      const nextSubtotal = nextRowOfType(idx, ["subtotal"]);
-      return nextSubtotal >= 0 ? nextSubtotal : baseIdx;
-    }
-    if(type==="subtotal"){
-      if(isIncomeStatement){
-        const prevSubtotal = prevRowOfType(idx, ["subtotal"]);
-        if(prevSubtotal >= 0) return prevSubtotal;
-        const prevGroup = prevRowOfType(idx, ["group"]);
-        return prevGroup >= 0 ? prevGroup : baseIdx;
-      }
-      return baseIdx;
-    }
-    if(type==="total") return baseIdx;
-    return baseIdx;
-  };
   for(let i=0;i<outRows.length;i++){
-    const row=outRows[i];
-    const type=rowType(row);
+    const type=ctx.rowTypes[i];
     if(type==="title") continue;
-    if(type==="detail"){
-      const denomIdx = pctDenomIndex(i);
-      const denomRow = Number.isFinite(denomIdx) ? rowNum(denomIdx) : null;
-      if(denomRow) setPctFormula(i, denomRow);
-      setVarFormulas(i);
+    const denomIdx = ctx.pctDenomIndex(i);
+    const denomRow = Number.isFinite(denomIdx) && denomIdx >= 0 ? rowNum(denomIdx) : null;
+    applyRuleFormulas(type, i, denomRow);
+    if(type==="detail") continue;
+    const spec = getRollupSpec(ctx, i);
+    if(!spec) continue;
+    if(spec.kind==="pair"){
+      const rowA=rowNum(spec.idxs[0]);
+      const rowB=rowNum(spec.idxs[1]);
+      setFormula("C", i, `C${rowA}+C${rowB}`);
+      setFormula("E", i, `E${rowA}+E${rowB}`);
       continue;
     }
-
-    if(type==="group"){
-      let start=i-1;
-      const rows=[];
-      while(start>=0 && rowType(outRows[start])==="detail"){
-        rows.push(rowNum(start));
-        start--;
-      }
-      const formulaC=sumListFormula("C", rows.reverse());
-      const formulaE=sumListFormula("E", rows.reverse());
+    if(spec.kind==="list"){
+      const rowNums = spec.idxs.map(rowNum);
+      const formulaC=sumListFormula("C", rowNums);
+      const formulaE=sumListFormula("E", rowNums);
       if(formulaC && formulaE){
         setFormula("C", i, formulaC);
         setFormula("E", i, formulaE);
-      }
-      continue;
-    }
-
-    if(type==="subtotal"){
-      const rows=[];
-      for(let j=i-1;j>=0;j--){
-        const t=rowType(outRows[j]);
-        if(t==="subtotal" || t==="total" || t==="title") break;
-        if(t==="group") rows.push(rowNum(j));
-      }
-      const formulaC=sumListFormula("C", rows.reverse());
-      const formulaE=sumListFormula("E", rows.reverse());
-      if(formulaC && formulaE){
-        setFormula("C", i, formulaC);
-        setFormula("E", i, formulaE);
-      }
-      continue;
-    }
-
-    if(type==="total"){
-      if(/TOTAL\s+ACTIVO/i.test(safeStr(row.concept))){
-        const rows=[];
-        for(let j=i-1;j>=0;j--){
-          const t=rowType(outRows[j]);
-          if(t==="title" && !isSubheader(outRows[j])) break;
-          if(t==="subtotal") rows.push(rowNum(j));
-        }
-        const formulaC=sumListFormula("C", rows.reverse());
-        const formulaE=sumListFormula("E", rows.reverse());
-        if(formulaC && formulaE){
-          setFormula("C", i, formulaC);
-          setFormula("E", i, formulaE);
-          setVarFormulas(i);
-          const denomIdx = pctDenomIndex(i);
-          const denomRow = Number.isFinite(denomIdx) ? rowNum(denomIdx) : null;
-          if(denomRow) setPctFormula(i, denomRow);
-        }
-        continue;
-      }
-      if(isExactTotalPasivo(row)){
-        const rows=[];
-        for(let j=i-1;j>=0;j--){
-          const t=rowType(outRows[j]);
-          if(t==="title" && !isSubheader(outRows[j])) break;
-          if(t==="subtotal") rows.push(rowNum(j));
-        }
-        const formulaC=sumListFormula("C", rows.reverse());
-        const formulaE=sumListFormula("E", rows.reverse());
-        if(formulaC && formulaE){
-          setFormula("C", i, formulaC);
-          setFormula("E", i, formulaE);
-          setVarFormulas(i);
-          const denomIdx = pctDenomIndex(i);
-          const denomRow = Number.isFinite(denomIdx) ? rowNum(denomIdx) : null;
-          if(denomRow) setPctFormula(i, denomRow);
-        }
-        continue;
-      }
-      if(isExactTotalPatrimonio(row)){
-        const rows=[];
-        for(let j=i-1;j>=0;j--){
-          if(rowType(outRows[j])==="title") break;
-          if(rowType(outRows[j])==="group") rows.push(rowNum(j));
-        }
-        const formulaC=sumListFormula("C", rows.reverse());
-        const formulaE=sumListFormula("E", rows.reverse());
-        if(formulaC && formulaE){
-          setFormula("C", i, formulaC);
-          setFormula("E", i, formulaE);
-          setVarFormulas(i);
-          const denomIdx = pctDenomIndex(i);
-          const denomRow = Number.isFinite(denomIdx) ? rowNum(denomIdx) : null;
-          if(denomRow) setPctFormula(i, denomRow);
-        }
-        continue;
-      }
-
-      if(isExactTotalPasivoPatrimonio(row)){
-        const idxPasivo = outRows.findIndex((r)=>isExactTotalPasivo(r));
-        const idxPatrimonio = outRows.findIndex((r)=>isExactTotalPatrimonio(r));
-        if(idxPasivo >= 0 && idxPatrimonio >= 0){
-          const rowPasivo = rowNum(idxPasivo);
-          const rowPatrimonio = rowNum(idxPatrimonio);
-          setFormula("C", i, `C${rowPasivo}+C${rowPatrimonio}`);
-          setFormula("E", i, `E${rowPasivo}+E${rowPatrimonio}`);
-          setVarFormulas(i);
-          const denomIdx = pctDenomIndex(i);
-          const denomRow = Number.isFinite(denomIdx) ? rowNum(denomIdx) : null;
-          if(denomRow) setPctFormula(i, denomRow);
-        }
-        continue;
-      }
-
-      const rows=[];
-      for(let j=i-1;j>=0;j--){
-        const t=rowType(outRows[j]);
-        if(t==="total" || t==="title") break;
-        if(t==="subtotal") rows.push(rowNum(j));
-      }
-      if(!rows.length){
-        for(let j=i-1;j>=0;j--){
-          const t=rowType(outRows[j]);
-          if(t==="total" || t==="title") break;
-          if(t==="group") rows.push(rowNum(j));
-        }
-      }
-      const formulaC=sumListFormula("C", rows.reverse());
-      const formulaE=sumListFormula("E", rows.reverse());
-      if(formulaC && formulaE){
-        setFormula("C", i, formulaC);
-        setFormula("E", i, formulaE);
-        setVarFormulas(i);
-        const denomIdx = pctDenomIndex(i);
-        const denomRow = Number.isFinite(denomIdx) ? rowNum(denomIdx) : null;
-        if(denomRow) setPctFormula(i, denomRow);
       }
     }
   }
+  if(reportMissing && typeof console !== "undefined"){
+    if(missing.length){
+      const list = missing.map(m=>`${sheetName}!${m.addr}${m.reason ? ` (${m.reason})` : ""}`);
+      console.warn(`[formulas] ${sheetName}: ${missing.length} missing formulas fixed`, list);
+    } else {
+      console.info(`[formulas] ${sheetName}: OK`);
+    }
+  }
 }
-
 function applyIncomeStatementFormulas(ws, outRows){
-  const rowByConcept = (re)=> outRows.findIndex(r=>re.test(safeStr(r.concept)));
-  const idxIngresos = rowByConcept(/INGRESOS\s+OPERACIONALES/i);
-  const idxCosto = rowByConcept(/COSTO\s+DE\s+VENTAS/i);
-  const idxUtilidad = rowByConcept(/UTILIDAD\s+BRUTA/i);
-  const idxGastos = rowByConcept(/GASTOS\s+OPERACIONALES/i);
-  const idxResultadoOp = rowByConcept(/RESULTADO\s+OPERACIONAL/i);
-  const idxOtrosIng = rowByConcept(/OTROS\s+INGRESOS\s+NO\s+OPERACIONALES/i);
-  const idxOtrosGas = rowByConcept(/OTROS\s+GASTOS\s+NO\s+OPERACIONALES/i);
-  const idxResultadoNoOp = rowByConcept(/RESULTADO\s+NO\s+OPERACIONAL/i);
-  const idxImpuestos = rowByConcept(/GASTO\s+DE\s+IMPUESTOS/i);
-  const idxResultado = rowByConcept(/RESULTADO\s+DEL\s+PERIODO|RESULTADO\s+DEL\s+EJERCICIO/i);
+  const {
+    idxIngresos,
+    idxCosto,
+    idxUtilidad,
+    idxGastos,
+    idxResultadoOp,
+    idxOtrosIng,
+    idxOtrosGas,
+    idxResultadoNoOp,
+    idxImpuestos,
+    idxResultado
+  } = getIncomeStatementIndexes(outRows);
 
   const rowNum = (idx)=> (idx >= 0 ? 8 + idx : null);
   const cellAddr = (col, idx)=> idx !== null ? `${col}${idx}` : null;
@@ -1437,9 +1454,6 @@ function applyIncomeStatementFormulas(ws, outRows){
 }
 
 function applyBalanceTotalsFormulas(ws, outRows){
-  const isExactTotalPasivo = (r)=>/^TOTAL\s+PASIVO$/i.test(safeStr(r.concept));
-  const isExactTotalPatrimonio = (r)=>/^TOTAL\s+PATRIMONIO$/i.test(safeStr(r.concept));
-  const isExactTotalPasivoPatrimonio = (r)=>/^TOTAL\s+PASIVO\s+Y\s+PATRIMONIO$/i.test(safeStr(r.concept));
   const idxPasivo = outRows.findIndex((r)=>isExactTotalPasivo(r));
   const idxPatrimonio = outRows.findIndex((r)=>isExactTotalPatrimonio(r));
   const idxPasivoPatrimonio = outRows.findIndex((r)=>isExactTotalPasivoPatrimonio(r));
@@ -1477,102 +1491,10 @@ function applyBalanceResultFormula(ws, balanceOut, incomeOut, incomeSheetName){
 }
 
 function computeExcelAlignedOutRows(outRows, options={}){
-  const scale = Number(options.scale) || 1000;
+  const scale = Number(options.scale) || SCALE_DIVISOR;
   const isIncomeStatement = !!options.isIncomeStatement;
   const rows = outRows.map(r=>({...(r||{})}));
-  const rowType=(row)=>{
-    const cls=(row.fill_class||"").toLowerCase();
-    if(row.isTitle || cls==="section" || cls==="subheader") return "title";
-    if(cls==="detail") return "detail";
-    if(cls==="subtotal") return "subtotal";
-    if(cls==="total") return "total";
-    return "group";
-  };
-  const isSubheader = (row)=> (row.fill_class||"").toLowerCase()==="subheader";
-  const isExactTotalPasivo = (r)=>/^TOTAL\s+PASIVO$/i.test(safeStr(r.concept));
-  const isExactTotalPatrimonio = (r)=>/^TOTAL\s+PATRIMONIO$/i.test(safeStr(r.concept));
-  const isExactTotalPasivoPatrimonio = (r)=>/^TOTAL\s+PASIVO\s+Y\s+PATRIMONIO$/i.test(safeStr(r.concept));
-  const isTotalActivo = (r)=>/^TOTAL\s+ACTIVO$/i.test(safeStr(r.concept));
-  const isTotalIngresosOperacionales = (r)=>/TOTAL\s+INGRESOS\s+OPERACIONALES/i.test(safeStr(r.concept));
-  const isResultadoPeriodo = (r)=>/RESULTADO\s+DEL\s+PERIODO|RESULTADO\s+DEL\s+EJERCICIO/i.test(safeStr(r.concept));
-  const isTotalActivoCorriente = (r)=>/TOTAL\s+ACTIVO\s+CORRIENTE/i.test(safeStr(r.concept));
-  const isTotalActivoNoCorriente = (r)=>/TOTAL\s+ACTIVO\s+NO\s+CORRIENTE/i.test(safeStr(r.concept));
-  const isTotalPasivoCorriente = (r)=>/TOTAL\s+PASIVO\s+CORRIENTE/i.test(safeStr(r.concept));
-  const isTotalPasivoNoCorriente = (r)=>/TOTAL\s+PASIVO\s+NO\s+CORRIENTE/i.test(safeStr(r.concept));
-  const baseTotalIndex = ()=>{
-    if(isIncomeStatement){
-      const idx = rows.findIndex((r)=>/TOTAL\s+INGRESOS/i.test(safeStr(r.concept)));
-      if(idx >= 0) return idx;
-    }
-    const idxAct = rows.findIndex((r)=>isTotalActivo(r));
-    if(idxAct >= 0) return idxAct;
-    return rows.findIndex((r)=>rowType(r)==="total");
-  };
-  const baseIdx = baseTotalIndex();
-  const totalIngresosIdx = isIncomeStatement
-    ? rows.findIndex((r)=>isTotalIngresosOperacionales(r))
-    : -1;
-  const totalActivoIdx = !isIncomeStatement
-    ? rows.findIndex((r)=>isTotalActivo(r))
-    : -1;
-  const totalPasivoIdx = !isIncomeStatement
-    ? rows.findIndex((r)=>isExactTotalPasivo(r))
-    : -1;
-  const nextRowOfType = (idx, types)=>{
-    for(let j=idx+1;j<rows.length;j++){
-      if(types.includes(rowType(rows[j]))) return j;
-    }
-    return -1;
-  };
-  const prevRowOfType = (idx, types)=>{
-    for(let j=idx-1;j>=0;j--){
-      if(types.includes(rowType(rows[j]))) return j;
-    }
-    return -1;
-  };
-  const pctDenomIndex = (idx)=>{
-    const row = rows[idx];
-    const type = rowType(row);
-
-    if(isIncomeStatement){
-      if(isTotalIngresosOperacionales(row) || isResultadoPeriodo(row)){
-        return null;
-      }
-      if(type==="subtotal" || type==="total"){
-        return totalIngresosIdx >= 0 ? totalIngresosIdx : baseIdx;
-      }
-    } else {
-      if(isTotalActivo(row) || isExactTotalPasivo(row) || isExactTotalPatrimonio(row) || isExactTotalPasivoPatrimonio(row)){
-        return null;
-      }
-      if(isTotalActivoCorriente(row) || isTotalActivoNoCorriente(row)){
-        return totalActivoIdx >= 0 ? totalActivoIdx : baseIdx;
-      }
-      if(isTotalPasivoCorriente(row) || isTotalPasivoNoCorriente(row)){
-        return totalPasivoIdx >= 0 ? totalPasivoIdx : baseIdx;
-      }
-    }
-
-    if(type==="detail"){
-      const nextGroup = nextRowOfType(idx, ["group"]);
-      return nextGroup >= 0 ? nextGroup : baseIdx;
-    }
-    if(type==="group"){
-      const nextSubtotal = nextRowOfType(idx, ["subtotal"]);
-      return nextSubtotal >= 0 ? nextSubtotal : baseIdx;
-    }
-    if(type==="subtotal"){
-      if(isIncomeStatement){
-        const prevSubtotal = prevRowOfType(idx, ["subtotal"]);
-        if(prevSubtotal >= 0) return prevSubtotal;
-        const prevGroup = prevRowOfType(idx, ["group"]);
-        return prevGroup >= 0 ? prevGroup : baseIdx;
-      }
-      return baseIdx;
-    }
-    if(type==="total") return baseIdx;
-    return baseIdx;
-  };
+  const ctx = buildRollupContext(rows, {isIncomeStatement});
   const sumRows = (idxs)=>{
     let cur=0, prev=0;
     for(const idx of idxs){
@@ -1593,121 +1515,36 @@ function computeExcelAlignedOutRows(outRows, options={}){
   };
   // Pass 1: calcular C/E (rollups)
   for(let i=0;i<rows.length;i++){
-    const row=rows[i];
-    const type=rowType(row);
+    const type=ctx.rowTypes[i];
     if(type==="title" || type==="detail") continue;
-
-    if(type==="group"){
-      let start=i-1;
-      const idxs=[];
-      while(start>=0 && rowType(rows[start])==="detail"){
-        idxs.push(start);
-        start--;
-      }
-      if(idxs.length){
-        const {cur, prev}=sumRows(idxs);
-        setRowValues(i, cur, prev);
-      }
+    const spec = getRollupSpec(ctx, i);
+    if(!spec) continue;
+    if(spec.kind==="pair"){
+      const left = getRowValues(spec.idxs[0]);
+      const right = getRowValues(spec.idxs[1]);
+      setRowValues(i, left.cur + right.cur, left.prev + right.prev);
       continue;
     }
-
-    if(type==="subtotal"){
-      const idxs=[];
-      for(let j=i-1;j>=0;j--){
-        const t=rowType(rows[j]);
-        if(t==="subtotal" || t==="total" || t==="title") break;
-        if(t==="group") idxs.push(j);
-      }
-      if(idxs.length){
-        const {cur, prev}=sumRows(idxs);
-        setRowValues(i, cur, prev);
-      }
-      continue;
-    }
-
-    if(type==="total"){
-      if(/TOTAL\s+ACTIVO/i.test(safeStr(row.concept))){
-        const idxs=[];
-        for(let j=i-1;j>=0;j--){
-          const t=rowType(rows[j]);
-          if(t==="title" && !isSubheader(rows[j])) break;
-          if(t==="subtotal") idxs.push(j);
-        }
-        if(idxs.length){
-          const {cur, prev}=sumRows(idxs);
-          setRowValues(i, cur, prev);
-        }
-        continue;
-      }
-      if(isExactTotalPasivo(row)){
-        const idxs=[];
-        for(let j=i-1;j>=0;j--){
-          const t=rowType(rows[j]);
-          if(t==="title" && !isSubheader(rows[j])) break;
-          if(t==="subtotal") idxs.push(j);
-        }
-        if(idxs.length){
-          const {cur, prev}=sumRows(idxs);
-          setRowValues(i, cur, prev);
-        }
-        continue;
-      }
-      if(isExactTotalPatrimonio(row)){
-        const idxs=[];
-        for(let j=i-1;j>=0;j--){
-          if(rowType(rows[j])==="title") break;
-          if(rowType(rows[j])==="group") idxs.push(j);
-        }
-        if(idxs.length){
-          const {cur, prev}=sumRows(idxs);
-          setRowValues(i, cur, prev);
-        }
-        continue;
-      }
-      if(isExactTotalPasivoPatrimonio(row)){
-        const idxPasivo = rows.findIndex((r)=>isExactTotalPasivo(r));
-        const idxPatrimonio = rows.findIndex((r)=>isExactTotalPatrimonio(r));
-        if(idxPasivo >= 0 && idxPatrimonio >= 0){
-          const pas = getRowValues(idxPasivo);
-          const pat = getRowValues(idxPatrimonio);
-          setRowValues(i, pas.cur + pat.cur, pas.prev + pat.prev);
-        }
-        continue;
-      }
-
-      const idxs=[];
-      for(let j=i-1;j>=0;j--){
-        const t=rowType(rows[j]);
-        if(t==="total" || t==="title") break;
-        if(t==="subtotal") idxs.push(j);
-      }
-      if(!idxs.length){
-        for(let j=i-1;j>=0;j--){
-          const t=rowType(rows[j]);
-          if(t==="total" || t==="title") break;
-          if(t==="group") idxs.push(j);
-        }
-      }
-      if(idxs.length){
-        const {cur, prev}=sumRows(idxs);
-        setRowValues(i, cur, prev);
-      }
+    if(spec.kind==="list"){
+      const {cur, prev}=sumRows(spec.idxs);
+      setRowValues(i, cur, prev);
     }
   }
 
   // Ingresos/resultado: fórmulas específicas de ER
   if(isIncomeStatement){
-    const rowByConcept = (re)=> rows.findIndex(r=>re.test(safeStr(r.concept)));
-    const idxIngresos = rowByConcept(/INGRESOS\s+OPERACIONALES/i);
-    const idxCosto = rowByConcept(/COSTO\s+DE\s+VENTAS/i);
-    const idxUtilidad = rowByConcept(/UTILIDAD\s+BRUTA/i);
-    const idxGastos = rowByConcept(/GASTOS\s+OPERACIONALES/i);
-    const idxResultadoOp = rowByConcept(/RESULTADO\s+OPERACIONAL/i);
-    const idxOtrosIng = rowByConcept(/OTROS\s+INGRESOS\s+NO\s+OPERACIONALES/i);
-    const idxOtrosGas = rowByConcept(/OTROS\s+GASTOS\s+NO\s+OPERACIONALES/i);
-    const idxResultadoNoOp = rowByConcept(/RESULTADO\s+NO\s+OPERACIONAL/i);
-    const idxImpuestos = rowByConcept(/GASTO\s+DE\s+IMPUESTOS/i);
-    const idxResultado = rowByConcept(/RESULTADO\s+DEL\s+PERIODO|RESULTADO\s+DEL\s+EJERCICIO/i);
+    const {
+      idxIngresos,
+      idxCosto,
+      idxUtilidad,
+      idxGastos,
+      idxResultadoOp,
+      idxOtrosIng,
+      idxOtrosGas,
+      idxResultadoNoOp,
+      idxImpuestos,
+      idxResultado
+    } = getIncomeStatementIndexes(rows);
 
     if(idxUtilidad >= 0 && idxIngresos >= 0 && idxCosto >= 0){
       const ing = getRowValues(idxIngresos);
@@ -1734,16 +1571,16 @@ function computeExcelAlignedOutRows(outRows, options={}){
 
   // Pass 2: D/F/G/H (pct/var) con denominadores alineados
   for(let i=0;i<rows.length;i++){
-    const row=rows[i];
-    const type=rowType(row);
+    const type=ctx.rowTypes[i];
     if(type==="title") continue;
     if(type==="detail" || type==="group" || type==="subtotal" || type==="total"){
+      const row=rows[i];
       const cur = Number(row.cur) || 0;
       const prev = Number(row.prev) || 0;
       row.diff = cur - prev;
       row.pctVar = prev===0 ? null : (row.diff/prev)*100;
-      const denomIdx = pctDenomIndex(i);
-      if(Number.isFinite(denomIdx) && denomIdx !== null){
+      const denomIdx = ctx.pctDenomIndex(i);
+      if(Number.isFinite(denomIdx) && denomIdx >= 0){
         const denom = rows[denomIdx];
         const denomCur = Number(denom?.cur) || 0;
         const denomPrev = Number(denom?.prev) || 0;
@@ -1759,12 +1596,11 @@ function computeExcelAlignedOutRows(outRows, options={}){
   }
   return rows;
 }
-
 function applyBalanceResultValue(balanceOut, incomeOut, options={}){
   const idxBal=findResultRowIndex(balanceOut);
   const idxEr=findResultRowIndex(incomeOut);
   if(idxBal < 0 || idxEr < 0) return;
-  const scale = Number(options.scale) || 1000;
+  const scale = Number(options.scale) || SCALE_DIVISOR;
   const cur = Number(incomeOut[idxEr]?.cur) || 0;
   const prev = Number(incomeOut[idxEr]?.prev) || 0;
   balanceOut[idxBal].cur = cur;
@@ -1772,69 +1608,9 @@ function applyBalanceResultValue(balanceOut, incomeOut, options={}){
   balanceOut[idxBal].diff = cur - prev;
   balanceOut[idxBal].pctVar = prev===0 ? null : (balanceOut[idxBal].diff/prev)*100;
 
-  const rowType=(row)=>{
-    const cls=(row.fill_class||"").toLowerCase();
-    if(row.isTitle || cls==="section" || cls==="subheader") return "title";
-    if(cls==="detail") return "detail";
-    if(cls==="subtotal") return "subtotal";
-    if(cls==="total") return "total";
-    return "group";
-  };
-  const isExactTotalPasivo = (r)=>/^TOTAL\s+PASIVO$/i.test(safeStr(r.concept));
-  const isExactTotalPatrimonio = (r)=>/^TOTAL\s+PATRIMONIO$/i.test(safeStr(r.concept));
-  const isExactTotalPasivoPatrimonio = (r)=>/^TOTAL\s+PASIVO\s+Y\s+PATRIMONIO$/i.test(safeStr(r.concept));
-  const isTotalActivo = (r)=>/^TOTAL\s+ACTIVO$/i.test(safeStr(r.concept));
-  const isTotalActivoCorriente = (r)=>/TOTAL\s+ACTIVO\s+CORRIENTE/i.test(safeStr(r.concept));
-  const isTotalActivoNoCorriente = (r)=>/TOTAL\s+ACTIVO\s+NO\s+CORRIENTE/i.test(safeStr(r.concept));
-  const isTotalPasivoCorriente = (r)=>/TOTAL\s+PASIVO\s+CORRIENTE/i.test(safeStr(r.concept));
-  const isTotalPasivoNoCorriente = (r)=>/TOTAL\s+PASIVO\s+NO\s+CORRIENTE/i.test(safeStr(r.concept));
-  const baseTotalIndex = ()=>{
-    const idxAct = balanceOut.findIndex((r)=>isTotalActivo(r));
-    if(idxAct >= 0) return idxAct;
-    return balanceOut.findIndex((r)=>rowType(r)==="total");
-  };
-  const baseIdx = baseTotalIndex();
-  const totalActivoIdx = balanceOut.findIndex((r)=>isTotalActivo(r));
-  const totalPasivoIdx = balanceOut.findIndex((r)=>isExactTotalPasivo(r));
-  const nextRowOfType = (idx, types)=>{
-    for(let j=idx+1;j<balanceOut.length;j++){
-      if(types.includes(rowType(balanceOut[j]))) return j;
-    }
-    return -1;
-  };
-  const prevRowOfType = (idx, types)=>{
-    for(let j=idx-1;j>=0;j--){
-      if(types.includes(rowType(balanceOut[j]))) return j;
-    }
-    return -1;
-  };
-  const pctDenomIndex = (idx)=>{
-    const row = balanceOut[idx];
-    const type = rowType(row);
-    if(isTotalActivo(row) || isExactTotalPasivo(row) || isExactTotalPatrimonio(row) || isExactTotalPasivoPatrimonio(row)){
-      return null;
-    }
-    if(isTotalActivoCorriente(row) || isTotalActivoNoCorriente(row)){
-      return totalActivoIdx >= 0 ? totalActivoIdx : baseIdx;
-    }
-    if(isTotalPasivoCorriente(row) || isTotalPasivoNoCorriente(row)){
-      return totalPasivoIdx >= 0 ? totalPasivoIdx : baseIdx;
-    }
-    if(type==="detail"){
-      const nextGroup = nextRowOfType(idx, ["group"]);
-      return nextGroup >= 0 ? nextGroup : baseIdx;
-    }
-    if(type==="group"){
-      const nextSubtotal = nextRowOfType(idx, ["subtotal"]);
-      return nextSubtotal >= 0 ? nextSubtotal : baseIdx;
-    }
-    if(type==="subtotal") return baseIdx;
-    if(type==="total") return baseIdx;
-    return baseIdx;
-  };
-
-  const denomIdx = pctDenomIndex(idxBal);
-  if(Number.isFinite(denomIdx) && denomIdx !== null){
+  const ctx = buildRollupContext(balanceOut, {isIncomeStatement:false});
+  const denomIdx = ctx.pctDenomIndex(idxBal);
+  if(Number.isFinite(denomIdx) && denomIdx >= 0){
     const denom = balanceOut[denomIdx];
     const denomCur = Number(denom?.cur) || 0;
     const denomPrev = Number(denom?.prev) || 0;
@@ -1881,8 +1657,8 @@ function buildUnmappedPlacementTable(unmapped, balanceLines, incomeLines, mappin
     <tr>
       <td class="code">${esc(u.code8)}</td>
       <td>${esc(u.desc||"")}</td>
-      <td class="num">${fmtNum(u.cur/1000)}</td>
-      <td class="num">${fmtNum(u.prev/1000)}</td>
+      <td class="num">${fmtNum(u.cur/SCALE_DIVISOR)}</td>
+      <td class="num">${fmtNum(u.prev/SCALE_DIVISOR)}</td>
       <td>
         <select data-unmapped-sheet="${i}" class="unmapped-sheet">
           <option value="balance" ${defaultSheet === "balance" ? "selected" : ""}>Balance</option>
@@ -2105,9 +1881,9 @@ function applyOverridesAndProcess(params={}){
 
   const balanceOutRaw=buildOutRows(bal.lines, bal.vals, balBase.cur, balBase.prev);
   const incomeOutRaw=buildOutRows(er.lines, er.vals, erBase.cur, erBase.prev);
-  const balanceOut=computeExcelAlignedOutRows(balanceOutRaw, {scale:1000});
-  const incomeOut=computeExcelAlignedOutRows(incomeOutRaw, {scale:1000, isIncomeStatement:true});
-  applyBalanceResultValue(balanceOut, incomeOut, {scale:1000});
+  const balanceOut=computeExcelAlignedOutRows(balanceOutRaw, {scale:SCALE_DIVISOR});
+  const incomeOut=computeExcelAlignedOutRows(incomeOutRaw, {scale:SCALE_DIVISOR, isIncomeStatement:true});
+  applyBalanceResultValue(balanceOut, incomeOut, {scale:SCALE_DIVISOR});
 
   // No incluidas: lo que quedó sin asignar (del consumo por modelo)
   const unmapped=[];
@@ -2126,7 +1902,7 @@ function applyOverridesAndProcess(params={}){
   $("kpiCur").textContent=String(curParsed.rows.length);
   $("kpiPrev").textContent=String(prevParsed.rows.length);
   $("kpiUnm").textContent=String(unmapped.length);
-  $("runMeta").textContent=`Cifras: ${curSheet} vs ${prevSheet} · SDACCTA · miles (÷1000)`;
+  $("runMeta").textContent=`Cifras: ${curSheet} vs ${prevSheet} · SDACCTA · miles (÷${SCALE_DIVISOR})`;
 
   const jsonOut={
     metadata:{
@@ -2135,7 +1911,7 @@ function applyOverridesAndProcess(params={}){
       figures_current_sheet: curSheet,
       figures_previous_sheet: prevSheet,
       amount_column: "SDACCTA",
-      scale_divisor: 1000,
+      scale_divisor: SCALE_DIVISOR,
       threshold_pct: thresholdPct,
       calculation_basis: "excel_formulas",
       percent_value_format: "0-100",
@@ -2353,3 +2129,6 @@ refreshCustomMappingsOutput();
 </script>
 </body>
 </html>
+
+
+
