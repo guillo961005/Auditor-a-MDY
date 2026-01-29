@@ -1107,6 +1107,11 @@ function buildExcel(proc){
 // Ajusta estos helpers cuando quieras cambiar el cálculo o los rangos en el Excel final.
 function applyRollupFormulas(ws, outRows, options={}){
   const isIncomeStatement=!!options.isIncomeStatement;
+  const reportMissing = options.reportMissing !== undefined
+    ? options.reportMissing
+    : (typeof window !== "undefined" && window.DEBUG_FORMULAS);
+  const sheetName = options.sheetName || (isIncomeStatement ? "EstadoResultados" : "Balance");
+  const missing = [];
   const rowType=(row)=>{
     const cls=(row.fill_class||"").toLowerCase();
     if(row.isTitle || cls==="section" || cls==="subheader") return "title";
@@ -1147,20 +1152,29 @@ function applyRollupFormulas(ws, outRows, options={}){
   const totalPasivoIdx = !isIncomeStatement
     ? outRows.findIndex((r)=>isExactTotalPasivo(r))
     : -1;
-  const setFormula = (col, idx, formula)=>{
+  const setFormula = (col, idx, formula, trackMissing=false, reason="")=>{
     const addr = `${col}${rowNum(idx)}`;
+    const hadFormula = !!(ws[addr] && ws[addr].f);
     if(!ws[addr]) ws[addr] = {t:"n", v:0};
     ws[addr].f = formula;
+    if(trackMissing && reportMissing && !hadFormula){
+      missing.push({addr, reason});
+    }
   };
-  const setPctFormula = (idx, denomRow)=>{
-    if(!denomRow) return;
-    setFormula("D", idx, `IF(C${denomRow}=0,\"\",C${rowNum(idx)}/C${denomRow})`);
-    setFormula("F", idx, `IF(E${denomRow}=0,\"\",E${rowNum(idx)}/E${denomRow})`);
-  };
-  const setVarFormulas = (idx)=>{
+  const setPctFormula = (idx, denomRow, trackMissing=false)=>{
     const r=rowNum(idx);
-    setFormula("G", idx, `C${r}-E${r}`);
-    setFormula("H", idx, `IF(E${r}=0,\"\",G${r}/E${r})`);
+    if(denomRow){
+      setFormula("D", idx, `IF(C${denomRow}=0,\"\",C${r}/C${denomRow})`, trackMissing, "pct");
+      setFormula("F", idx, `IF(E${denomRow}=0,\"\",E${r}/E${denomRow})`, trackMissing, "pct");
+      return;
+    }
+    setFormula("D", idx, '""', trackMissing, "pct");
+    setFormula("F", idx, '""', trackMissing, "pct");
+  };
+  const setVarFormulas = (idx, trackMissing=false)=>{
+    const r=rowNum(idx);
+    setFormula("G", idx, `C${r}-E${r}`, trackMissing, "var");
+    setFormula("H", idx, `IF(E${r}=0,\"\",G${r}/E${r})`, trackMissing, "var");
   };
   const sumListFormula = (col, rows)=>{
     if(!rows.length) return null;
@@ -1227,17 +1241,15 @@ function applyRollupFormulas(ws, outRows, options={}){
     const row=outRows[i];
     const type=rowType(row);
     if(type==="title") continue;
+    const denomIdx = pctDenomIndex(i);
+    const denomRow = Number.isFinite(denomIdx) ? rowNum(denomIdx) : null;
     if(type==="detail"){
-      const denomIdx = pctDenomIndex(i);
-      const denomRow = Number.isFinite(denomIdx) ? rowNum(denomIdx) : null;
       if(denomRow) setPctFormula(i, denomRow);
       setVarFormulas(i);
       continue;
     }
 
     if(type==="group"){
-      const denomIdx = pctDenomIndex(i);
-      const denomRow = Number.isFinite(denomIdx) ? rowNum(denomIdx) : null;
       let start=i-1;
       const rows=[];
       while(start>=0 && rowType(outRows[start])==="detail"){
@@ -1256,8 +1268,6 @@ function applyRollupFormulas(ws, outRows, options={}){
     }
 
     if(type==="subtotal"){
-      const denomIdx = pctDenomIndex(i);
-      const denomRow = Number.isFinite(denomIdx) ? rowNum(denomIdx) : null;
       const rows=[];
       for(let j=i-1;j>=0;j--){
         const t=rowType(outRows[j]);
@@ -1289,8 +1299,6 @@ function applyRollupFormulas(ws, outRows, options={}){
           setFormula("C", i, formulaC);
           setFormula("E", i, formulaE);
           setVarFormulas(i);
-          const denomIdx = pctDenomIndex(i);
-          const denomRow = Number.isFinite(denomIdx) ? rowNum(denomIdx) : null;
           if(denomRow) setPctFormula(i, denomRow);
         }
         continue;
@@ -1308,8 +1316,6 @@ function applyRollupFormulas(ws, outRows, options={}){
           setFormula("C", i, formulaC);
           setFormula("E", i, formulaE);
           setVarFormulas(i);
-          const denomIdx = pctDenomIndex(i);
-          const denomRow = Number.isFinite(denomIdx) ? rowNum(denomIdx) : null;
           if(denomRow) setPctFormula(i, denomRow);
         }
         continue;
@@ -1326,8 +1332,6 @@ function applyRollupFormulas(ws, outRows, options={}){
           setFormula("C", i, formulaC);
           setFormula("E", i, formulaE);
           setVarFormulas(i);
-          const denomIdx = pctDenomIndex(i);
-          const denomRow = Number.isFinite(denomIdx) ? rowNum(denomIdx) : null;
           if(denomRow) setPctFormula(i, denomRow);
         }
         continue;
@@ -1342,8 +1346,6 @@ function applyRollupFormulas(ws, outRows, options={}){
           setFormula("C", i, `C${rowPasivo}+C${rowPatrimonio}`);
           setFormula("E", i, `E${rowPasivo}+E${rowPatrimonio}`);
           setVarFormulas(i);
-          const denomIdx = pctDenomIndex(i);
-          const denomRow = Number.isFinite(denomIdx) ? rowNum(denomIdx) : null;
           if(denomRow) setPctFormula(i, denomRow);
         }
         continue;
@@ -1368,10 +1370,27 @@ function applyRollupFormulas(ws, outRows, options={}){
         setFormula("C", i, formulaC);
         setFormula("E", i, formulaE);
         setVarFormulas(i);
-        const denomIdx = pctDenomIndex(i);
-        const denomRow = Number.isFinite(denomIdx) ? rowNum(denomIdx) : null;
         if(denomRow) setPctFormula(i, denomRow);
       }
+    }
+  }
+  for(let i=0;i<outRows.length;i++){
+    const row=outRows[i];
+    const type=rowType(row);
+    if(type==="title") continue;
+    if(type==="detail" || type==="group" || type==="subtotal" || type==="total"){
+      const denomIdx = pctDenomIndex(i);
+      const denomRow = Number.isFinite(denomIdx) ? rowNum(denomIdx) : null;
+      setVarFormulas(i, !!reportMissing);
+      setPctFormula(i, denomRow, !!reportMissing);
+    }
+  }
+  if(reportMissing && typeof console !== "undefined"){
+    if(missing.length){
+      const list = missing.map(m=>`${sheetName}!${m.addr}${m.reason ? ` (${m.reason})` : ""}`);
+      console.warn(`[formulas] ${sheetName}: ${missing.length} missing formulas fixed`, list);
+    } else {
+      console.info(`[formulas] ${sheetName}: OK`);
     }
   }
 }
