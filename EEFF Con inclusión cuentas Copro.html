@@ -1052,6 +1052,141 @@ function styleSheet(ws, outRows, title, styles, options={}){
   }
   ws["!freeze"]={xSplit:0, ySplit:7};
 }
+function buildVariationsDetailAOA(proc){
+  const thresholdPct = Number(proc.thresholdPct) || 0;
+  const labelCur = safeStr(proc.labelCur) || "Actual";
+  const labelPrev = safeStr(proc.labelPrev) || "Anterior";
+  const accounts = proc.accounts || new Map();
+  const groups=[];
+  const groupMap=new Map();
+
+  function addFromOut(outRows, sheetLabel){
+    for(const row of (outRows || [])){
+      if(row.isTitle) continue;
+      if(!row.assigned_codes || !row.assigned_codes.length) continue;
+      if(Math.abs(row.pctVar || 0) < thresholdPct) continue;
+      const rubro = safeStr(row.concept);
+      const key = `${sheetLabel}||${rubro}`;
+      if(!groupMap.has(key)){
+        const g={sheetLabel, rubro, items:[]};
+        groupMap.set(key, g);
+        groups.push(g);
+      }
+      const g=groupMap.get(key);
+      const codes = [...row.assigned_codes].sort();
+      for(const code8 of codes){
+        const a = accounts.get(code8);
+        if(!a) continue;
+        const curRaw = Number(a.cur) || 0;
+        const prevRaw = Number(a.prev) || 0;
+        if(curRaw === 0 && prevRaw === 0) continue;
+        const cur = curRaw / SCALE_DIVISOR;
+        const prev = prevRaw / SCALE_DIVISOR;
+        const diff = cur - prev;
+        const pctVar = (prev === 0) ? null : (diff/prev)*100;
+        g.items.push({code8, desc:a.desc || "", cur, prev, diff, pctVar});
+      }
+    }
+  }
+
+  addFromOut(proc.balanceOut, "Balance");
+  addFromOut(proc.incomeOut, "EstadoResultados");
+
+  const rowsMeta=[];
+  for(const g of groups){
+    let totalCur=0, totalPrev=0, totalDiff=0;
+    for(const it of g.items){
+      totalCur += it.cur;
+      totalPrev += it.prev;
+      totalDiff += it.diff;
+      rowsMeta.push({
+        cells:[g.sheetLabel, g.rubro, it.code8, it.desc, it.cur, it.prev, it.diff, (it.pctVar==null ? null : it.pctVar/100)],
+        isTotal:false
+      });
+    }
+    if(g.items.length){
+      const totalPct = (totalPrev === 0) ? null : (totalDiff/totalPrev)*100;
+      rowsMeta.push({
+        cells:[g.sheetLabel, g.rubro, "", "TOTAL RUBRO", totalCur, totalPrev, totalDiff, (totalPct==null ? null : totalPct/100)],
+        isTotal:true
+      });
+    }
+  }
+
+  const head=[
+    ["DETALLE VARIACIONES SIGNIFICATIVAS"],
+    [`Umbral: ${thresholdPct}% · Cifras en miles de pesos (÷ ${SCALE_DIVISOR})`],
+    ["Estado","Rubro","CODICTA","DESCCTA",labelCur,labelPrev,"Var.","%"]
+  ];
+  if(rowsMeta.length===0){
+    rowsMeta.push({cells:["Sin variaciones sobre el umbral", "", "", "", null, null, null, null], isTotal:false});
+  }
+  const aoa = head.concat(rowsMeta.map(r=>r.cells));
+  return {aoa, dataCount: rowsMeta.length, rowsMeta};
+}
+function styleVariationsSheet(ws, styles, dataCount, rowsMeta){
+  const palette=[
+    "FDEBD0","D6EAF8","D5F5E3","FADBD8","FCF3CF","E8DAEF","D4EFDF","F6DDCC",
+    "EAF2F8","EBDEF0","F9E79F","D1F2EB","F2F4F4","F5EEF8","D0ECE7","FDEDEC"
+  ];
+  const rubroColor=new Map();
+  let pIdx=0;
+  function colorForRubro(rubro){
+    const key=safeStr(rubro);
+    if(!key) return null;
+    if(!rubroColor.has(key)){
+      rubroColor.set(key, palette[pIdx % palette.length]);
+      pIdx++;
+    }
+    return rubroColor.get(key);
+  }
+  const styleCache=new Map();
+  function withFill(base, color){
+    if(!color) return base;
+    const key=(base && base.numFmt ? base.numFmt : "text")+"|"+color;
+    if(styleCache.has(key)) return styleCache.get(key);
+    const s=Object.assign({}, base || {});
+    s.fill={patternType:"solid", fgColor:{rgb:color}};
+    styleCache.set(key, s);
+    return s;
+  }
+  ws["!cols"]=[{wch:16},{wch:40},{wch:12},{wch:50},{wch:14},{wch:14},{wch:14},{wch:10}];
+  ws["!merges"]=ws["!merges"]||[];
+  ws["!merges"].push({s:{r:0,c:0}, e:{r:0,c:7}});
+  ws["!merges"].push({s:{r:1,c:0}, e:{r:1,c:7}});
+  if(ws["A1"]) ws["A1"].s={font:{bold:true, sz:12}, alignment:{horizontal:"center", vertical:"center"}};
+  if(ws["A2"]) ws["A2"].s={font:{sz:11}, alignment:{horizontal:"center", vertical:"center"}};
+  for(const c of ["A3","B3","C3","D3","E3","F3","G3","H3"]){ if(ws[c]) ws[c].s=styles.colHeader; }
+  const startRow=4;
+  for(let i=0;i<dataCount;i++){
+    const r=startRow+i;
+    const rowMeta = rowsMeta && rowsMeta[i] ? rowsMeta[i] : null;
+    const rubro = rowMeta ? rowMeta.cells[1] : "";
+    const fillColor = colorForRubro(rubro);
+    const addr=(c)=>XLSX.utils.encode_cell({r:r-1,c});
+    for(const c of [0,1,2,3]){
+      const a=addr(c);
+      if(ws[a]) ws[a].s=withFill(styles.text, fillColor);
+    }
+    for(const c of [4,5,6]){
+      const a=addr(c);
+      if(ws[a]) ws[a].s=withFill(styles.num, fillColor);
+    }
+    const aPct=addr(7);
+    if(ws[aPct]) ws[aPct].s=withFill(styles.pct, fillColor);
+    if(rowMeta && rowMeta.isTotal){
+      for(const c of [0,1,2,3]){
+        const a=addr(c);
+        if(ws[a]) ws[a].s = Object.assign({}, ws[a].s || {}, {font:{bold:true}});
+      }
+      for(const c of [4,5,6,7]){
+        const a=addr(c);
+        if(ws[a]) ws[a].s = Object.assign({}, ws[a].s || {}, {font:{bold:true}});
+      }
+    }
+  }
+  ws["!freeze"]={xSplit:0, ySplit:3};
+}
 function buildExcel(proc){
   const styles=makeStyles();
   const wb=XLSX.utils.book_new();
@@ -1070,6 +1205,12 @@ function buildExcel(proc){
   XLSX.utils.book_append_sheet(wb, wsEr, incomeSheetName);
   applyBalanceResultFormula(wsBal, proc.balanceOut, proc.incomeOut, incomeSheetName);
 
+  const varDetail = buildVariationsDetailAOA(proc);
+  const wsVar = XLSX.utils.aoa_to_sheet(varDetail.aoa);
+  styleVariationsSheet(wsVar, styles, varDetail.dataCount, varDetail.rowsMeta);
+  XLSX.utils.book_append_sheet(wb, wsVar, "DetalleVariaciones");
+
+  /*
   const unm=proc.unmappedList;
   const aoaUnm=[
     ["CUENTAS NO INCLUIDAS (8 dígitos con saldo)"],
@@ -1092,6 +1233,7 @@ function buildExcel(proc){
   const wsVal=XLSX.utils.aoa_to_sheet(aoaVal);
   wsVal["!cols"]=[{wch:34},{wch:70}];
   XLSX.utils.book_append_sheet(wb, wsVal, "Validaciones");
+  */
 
   return wb;
 }
