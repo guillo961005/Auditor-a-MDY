@@ -137,6 +137,32 @@
         <div class="kpi"><div class="t">Cuentas 8 dígitos leídas (Anterior)</div><div class="v" id="kpiPrev">—</div></div>
         <div class="kpi"><div class="t">Cuentas no incluidas (saldo ≠ 0)</div><div class="v" id="kpiUnm">—</div></div>
       </div>
+      <div class="hint" style="margin-top:12px;">Reasignar por prefijo: mueve cuentas ya incluidas hacia otra linea.</div>
+      <div class="row" style="margin-top:8px;">
+        <div class="col">
+          <label>Codigo o prefijo</label>
+          <input id="movePrefix" type="text" placeholder="Ej: 413508 o 41350812"/>
+        </div>
+        <div class="col">
+          <label>Hoja destino</label>
+          <select id="moveSheet">
+            <option value="balance">Balance</option>
+            <option value="er">ER</option>
+          </select>
+        </div>
+        <div class="col">
+          <label>Linea destino</label>
+          <select id="moveLine"></select>
+        </div>
+      </div>
+      <div class="btns">
+        <button id="btnAddMove" type="button" disabled>Agregar reasignacion</button>
+        <button id="btnClearMoves" type="button" disabled>Limpiar reasignaciones</button>
+      </div>
+      <div class="hint">Ingresa 2-8 digitos. Menos de 8 = prefijo (incluye todas las cuentas que empiezan con ese numero).</div>
+      <div class="preview-wrap" style="margin-top:8px;">
+        <div class="preview" id="moveListTable"></div>
+      </div>
       <div id="unmappedPlacementWrap" style="margin-top:12px;">
         <div class="hint" style="margin-bottom:8px;">Ubica cada cuenta no incluida en una línea específica o crea una fila nueva y recalcula el reporte.</div>
         <div class="preview-wrap">
@@ -285,15 +311,24 @@ const MODEL = {
 };
 
 const STORAGE_KEY = "bg-er-custom-mappings-v1";
+const STORAGE_ROWS_KEY = "bg-er-custom-rows-v1";
+const STORAGE_MOVES_KEY = "bg-er-custom-moves-v1";
 let customMappings = [];
 let customRows = [];
-
-// ===== util =====
+let customMoves = [];
 const $ = (id)=>document.getElementById(id);
 const statusText = $("statusText");
 function setStatus(msg){ statusText.textContent = msg; }
 function safeStr(x){ return (x===undefined || x===null) ? "" : String(x).trim(); }
 function normHeader(s){ return safeStr(s).toUpperCase().replace(/\u00A0/g," ").replace(/[^A-Z0-9]/g,""); }
+function normalizeMoveDigits(raw){
+  const digits = safeStr(raw).replace(/\D/g, "");
+  if(digits.length < 2 || digits.length > 8) return "";
+  return digits;
+}
+function moveKey(pattern, sheet, idx){
+  return `${pattern}|${sheet}|${idx}`;
+}
 function parseYearFromName(name){ const m=String(name).match(/(19|20)\d{2}/); return m?parseInt(m[0],10):null; }
 function downloadText(filename, content, mime="text/plain"){
   const blob=new Blob([content],{type:mime});
@@ -343,11 +378,30 @@ function loadCustomMappings(){
     return [];
   }
 }
+function loadCustomMoves(){
+  try{
+    const raw = localStorage.getItem(STORAGE_MOVES_KEY);
+    if(!raw) return [];
+    const parsed = JSON.parse(raw);
+    if(!Array.isArray(parsed)) return [];
+    return parsed.filter((m)=>m && m.pattern && m.targetSheet && Number.isFinite(m.targetIndex));
+  } catch (err){
+    console.warn("No se pudo cargar reasignaciones.", err);
+    return [];
+  }
+}
 function saveCustomMappings(list){
   try{
     localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
   } catch (err){
     console.warn("No se pudo guardar mappings.", err);
+  }
+}
+function saveCustomMoves(list){
+  try{
+    localStorage.setItem(STORAGE_MOVES_KEY, JSON.stringify(list));
+  } catch (err){
+    console.warn("No se pudo guardar reasignaciones.", err);
   }
 }
 function clearCustomMappings(){
@@ -356,6 +410,14 @@ function clearCustomMappings(){
     localStorage.removeItem(STORAGE_KEY);
   } catch (err){
     console.warn("No se pudo limpiar mappings.", err);
+  }
+}
+function clearCustomMoves(){
+  customMoves = [];
+  try{
+    localStorage.removeItem(STORAGE_MOVES_KEY);
+  } catch (err){
+    console.warn("No se pudo limpiar reasignaciones.", err);
   }
 }
 function removeCustomMappingByCode(code8){
@@ -633,10 +695,40 @@ function buildAccounts(curRows, prevRows){
   }
   return m;
 }
-function mapAccountsToModel(lines, accounts, remaining0){
+function mapAccountsToModel(lines, accounts, remaining0, overrides){
   // remaining0: optional Set of code8 pending to assign (global consumption)
   const remaining = remaining0 ? new Set(remaining0) : new Set(accounts.keys());
   const vals = lines.map(()=>({current_raw:0, previous_raw:0, assigned_codes:[]}));
+
+  const forced = Array.isArray(overrides) ? overrides : [];
+  if(forced.length){
+    const normalized = [];
+    for(const ov of forced){
+      const digits = normalizeMoveDigits(ov.pattern || ov.code || ov.code8);
+      if(!digits) continue;
+      const idx = Number(ov.targetIndex);
+      if(!Number.isFinite(idx)) continue;
+      const line = lines[idx];
+      if(!line || !isLineEligibleForMapping(line)) continue;
+      normalized.push({digits, targetIndex: idx});
+    }
+    normalized.sort((a,b)=>b.digits.length - a.digits.length);
+    for(const ov of normalized){
+      const matcher = matcherFromDigits(ov.digits);
+      if(!matcher) continue;
+      const line = lines[ov.targetIndex];
+      if(!line) continue;
+      for(const code8 of Array.from(remaining)){
+        if(!matchCode(code8, matcher)) continue;
+        const a = accounts.get(code8);
+        if(!a){ remaining.delete(code8); continue; }
+        vals[line.idx].current_raw += a.cur;
+        vals[line.idx].previous_raw += a.prev;
+        vals[line.idx].assigned_codes.push(code8);
+        remaining.delete(code8);
+      }
+    }
+  }
 
   for(const line of lines){
     if(!line.hasGuide) continue;
@@ -1876,6 +1968,77 @@ function fmtPct(x){
 }
 function esc(s){ return String(s??"").replace(/[&<>"]/g, ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[ch])); }
 
+function buildLineOptions(lines){
+  return (lines || []).map((l, idx)=>`<option value="${idx}">${idx+1}. ${esc(l.concept||"")}</option>`).join("");
+}
+function buildMoveListTable(moves, balanceLines, incomeLines){
+  if(!moves || !moves.length){
+    return `<div class="hint">No hay reasignaciones guardadas.</div>`;
+  }
+  const rows = moves.map((m)=>{
+    const digits = normalizeMoveDigits(m.pattern || m.code || m.code8);
+    const sheet = m.targetSheet === "er" ? "ER" : "Balance";
+    const lineList = m.targetSheet === "er" ? incomeLines : balanceLines;
+    const line = lineList && Number.isFinite(m.targetIndex) ? lineList[m.targetIndex] : null;
+    const lineLabel = line ? `${m.targetIndex+1}. ${esc(line.concept||"")}` : `Linea ${Number(m.targetIndex)+1 || ""}`;
+    const type = digits && digits.length === 8 ? "Exacto" : "Prefijo";
+    const key = moveKey(digits || "", m.targetSheet === "er" ? "er" : "balance", Number(m.targetIndex));
+    return `
+    <tr>
+      <td class="code">${esc(digits || safeStr(m.pattern))}</td>
+      <td>${type}</td>
+      <td>${sheet}</td>
+      <td>${lineLabel}</td>
+      <td><button type="button" class="btn-remove-move" data-move-key="${esc(key)}">Quitar</button></td>
+    </tr>
+    `;
+  }).join("");
+  return `
+    <table>
+      <thead>
+        <tr>
+          <th style="width:120px;">Codigo</th>
+          <th style="width:90px;">Tipo</th>
+          <th style="width:90px;">Hoja</th>
+          <th>Linea destino</th>
+          <th style="width:120px;">Accion</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>
+  `;
+}
+function renderMoveControls(proc){
+  const table = $("moveListTable");
+  const sheetSel = $("moveSheet");
+  const lineSel = $("moveLine");
+  const btnAdd = $("btnAddMove");
+  const btnClear = $("btnClearMoves");
+  if(!table || !sheetSel || !lineSel || !btnAdd || !btnClear) return;
+  btnClear.disabled = !(customMoves && customMoves.length);
+  if(!proc){
+    table.innerHTML = `<div class="hint">Procesa primero para habilitar reasignaciones.</div>`;
+    btnAdd.disabled = true;
+    lineSel.innerHTML = "";
+    return;
+  }
+  const sheetVal = sheetSel.value === "er" ? "er" : "balance";
+  const lines = sheetVal === "er" ? proc.incomeLines : proc.balanceLines;
+  lineSel.innerHTML = buildLineOptions(lines);
+  btnAdd.disabled = false;
+  table.innerHTML = buildMoveListTable(customMoves, proc.balanceLines, proc.incomeLines);
+  table.querySelectorAll(".btn-remove-move").forEach((btn)=>{
+    btn.addEventListener("click", ()=>{
+      const key = btn.dataset.moveKey;
+      if(!key) return;
+      const next = customMoves.filter((m)=>moveKey(normalizeMoveDigits(m.pattern || m.code || m.code8), m.targetSheet, m.targetIndex) !== key);
+      customMoves = next;
+      saveCustomMoves(customMoves);
+      runProcessing();
+      setStatus(`Reasignacion eliminada: ${key}.`);
+    });
+  });
+}
 function buildUnmappedPlacementTable(unmapped, balanceLines, incomeLines, mappings){
   if(!unmapped || !unmapped.length){
     return `<div class="hint">No hay cuentas no incluidas para ubicar.</div>`;
@@ -2028,6 +2191,7 @@ function renderUnmappedPlacements(proc){
     });
   });
   refreshCustomMappingsOutput();
+  renderMoveControls(proc);
 }
 // ===== UI =====
 let figuresWB=null;
@@ -2068,7 +2232,8 @@ $("figuresFile").addEventListener("change", async (e)=>{
 
 function computeStatement(modelRows, accounts, remaining0, options={}){
   const lines=buildLineDefs(modelRows);
-  const {vals, remaining}=mapAccountsToModel(lines, accounts, remaining0);
+  const forced = options.moves || [];
+  const {vals, remaining}=mapAccountsToModel(lines, accounts, remaining0, forced);
   computeTotalsByColors(lines, vals, options);
   return {lines, vals, remaining};
 }
@@ -2100,8 +2265,11 @@ function applyOverridesAndProcess(params={}){
   let effectiveModel = buildModelWithCustomMappings(MODEL, mergedMappings);
   effectiveModel = buildModelWithCustomRows(effectiveModel, extraRows);
 
-  const bal=computeStatement(effectiveModel.balance, accounts);
-  const er=computeStatement(effectiveModel.er, accounts, bal.remaining, {isIncomeStatement:true});
+  const moveOverrides = Array.isArray(customMoves) ? customMoves : [];
+  const balMoves = moveOverrides.filter(m=>m.targetSheet === "balance");
+  const erMoves = moveOverrides.filter(m=>m.targetSheet === "er");
+  const bal=computeStatement(effectiveModel.balance, accounts, null, {moves: balMoves});
+  const er=computeStatement(effectiveModel.er, accounts, bal.remaining, {isIncomeStatement:true, moves: erMoves});
 
   // Resultado del ejercicio (Balance <- ER), luego recalcular totales
   injectResultIntoBalance(bal.lines, bal.vals, er.lines, er.vals);
@@ -2161,8 +2329,8 @@ function applyOverridesAndProcess(params={}){
         income_statement: "Participación sobre Total Ingresos (detectado por 'TOTAL INGRESOS' o fallback)"
       },
       custom_mappings: customMappings,
+      custom_moves: customMoves,
       custom_rows: extraRows
-    },
     balance:{lines: balanceOut},
     income_statement:{lines: incomeOut},
     unmapped_accounts: unmapped
@@ -2239,6 +2407,29 @@ function gatherPlacements(){
   return {extraMappings, extraRows};
 }
 
+function addMoveFromUI(){
+  if(!processed) return;
+  const raw = $("movePrefix")?.value || "";
+  const digits = normalizeMoveDigits(raw);
+  if(!digits){
+    alert("Ingresa un codigo de 2 a 8 digitos.");
+    return;
+  }
+  const sheetSel = $("moveSheet");
+  const lineSel = $("moveLine");
+  if(!sheetSel || !lineSel) return;
+  const targetSheet = sheetSel.value === "er" ? "er" : "balance";
+  const idx = Number(lineSel.value);
+  if(!Number.isFinite(idx)) return;
+  const key = moveKey(digits, targetSheet, idx);
+  const next = new Map(customMoves.map((m)=>[moveKey(normalizeMoveDigits(m.pattern || m.code || m.code8), m.targetSheet, m.targetIndex), m]));
+  next.set(key, {pattern: digits, targetSheet, targetIndex: idx, updatedAt: new Date().toISOString()});
+  customMoves = Array.from(next.values());
+  saveCustomMoves(customMoves);
+  if($("movePrefix")) $("movePrefix").value = "";
+  runProcessing();
+  setStatus(`Reasignacion guardada: ${digits} -> ${targetSheet}:${idx+1}.`);
+}
 function applySavedMappingsToModel(){
   return buildModelWithCustomMappings(MODEL, customMappings);
 }
@@ -2258,6 +2449,19 @@ function runProcessing(){
 
 $("btnProcess").addEventListener("click", runProcessing);
 
+$("moveSheet").addEventListener("change", ()=>renderMoveControls(processed));
+$("btnAddMove").addEventListener("click", addMoveFromUI);
+$("btnClearMoves").addEventListener("click", ()=>{
+  clearCustomMoves();
+  runProcessing();
+  setStatus("Reasignaciones limpiadas.");
+});
+$("movePrefix").addEventListener("keydown", (e)=>{
+  if(e.key === "Enter"){
+    e.preventDefault();
+    addMoveFromUI();
+  }
+});
 $("btnApplyUnmapped").addEventListener("click", ()=>{
   if(!processed) return;
   const {extraMappings, extraRows} = gatherPlacements();
@@ -2342,6 +2546,8 @@ $("btnExcel").addEventListener("click", ()=>{
 
 customMappings = loadCustomMappings();
 refreshCustomMappingsOutput();
+customMoves = loadCustomMoves();
+renderMoveControls(null);
 </script>
 </body>
 </html>
