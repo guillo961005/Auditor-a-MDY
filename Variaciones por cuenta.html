@@ -1,0 +1,776 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Comparativo A vs B (un Excel - dos hojas)</title>
+  <style>
+    :root {
+      --ink: #1b1f24;
+      --muted: #5b6673;
+      --bd: #e0e5ea;
+      --panel: #ffffff;
+      --bg1: #f3f5f8;
+      --bg2: #e8edf2;
+      --accent: #0b3a5b;
+      --accent-2: #9a7b2f;
+      --shadow: 0 10px 24px rgba(16,24,40,.08), 0 4px 10px rgba(16,24,40,.06);
+    }
+    body {
+      font-family: "Calibri", "Candara", "Trebuchet MS", sans-serif;
+      margin: 22px;
+      color: var(--ink);
+      background:
+        linear-gradient(135deg, var(--bg1), var(--bg2)),
+        repeating-linear-gradient(45deg, rgba(11,58,91,.03) 0, rgba(11,58,91,.03) 1px, transparent 1px, transparent 10px);
+      min-height: 100vh;
+    }
+    h1 {
+      font-family: "Georgia", "Garamond", serif;
+      font-size: 20px;
+      margin: 0 0 14px;
+      letter-spacing: .2px;
+    }
+    h2 {
+      font-family: "Georgia", "Garamond", serif;
+      font-size: 12px;
+      margin: 18px 0 8px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--accent);
+    }
+    .card {
+      border: 1px solid var(--bd);
+      border-radius: 14px;
+      padding: 16px;
+      margin-bottom: 14px;
+      background: var(--panel);
+      box-shadow: var(--shadow);
+    }
+    label {
+      font-size: 12px;
+      color: var(--muted);
+      display: block;
+      margin: 8px 0 4px;
+    }
+    input[type="file"], select, input[type="text"] {
+      width: 100%;
+      padding: 9px 10px;
+      border: 1px solid var(--bd);
+      border-radius: 8px;
+      background: #fff;
+    }
+    button {
+      padding: 10px 12px;
+      border: 1px solid var(--bd);
+      background: #f6f7f9;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: transform .08s ease, box-shadow .08s ease;
+    }
+    button:hover { transform: translateY(-1px); box-shadow: 0 6px 14px rgba(0,0,0,.08); }
+    button.primary {
+      background: linear-gradient(180deg, #0b3a5b, #092f49);
+      color: white;
+      border-color: #092b43;
+      box-shadow: 0 8px 18px rgba(11,58,91,.25);
+    }
+    button:disabled { opacity: .6; cursor: not-allowed; box-shadow: none; transform: none; }
+    .muted { color: var(--muted); font-size: 12px; }
+    .pill {
+      display: inline-block;
+      padding: 4px 10px;
+      border: 1px solid rgba(11,58,91,.2);
+      border-radius: 999px;
+      font-size: 12px;
+      background: rgba(11,58,91,.06);
+      margin: 4px 6px 0 0;
+    }
+    table { width: 100%; border-collapse: collapse; font-size: 12px; background: #fff; }
+    th, td { border: 1px solid var(--bd); padding: 6px 8px; vertical-align: top; }
+    th {
+      background: var(--accent);
+      color: #fff;
+      text-align: left;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+    tbody tr:nth-child(even) td { background: #f9fafb; }
+    tbody tr:hover td { background: #eef3f7; }
+    .right { text-align: right; }
+    .nowrap { white-space: nowrap; }
+    .scroll {
+      max-height: 520px;
+      overflow: auto;
+      border: 1px solid var(--bd);
+      border-radius: 10px;
+      background: #fff;
+    }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+  </style>
+</head>
+<body>
+  <h1>Comparativo de cuentas – Ranking de incremento / reducción (un Excel con dos hojas)</h1>
+
+  <div class="card">
+    <label>Excel (debe contener dos hojas: Periodo A y Periodo B)</label>
+    <input id="fileX" type="file" accept=".xlsx,.xls" />
+    <div class="muted" id="metaX">Sin archivo cargado.</div>
+
+    <div class="row" style="margin-top:10px;">
+      <div>
+        <label>Hoja Periodo A</label>
+        <select id="sheetA" disabled></select>
+      </div>
+      <div>
+        <label>Hoja Periodo B</label>
+        <select id="sheetB" disabled></select>
+      </div>
+    </div>
+
+    <div class="row" style="margin-top:10px;">
+      <div>
+        <label>Filtro opcional: Cuenta contable (CODICTA) exacta</label>
+        <input id="filterCuenta" type="text" placeholder="Ej: 52353001 (vacío = todas)" />
+      </div>
+      <div>
+        <label>Orden del ranking</label>
+        <select id="orderMode">
+          <option value="var">Variación (B-A) – recomendado</option>
+          <option value="abs">Mayor impacto (|Variación|)</option>
+          <option value="pos">Mayor incremento (Variación más positiva)</option>
+          <option value="neg">Mayor reducción (Variación más negativa)</option>
+        </select>
+      </div>
+    </div>
+    <div class="row" style="margin-top:10px;">
+      <div>
+        <label>Valor calculado (si no existe VALOR/VALORTRA)</label>
+        <select id="valueMode">
+          <option value="deb-cred">Débitos - Créditos (recomendado)</option>
+          <option value="cred-deb">Créditos - Débitos</option>
+        </select>
+      </div>
+      <div class="muted" style="align-self:end;">
+        Si tu archivo ya trae VALOR/VALORTRA, se usa ese campo.
+      </div>
+    </div>
+
+    <div style="margin-top:12px; display:flex; gap:10px; flex-wrap:wrap;">
+      <button id="btnRun" class="primary" disabled>Generar ranking</button>
+      <button id="btnCSV" disabled>Exportar ranking a Excel</button>
+      <button id="btnCSVCenco" disabled>Exportar centros de costo a Excel</button>
+      <button id="btnCSVDelta" disabled>Exportar “nuevas/eliminadas/terceros” a Excel</button>
+      <span class="muted" id="status"></span>
+    </div>
+    <div class="muted" id="colStatus" style="margin-top:6px;"></div>
+
+    <div class="muted" style="margin-top:8px;">
+      Procesamiento 100% local (navegador). No usa internet.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>KPIs</h2>
+    <div id="kpis"></div>
+  </div>
+
+  <div class="card">
+    <h2>Centro de costo (resumen)</h2>
+    <div class="scroll">
+      <table id="tblCenco">
+        <thead>
+          <tr>
+            <th class="nowrap">C. costo</th>
+            <th>Nombre centro de costo</th>
+            <th class="right nowrap">Valor A</th>
+            <th class="right nowrap">Valor B</th>
+            <th class="right nowrap">Variación (B-A)</th>
+            <th class="right nowrap">% Variación</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div class="muted" style="margin-top:8px;">
+      % Variación = (B - A) / A. Si A = 0, se muestra N/A.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Ranking por línea (Tercero + Centro de costo + Cuenta + Descripcion)</h2>
+    <div class="scroll">
+      <table id="tblRanking">
+        <thead>
+          <tr>
+            <th>Tercero</th>
+            <th class="nowrap">NIT</th>
+            <th class="nowrap">C. costo</th>
+            <th>Nombre centro de costo</th>
+            <th class="nowrap">Cuenta</th>
+            <th>Descripcion transaccion</th>
+            <th class="right nowrap">Valor A</th>
+            <th class="right nowrap">Valor B</th>
+            <th class="right nowrap">Variación (B-A)</th>
+            <th class="right nowrap">Impacto |Var|</th>
+            <th class="right nowrap">% acum. impacto</th>
+            <th>Tipo</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div class="muted" style="margin-top:8px;">
+      Tipo: <b>Nueva</b> (solo en B), <b>Eliminada</b> (solo en A), <b>Común</b> (en ambos).
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Terceros (NIT) nuevos / desaparecen</h2>
+    <div class="grid3">
+      <div>
+        <div class="pill">Terceros nuevos en B</div>
+        <div class="scroll" style="max-height:240px;">
+          <table id="tblNewThird">
+            <thead><tr><th>NIT</th><th>Razón social</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+      <div>
+        <div class="pill">Terceros que desaparecen (solo A)</div>
+        <div class="scroll" style="max-height:240px;">
+          <table id="tblGoneThird">
+            <thead><tr><th>NIT</th><th>Razón social</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="muted">
+        <b>Nota:</b> “Tercero nuevo” = NIT en B que no está en A.  
+        Si cambia solo la razón social pero el NIT es igual, no cuenta como nuevo.
+      </div>
+    </div>
+  </div>
+
+  <!-- Librerías locales (NO CDN) -->
+  <script src="./xlsx.full.min.js"></script>
+  <!-- Opcional para exportar a Excel con estilos más adelante -->
+  <script src="./xlsx-js-style.min.js"></script>
+
+  <script>
+    // =========================
+    // Mapeo de columnas
+    // =========================
+    // Ajusta si tu Zeus exporta nombres distintos.
+    const COL_ALIASES = {
+      nit:       ["NITTRA", "IDTERCERO", "NIT"],
+      tercero:   ["NOMBRETER", "Desc3ro", "DescProveedor", "DescCliente", "RazonSocial", "Proveedor"],
+      cenco:     ["IDCENCO", "CENCO", "CENTROCOSTO"],
+      cencoDesc: ["DESCENCO", "DetalleMostrar", "DescCenco", "DescMostrar", "NombreCentroCosto"],
+      cuenta:    ["CODICTA", "CUENTA", "CODCTA"],
+      descri:    ["DESCRITRA", "DESCRIPCION", "DESCRIPTRA"],
+      valor:     ["VALORTRA", "Valor", "VALOR"],
+      debitos:   ["DEBITOS", "DEBITO", "DB"],
+      creditos:  ["CREDITOS", "CREDITO", "CR"]
+    };
+
+    const el = (id) => document.getElementById(id);
+    const fileX = el("fileX");
+    const sheetA = el("sheetA");
+    const sheetB = el("sheetB");
+    const metaX = el("metaX");
+    const status = el("status");
+    const colStatus = el("colStatus");
+    const btnRun = el("btnRun");
+    const btnCSV = el("btnCSV");
+    const btnCSVCenco = el("btnCSVCenco");
+    const btnCSVDelta = el("btnCSVDelta");
+    const filterCuenta = el("filterCuenta");
+    const orderMode = el("orderMode");
+    const valueMode = el("valueMode");
+    const kpis = el("kpis");
+
+    const state = {
+      wb: null,
+      rankingRows: null,
+      deltaExport: null,
+      cencoRows: null
+    };
+
+    // Normalización y parse numérico
+    const norm = (v) => (v ?? "").toString().replace(/\u00A0/g, " ").trim();
+    const normKey = (v) => norm(v).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+    const toNum = (v) => {
+      if (v === null || v === undefined || v === "") return 0;
+      if (typeof v === "number") return isFinite(v) ? v : 0;
+      let s = v.toString().trim();
+      if (!s) return 0;
+      let neg = false;
+      if (s.startsWith("(") && s.endsWith(")")) {
+        neg = true;
+        s = s.slice(1, -1);
+      }
+      s = s.replace(/\s/g, "").replace(/[^\d,.\-]/g, "");
+      const hasDot = s.includes(".");
+      const hasComma = s.includes(",");
+      if (hasDot && hasComma) {
+        if (s.lastIndexOf(",") > s.lastIndexOf(".")) {
+          s = s.replace(/\./g, "").replace(/,/g, ".");
+        } else {
+          s = s.replace(/,/g, "");
+        }
+      } else if (hasComma && !hasDot) {
+        s = s.replace(/,/g, ".");
+      }
+      const n = Number(s);
+      if (!isFinite(n)) return 0;
+      return neg ? -n : n;
+    };
+    const fmtMoney = (n) => n.toLocaleString("es-CO", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const fmtPct = (n) => (n === null || n === undefined || !isFinite(n)) ? "N/A" : `${n.toFixed(2)}%`;
+
+    function resolveMapping(rows) {
+      const headerMap = new Map();
+      for (const r of rows) {
+        const keys = Object.keys(r || {});
+        if (!keys.length) continue;
+        for (const k of keys) {
+          const nk = normKey(k);
+          if (!headerMap.has(nk)) headerMap.set(nk, k);
+        }
+        if (headerMap.size) break;
+      }
+      const resolved = {};
+      const missing = [];
+      for (const [field, aliases] of Object.entries(COL_ALIASES)) {
+        let found = null;
+        for (const a of aliases) {
+          const nk = normKey(a);
+          if (headerMap.has(nk)) { found = headerMap.get(nk); break; }
+        }
+        resolved[field] = found;
+        if (!found) missing.push(field);
+      }
+      return { resolved, missing };
+    }
+
+    function getVal(row, colMap, field) {
+      const k = colMap[field];
+      return k ? row[k] : "";
+    }
+
+    function downloadCSV(filename, rows) {
+      const esc = (x) => `"${(x ?? "").toString().replace(/"/g,'""')}"`;
+      const csv = rows.map(r => r.map(esc).join(",")).join("\n");
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    function makeStyle(isHeader, type) {
+      const isNum = type === "money" || type === "number" || type === "pct";
+      const base = {
+        alignment: {
+          horizontal: isHeader ? "center" : (isNum ? "right" : "left"),
+          vertical: "center",
+          wrapText: true
+        },
+        border: {
+          top: { style: "thin", color: { rgb: "D0D7DE" } },
+          bottom: { style: "thin", color: { rgb: "D0D7DE" } },
+          left: { style: "thin", color: { rgb: "D0D7DE" } },
+          right: { style: "thin", color: { rgb: "D0D7DE" } }
+        }
+      };
+      if (isHeader) {
+        base.font = { bold: true, color: { rgb: "FFFFFF" } };
+        base.fill = { fgColor: { rgb: "0B3A5B" } };
+      }
+      return base;
+    }
+
+    function autoCols(rows) {
+      if (!rows || !rows.length) return [];
+      const cols = rows[0].map(() => 10);
+      for (const r of rows) {
+        r.forEach((v, i) => {
+          const len = (v === null || v === undefined) ? 0 : v.toString().length;
+          if (len + 2 > cols[i]) cols[i] = Math.min(Math.max(len + 2, 10), 50);
+        });
+      }
+      return cols.map(w => ({ wch: w }));
+    }
+
+    function downloadXLSX(filename, sheetName, rows, colTypes) {
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.aoa_to_sheet(rows);
+      ws["!cols"] = autoCols(rows);
+
+      const range = XLSX.utils.decode_range(ws["!ref"]);
+      const headerStyles = colTypes.map((t) => makeStyle(true, t));
+      const bodyStyles = colTypes.map((t) => makeStyle(false, t));
+
+      for (let r = range.s.r; r <= range.e.r; r++) {
+        for (let c = range.s.c; c <= range.e.c; c++) {
+          const addr = XLSX.utils.encode_cell({ r, c });
+          const cell = ws[addr];
+          if (!cell) continue;
+          const isHeader = r === 0;
+          cell.s = isHeader ? headerStyles[c] : bodyStyles[c];
+          if (!isHeader) {
+            const t = colTypes[c];
+            if (t === "money" || t === "number") cell.z = "#,##0.00";
+            if (t === "pct") cell.z = "0.00%";
+          }
+        }
+      }
+
+      XLSX.utils.book_append_sheet(wb, ws, sheetName);
+      XLSX.writeFile(wb, filename);
+    }
+
+    fileX.addEventListener("change", async () => {
+      const f = fileX.files?.[0];
+      if (!f) return;
+
+      status.textContent = "Leyendo archivo...";
+      const data = await f.arrayBuffer();
+      state.wb = XLSX.read(data, { type: "array" });
+      state.rankingRows = null;
+      state.cencoRows = null;
+      state.deltaExport = null;
+
+      metaX.textContent = `${f.name} (${(f.size/1024).toFixed(1)} KB) – Hojas: ${state.wb.SheetNames.length}`;
+      sheetA.innerHTML = "";
+      sheetB.innerHTML = "";
+
+      state.wb.SheetNames.forEach((name, i) => {
+        const optA = document.createElement("option");
+        optA.value = name; optA.textContent = name;
+        sheetA.appendChild(optA);
+
+        const optB = document.createElement("option");
+        optB.value = name; optB.textContent = name;
+        sheetB.appendChild(optB);
+
+        if (i === 0) sheetA.value = name;
+        if (i === 1) sheetB.value = name; // si hay 2 hojas, deja la 2 como B por defecto
+      });
+
+      sheetA.disabled = false;
+      sheetB.disabled = false;
+      btnRun.disabled = !(sheetA.value && sheetB.value);
+      btnCSV.disabled = true;
+      btnCSVCenco.disabled = true;
+      btnCSVDelta.disabled = true;
+      status.textContent = "Archivo cargado. Selecciona hojas A y B.";
+      colStatus.textContent = "";
+    });
+
+    btnRun.addEventListener("click", () => {
+      try {
+        if (!state.wb) throw new Error("No hay archivo cargado.");
+        const shA = sheetA.value;
+        const shB = sheetB.value;
+        if (!shA || !shB) throw new Error("Selecciona hoja A y hoja B.");
+        if (shA === shB) throw new Error("Hoja A y B no pueden ser la misma.");
+
+        const rowsA = sheetToRows(state.wb, shA);
+        const rowsB = sheetToRows(state.wb, shB);
+
+        const cuentaFiltro = norm(filterCuenta.value);
+        const { results, kpi, thirds, deltaExport, cencoRows, mapInfoA, mapInfoB } = buildComparison(rowsA, rowsB, cuentaFiltro);
+
+        state.rankingRows = results;
+        state.deltaExport = deltaExport;
+        state.cencoRows = cencoRows;
+
+        renderKPIs(kpi, thirds, shA, shB);
+        renderCencos(cencoRows);
+        renderRanking(results);
+        renderThirds(thirds);
+        renderColStatus(mapInfoA, mapInfoB);
+
+        btnCSV.disabled = false;
+        btnCSVCenco.disabled = false;
+        btnCSVDelta.disabled = false;
+        if (mapInfoA.missing.length || mapInfoB.missing.length) {
+          status.textContent = "Atención: faltan columnas. Revisa el detalle de columnas detectadas.";
+        } else {
+          status.textContent = "OK. Ranking generado.";
+        }
+      } catch (e) {
+        console.error(e);
+        status.textContent = "Error: " + (e?.message || e);
+      }
+    });
+
+    btnCSV.addEventListener("click", () => {
+      if (!state.rankingRows) return;
+      const rows = [["NOMBRETER","NITTRA","IDCENCO","DESCENCO","CODICTA","DESCRITRA","Valor_A","Valor_B","Variación","Impacto_abs","%AcumuladoImpacto","Tipo"]];
+      for (const r of state.rankingRows) {
+        rows.push([r.tercero, r.nit, r.cenco, r.cencoDesc, r.cuenta, r.descri, r.a, r.b, r.variacion, r.impacto, r.pctAcc / 100, r.tipo]);
+      }
+      downloadXLSX("ranking_variacion.xlsx", "Ranking", rows, ["text","text","text","text","text","text","money","money","money","money","pct","text"]);
+    });
+
+    btnCSVCenco.addEventListener("click", () => {
+      if (!state.cencoRows) return;
+      const rows = [["IDCENCO","DESCENCO","Valor_A","Valor_B","Variación","%Variación"]];
+      for (const r of state.cencoRows) {
+        rows.push([r.cenco, r.cencoDesc, r.a, r.b, r.variacion, r.pctVar === null ? null : (r.pctVar / 100)]);
+      }
+      downloadXLSX("centros_costo_variacion.xlsx", "CentrosCosto", rows, ["text","text","money","money","money","pct"]);
+    });
+
+    btnCSVDelta.addEventListener("click", () => {
+      if (!state.deltaExport) return;
+      downloadXLSX("nuevos_eliminados_terceros.xlsx", "Delta", state.deltaExport, ["text","text","text","text"]);
+    });
+
+    function sheetToRows(wb, sheetName) {
+      const ws = wb.Sheets[sheetName];
+      // defval:"" mantiene estructura
+      return XLSX.utils.sheet_to_json(ws, { defval: "" });
+    }
+
+    function buildComparison(rowsA, rowsB, cuentaFiltro) {
+      const mapA = new Map();
+      const mapB = new Map();
+      const thirdsA = new Map(); // nit -> razon
+      const thirdsB = new Map();
+      const cencoA = new Map();
+      const cencoB = new Map();
+      const mapInfoA = resolveMapping(rowsA);
+      const mapInfoB = resolveMapping(rowsB);
+      const vm = valueMode.value;
+
+      const adjustMissing = (info) => {
+        if (!info.resolved.valor && (info.resolved.debitos || info.resolved.creditos)) {
+          info.missing = info.missing.filter((m) => m !== "valor");
+        }
+      };
+      adjustMissing(mapInfoA);
+      adjustMissing(mapInfoB);
+
+      const ingest = (rows, map, thirdsMap, cencoMap, colMap) => {
+        for (const r of rows) {
+          const cuenta = norm(getVal(r, colMap, "cuenta"));
+          if (cuentaFiltro && cuenta !== cuentaFiltro) continue;
+
+          const nit = norm(getVal(r, colMap, "nit"));
+          const tercero = norm(getVal(r, colMap, "tercero"));
+          const cenco = norm(getVal(r, colMap, "cenco"));
+          const cencoDesc = norm(getVal(r, colMap, "cencoDesc"));
+          const descri = norm(getVal(r, colMap, "descri"));
+          const valorRaw = getVal(r, colMap, "valor");
+          let valor = toNum(valorRaw);
+          if (!valor && valorRaw !== 0 && valorRaw !== "0") {
+            const deb = toNum(getVal(r, colMap, "debitos"));
+            const cre = toNum(getVal(r, colMap, "creditos"));
+            if (deb || cre) valor = (vm === "cred-deb") ? (cre - deb) : (deb - cre);
+          }
+
+          // evitar basura (filas vacías)
+          if (!nit && !tercero && !cenco && !cuenta && !descri) continue;
+
+          const key = [nit, tercero, cenco, cencoDesc, cuenta, descri].join("||");
+          map.set(key, (map.get(key) || 0) + valor);
+
+          if (nit && !thirdsMap.has(nit)) thirdsMap.set(nit, tercero);
+
+          if (cenco || cencoDesc) {
+            const ck = [cenco, cencoDesc].join("||");
+            cencoMap.set(ck, (cencoMap.get(ck) || 0) + valor);
+          }
+        }
+      };
+
+      ingest(rowsA, mapA, thirdsA, cencoA, mapInfoA.resolved);
+      ingest(rowsB, mapB, thirdsB, cencoB, mapInfoB.resolved);
+
+      const keys = new Set([...mapA.keys(), ...mapB.keys()]);
+      const results = [];
+      let totalA = 0, totalB = 0;
+
+      for (const k of keys) {
+        const a = mapA.get(k) || 0;
+        const b = mapB.get(k) || 0;
+        totalA += a; totalB += b;
+
+        const [nit, tercero, cenco, cencoDesc, cuenta, descri] = k.split("||");
+        const variacion = b - a;
+        const impacto = Math.abs(variacion);
+
+        let tipo = "Común";
+        if (!mapA.has(k) && mapB.has(k)) tipo = "Nueva";
+        if (mapA.has(k) && !mapB.has(k)) tipo = "Eliminada";
+
+        results.push({ nit, tercero, cenco, cencoDesc, cuenta, descri, a, b, variacion, impacto, tipo });
+      }
+
+      // Orden
+      const mode = orderMode.value;
+      if (mode === "var") results.sort((x,y) => y.variacion - x.variacion);
+      if (mode === "abs") results.sort((x,y) => y.impacto - x.impacto);
+      if (mode === "neg") results.sort((x,y) => x.variacion - y.variacion);
+      if (mode === "pos") results.sort((x,y) => y.variacion - x.variacion);
+
+      // acumulado por impacto (tipo Pareto)
+      const totalImpacto = results.reduce((s,r) => s + r.impacto, 0) || 1;
+      let acc = 0;
+      for (const r of results) {
+        acc += (r.impacto / totalImpacto) * 100;
+        r.pctAcc = acc;
+      }
+
+      // terceros nuevos / desaparecen
+      const newThirds = [];
+      const goneThirds = [];
+      for (const [nit, rs] of thirdsB.entries()) if (!thirdsA.has(nit)) newThirds.push({ nit, rs });
+      for (const [nit, rs] of thirdsA.entries()) if (!thirdsB.has(nit)) goneThirds.push({ nit, rs });
+      newThirds.sort((a,b)=>a.nit.localeCompare(b.nit));
+      goneThirds.sort((a,b)=>a.nit.localeCompare(b.nit));
+
+      const kpi = {
+        totalA, totalB,
+        variacionTotal: totalB - totalA,
+        countLineas: results.length,
+        countNuevas: results.filter(r => r.tipo === "Nueva").length,
+        countEliminadas: results.filter(r => r.tipo === "Eliminada").length
+      };
+
+      // resumen por centro de costo
+      const cencoKeys = new Set([...cencoA.keys(), ...cencoB.keys()]);
+      const cencoRows = [];
+      for (const k of cencoKeys) {
+        const a = cencoA.get(k) || 0;
+        const b = cencoB.get(k) || 0;
+        const [cenco, cencoDesc] = k.split("||");
+        const variacion = b - a;
+        const pctVar = a === 0 ? null : (variacion / a) * 100;
+        cencoRows.push({ cenco, cencoDesc, a, b, variacion, pctVar });
+      }
+      cencoRows.sort((x,y) => y.variacion - x.variacion);
+
+      // CSV “delta”: una sola salida con secciones
+      const deltaExport = [];
+      deltaExport.push(["SECCION","NIT","RAZON_SOCIAL","OBS"]);
+      deltaExport.push(["TERCEROS_NUEVOS_EN_B","","",""]);
+      for (const t of newThirds) deltaExport.push(["TERCERO_NUEVO", t.nit, t.rs, "Existe en B y no en A"]);
+      deltaExport.push(["TERCEROS_DESAPARECEN_SOLO_A","","",""]);
+      for (const t of goneThirds) deltaExport.push(["TERCERO_DESAPARECE", t.nit, t.rs, "Existe en A y no en B"]);
+      deltaExport.push(["LINEAS_NUEVAS_ELIMINADAS","","",""]);
+      for (const r of results.filter(x=>x.tipo!=="Común")) {
+        deltaExport.push([`LINEA_${r.tipo.toUpperCase()}`, r.nit, r.tercero, `CC:${r.cenco} ${r.cencoDesc} | CTA:${r.cuenta} | DESC:${r.descri} | A:${r.a} | B:${r.b}`]);
+      }
+
+      return { results, kpi, thirds: { newThirds, goneThirds }, deltaExport, cencoRows, mapInfoA, mapInfoB };
+    }
+
+    function renderKPIs(kpi, thirds, shA, shB) {
+      const items = [
+        ["Hoja A", shA],
+        ["Hoja B", shB],
+        ["Total A", fmtMoney(kpi.totalA)],
+        ["Total B", fmtMoney(kpi.totalB)],
+        ["Variación (B-A)", fmtMoney(kpi.variacionTotal)],
+        ["# Líneas", kpi.countLineas],
+        ["# Líneas nuevas", kpi.countNuevas],
+        ["# Líneas eliminadas", kpi.countEliminadas],
+        ["# Terceros nuevos", thirds.newThirds.length],
+        ["# Terceros desaparecen", thirds.goneThirds.length]
+      ];
+      kpis.innerHTML = items.map(([k,v]) => `<span class="pill"><b>${k}:</b> ${v}</span>`).join("");
+    }
+
+    function renderCencos(rows) {
+      const tb = document.querySelector("#tblCenco tbody");
+      tb.innerHTML = "";
+      for (const r of rows) {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td class="nowrap">${r.cenco}</td>
+          <td>${r.cencoDesc}</td>
+          <td class="right nowrap">${fmtMoney(r.a)}</td>
+          <td class="right nowrap">${fmtMoney(r.b)}</td>
+          <td class="right nowrap">${fmtMoney(r.variacion)}</td>
+          <td class="right nowrap">${fmtPct(r.pctVar)}</td>
+        `;
+        tb.appendChild(tr);
+      }
+    }
+
+    function renderColStatus(mapInfoA, mapInfoB) {
+      const labels = {
+        nit: "NIT",
+        tercero: "Tercero",
+        cenco: "CentroCosto",
+        cencoDesc: "NombreCenco",
+        cuenta: "Cuenta",
+        descri: "Descripcion",
+        valor: "Valor",
+        debitos: "Debitos",
+        creditos: "Creditos"
+      };
+      const fmt = (res) => Object.keys(labels)
+        .map((k) => `${labels[k]}=${res[k] || "NO ENCONTRADO"}`)
+        .join(" | ");
+      const miss = (missing) => missing.length
+        ? `Faltan: ${missing.map(k => labels[k] || k).join(", ")}`
+        : "OK";
+      colStatus.innerHTML =
+        `<div><b>Columnas detectadas A:</b> ${fmt(mapInfoA.resolved)}. ${miss(mapInfoA.missing)}</div>` +
+        `<div><b>Columnas detectadas B:</b> ${fmt(mapInfoB.resolved)}. ${miss(mapInfoB.missing)}</div>`;
+    }
+
+    function renderRanking(rows) {
+      const tb = document.querySelector("#tblRanking tbody");
+      tb.innerHTML = "";
+      for (const r of rows) {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${r.tercero}</td>
+          <td class="nowrap">${r.nit}</td>
+          <td class="nowrap">${r.cenco}</td>
+          <td>${r.cencoDesc}</td>
+          <td class="nowrap">${r.cuenta}</td>
+          <td>${r.descri}</td>
+          <td class="right nowrap">${fmtMoney(r.a)}</td>
+          <td class="right nowrap">${fmtMoney(r.b)}</td>
+          <td class="right nowrap">${fmtMoney(r.variacion)}</td>
+          <td class="right nowrap">${fmtMoney(r.impacto)}</td>
+          <td class="right nowrap">${r.pctAcc.toFixed(2)}%</td>
+          <td>${r.tipo}</td>
+        `;
+        tb.appendChild(tr);
+      }
+    }
+
+    function renderThirds(thirds) {
+      const tbN = document.querySelector("#tblNewThird tbody");
+      const tbG = document.querySelector("#tblGoneThird tbody");
+      tbN.innerHTML = "";
+      tbG.innerHTML = "";
+      for (const t of thirds.newThirds) {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td class="nowrap">${t.nit}</td><td>${t.rs}</td>`;
+        tbN.appendChild(tr);
+      }
+      for (const t of thirds.goneThirds) {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td class="nowrap">${t.nit}</td><td>${t.rs}</td>`;
+        tbG.appendChild(tr);
+      }
+    }
+  </script>
+</body>
+</html>
