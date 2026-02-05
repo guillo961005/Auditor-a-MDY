@@ -6,15 +6,15 @@
   <title>Comparativo A vs B (un Excel - dos hojas)</title>
   <style>
     :root {
-      --ink: #1b1f24;
-      --muted: #5b6673;
-      --bd: #e0e5ea;
-      --panel: #ffffff;
-      --bg1: #f3f5f8;
-      --bg2: #e8edf2;
-      --accent: #0b3a5b;
-      --accent-2: #9a7b2f;
-      --shadow: 0 10px 24px rgba(16,24,40,.08), 0 4px 10px rgba(16,24,40,.06);
+      --ink: #e6edf3;
+      --muted: #9aa7b3;
+      --bd: #1f2a35;
+      --panel: #0f1720;
+      --bg1: #0b1219;
+      --bg2: #0c141d;
+      --accent: #1e3a5f;
+      --accent-2: #c7a14a;
+      --shadow: 0 12px 26px rgba(0,0,0,.45), 0 4px 12px rgba(0,0,0,.35);
     }
     body {
       font-family: "Calibri", "Candara", "Trebuchet MS", sans-serif;
@@ -22,7 +22,7 @@
       color: var(--ink);
       background:
         linear-gradient(135deg, var(--bg1), var(--bg2)),
-        repeating-linear-gradient(45deg, rgba(11,58,91,.03) 0, rgba(11,58,91,.03) 1px, transparent 1px, transparent 10px);
+        repeating-linear-gradient(45deg, rgba(30,58,95,.12) 0, rgba(30,58,95,.12) 1px, transparent 1px, transparent 10px);
       min-height: 100vh;
     }
     h1 {
@@ -58,15 +58,17 @@
       padding: 9px 10px;
       border: 1px solid var(--bd);
       border-radius: 8px;
-      background: #fff;
+      background: #0c141d;
+      color: var(--ink);
     }
     button {
       padding: 10px 12px;
       border: 1px solid var(--bd);
-      background: #f6f7f9;
+      background: #111c27;
       border-radius: 10px;
       cursor: pointer;
       transition: transform .08s ease, box-shadow .08s ease;
+      color: var(--ink);
     }
     button:hover { transform: translateY(-1px); box-shadow: 0 6px 14px rgba(0,0,0,.08); }
     button.primary {
@@ -80,13 +82,13 @@
     .pill {
       display: inline-block;
       padding: 4px 10px;
-      border: 1px solid rgba(11,58,91,.2);
+      border: 1px solid rgba(46,86,138,.35);
       border-radius: 999px;
       font-size: 12px;
-      background: rgba(11,58,91,.06);
+      background: rgba(30,58,95,.25);
       margin: 4px 6px 0 0;
     }
-    table { width: 100%; border-collapse: collapse; font-size: 12px; background: #fff; }
+    table { width: 100%; border-collapse: collapse; font-size: 12px; background: #0c141d; color: var(--ink); }
     th, td { border: 1px solid var(--bd); padding: 6px 8px; vertical-align: top; }
     th {
       background: var(--accent);
@@ -96,8 +98,8 @@
       top: 0;
       z-index: 1;
     }
-    tbody tr:nth-child(even) td { background: #f9fafb; }
-    tbody tr:hover td { background: #eef3f7; }
+    tbody tr:nth-child(even) td { background: #0f1823; }
+    tbody tr:hover td { background: #122234; }
     .right { text-align: right; }
     .nowrap { white-space: nowrap; }
     .scroll {
@@ -105,27 +107,27 @@
       overflow: auto;
       border: 1px solid var(--bd);
       border-radius: 10px;
-      background: #fff;
+      background: #0c141d;
     }
     .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
     .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
   </style>
 </head>
 <body>
-  <h1>Comparativo de cuentas – Ranking de incremento / reducción (un Excel con dos hojas)</h1>
+  <h1 id="ttlMain">Comparativo de cuentas – Ranking de incremento / reducción (un Excel con dos hojas)</h1>
 
   <div class="card">
-    <label>Excel (debe contener dos hojas: Periodo A y Periodo B)</label>
+    <label id="lblExcelPeriod">Excel (debe contener dos hojas: Periodo A y Periodo B)</label>
     <input id="fileX" type="file" accept=".xlsx,.xls" />
     <div class="muted" id="metaX">Sin archivo cargado.</div>
 
     <div class="row" style="margin-top:10px;">
       <div>
-        <label>Hoja Periodo A</label>
+        <label id="lblSheetA">Hoja Periodo A</label>
         <select id="sheetA" disabled></select>
       </div>
       <div>
-        <label>Hoja Periodo B</label>
+        <label id="lblSheetB">Hoja Periodo B</label>
         <select id="sheetB" disabled></select>
       </div>
     </div>
@@ -185,9 +187,9 @@
           <tr>
             <th class="nowrap">C. costo</th>
             <th>Nombre centro de costo</th>
-            <th class="right nowrap">Valor A</th>
-            <th class="right nowrap">Valor B</th>
-            <th class="right nowrap">Variación (B-A)</th>
+            <th id="thCencoA" class="right nowrap">Valor A</th>
+            <th id="thCencoB" class="right nowrap">Valor B</th>
+            <th id="thCencoVar" class="right nowrap">Variación (B-A)</th>
             <th class="right nowrap">% Variación</th>
           </tr>
         </thead>
@@ -195,7 +197,7 @@
       </table>
     </div>
     <div class="muted" style="margin-top:8px;">
-      % Variación = (B - A) / A. Si A = 0, se muestra N/A.
+      <span id="notePctVar">% Variación = (B - A) / A. Si A = 0, se muestra N/A.</span>
     </div>
   </div>
 
@@ -211,9 +213,9 @@
             <th>Nombre centro de costo</th>
             <th class="nowrap">Cuenta</th>
             <th>Descripcion transaccion</th>
-            <th class="right nowrap">Valor A</th>
-            <th class="right nowrap">Valor B</th>
-            <th class="right nowrap">Variación (B-A)</th>
+            <th id="thRankA" class="right nowrap">Valor A</th>
+            <th id="thRankB" class="right nowrap">Valor B</th>
+            <th id="thRankVar" class="right nowrap">Variación (B-A)</th>
             <th class="right nowrap">Impacto |Var|</th>
             <th class="right nowrap">% acum. impacto</th>
             <th>Tipo</th>
@@ -223,7 +225,7 @@
       </table>
     </div>
     <div class="muted" style="margin-top:8px;">
-      Tipo: <b>Nueva</b> (solo en B), <b>Eliminada</b> (solo en A), <b>Común</b> (en ambos).
+      <span id="noteTipo">Tipo: <b>Nueva</b> (solo en B), <b>Eliminada</b> (solo en A), <b>Común</b> (en ambos).</span>
     </div>
   </div>
 
@@ -231,7 +233,7 @@
     <h2>Terceros (NIT) nuevos / desaparecen</h2>
     <div class="grid3">
       <div>
-        <div class="pill">Terceros nuevos en B</div>
+        <div class="pill" id="lblThirdNew">Terceros nuevos en B</div>
         <div class="scroll" style="max-height:240px;">
           <table id="tblNewThird">
             <thead><tr><th>NIT</th><th>Razón social</th></tr></thead>
@@ -240,7 +242,7 @@
         </div>
       </div>
       <div>
-        <div class="pill">Terceros que desaparecen (solo A)</div>
+        <div class="pill" id="lblThirdGone">Terceros que desaparecen (solo A)</div>
         <div class="scroll" style="max-height:240px;">
           <table id="tblGoneThird">
             <thead><tr><th>NIT</th><th>Razón social</th></tr></thead>
@@ -248,7 +250,7 @@
           </table>
         </div>
       </div>
-      <div class="muted">
+      <div class="muted" id="thirdsNote">
         <b>Nota:</b> “Tercero nuevo” = NIT en B que no está en A.  
         Si cambia solo la razón social pero el NIT es igual, no cuenta como nuevo.
       </div>
@@ -274,11 +276,14 @@
       descri:    ["DESCRITRA", "DESCRIPCION", "DESCRIPTRA"],
       valor:     ["VALORTRA", "Valor", "VALOR"],
       debitos:   ["DEBITOS", "DEBITO", "DB"],
-      creditos:  ["CREDITOS", "CREDITO", "CR"]
+      creditos:  ["CREDITOS", "CREDITO", "CR"],
+      fecha:     ["FECHATRA", "FECHA", "FechaReporte", "FECHAFACT", "VENCEFAC"]
     };
 
     const el = (id) => document.getElementById(id);
+    const ttlMain = el("ttlMain");
     const fileX = el("fileX");
+    const lblExcelPeriod = el("lblExcelPeriod");
     const sheetA = el("sheetA");
     const sheetB = el("sheetB");
     const metaX = el("metaX");
@@ -292,12 +297,27 @@
     const orderMode = el("orderMode");
     const valueMode = el("valueMode");
     const kpis = el("kpis");
+    const lblSheetA = el("lblSheetA");
+    const lblSheetB = el("lblSheetB");
+    const thCencoA = el("thCencoA");
+    const thCencoB = el("thCencoB");
+    const thCencoVar = el("thCencoVar");
+    const thRankA = el("thRankA");
+    const thRankB = el("thRankB");
+    const thRankVar = el("thRankVar");
+    const notePctVar = el("notePctVar");
+    const noteTipo = el("noteTipo");
+    const lblThirdNew = el("lblThirdNew");
+    const lblThirdGone = el("lblThirdGone");
+    const thirdsNote = el("thirdsNote");
 
     const state = {
       wb: null,
       rankingRows: null,
       deltaExport: null,
-      cencoRows: null
+      cencoRows: null,
+      periodLabels: { A: "A", B: "B" },
+      sheetLabels: { A: "", B: "" }
     };
 
     // Normalización y parse numérico
@@ -331,6 +351,78 @@
     };
     const fmtMoney = (n) => n.toLocaleString("es-CO", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     const fmtPct = (n) => (n === null || n === undefined || !isFinite(n)) ? "N/A" : `${n.toFixed(2)}%`;
+    const yearRegex = /(?:19|20)\d{2}/;
+    const getCellYear = (v) => {
+      if (v === null || v === undefined || v === "") return "";
+      if (v instanceof Date && isFinite(v)) {
+        const y = v.getFullYear();
+        return (y >= 1900 && y <= 2100) ? String(y) : "";
+      }
+      if (typeof v === "number" && XLSX?.SSF?.parse_date_code) {
+        const d = XLSX.SSF.parse_date_code(v);
+        if (d && d.y >= 1900 && d.y <= 2100) return String(d.y);
+      }
+      const s = norm(v);
+      if (!s) return "";
+      const m = s.match(yearRegex);
+      if (m) return m[0];
+      const t = Date.parse(s);
+      if (!Number.isNaN(t)) {
+        const y = new Date(t).getFullYear();
+        if (y >= 1900 && y <= 2100) return String(y);
+      }
+      return "";
+    };
+
+    function inferYearLabel(rows, sheetName, mapInfo, fallback) {
+      const yearFromSheet = getCellYear(sheetName);
+      if (yearFromSheet) return yearFromSheet;
+
+      const fechaCol = mapInfo?.resolved?.fecha;
+      const maxScan = Math.min(rows.length, 2000);
+      if (fechaCol) {
+        for (let i = 0; i < maxScan; i++) {
+          const y = getCellYear(rows[i]?.[fechaCol]);
+          if (y) return y;
+        }
+      }
+
+      const broadScan = Math.min(rows.length, 300);
+      for (let i = 0; i < broadScan; i++) {
+        const vals = Object.values(rows[i] || {});
+        for (const v of vals) {
+          const y = getCellYear(v);
+          if (y) return y;
+        }
+      }
+      return fallback;
+    }
+
+    function refreshPeriodUI() {
+      const a = state.periodLabels.A;
+      const b = state.periodLabels.B;
+
+      ttlMain.textContent = `Comparativo de cuentas – Ranking de incremento / reducción (${a} vs ${b})`;
+      lblExcelPeriod.textContent = `Excel (debe contener dos hojas: Periodo ${a} y Periodo ${b})`;
+      lblSheetA.textContent = `Hoja Periodo ${a}`;
+      lblSheetB.textContent = `Hoja Periodo ${b}`;
+      thCencoA.textContent = `Valor ${a}`;
+      thCencoB.textContent = `Valor ${b}`;
+      thCencoVar.textContent = `Variación (${b}-${a})`;
+      thRankA.textContent = `Valor ${a}`;
+      thRankB.textContent = `Valor ${b}`;
+      thRankVar.textContent = `Variación (${b}-${a})`;
+      notePctVar.textContent = `% Variación = (${b} - ${a}) / ${a}. Si ${a} = 0, se muestra N/A.`;
+      noteTipo.innerHTML = `Tipo: <b>Nueva</b> (solo en ${b}), <b>Eliminada</b> (solo en ${a}), <b>Común</b> (en ambos).`;
+      lblThirdNew.textContent = `Terceros nuevos en ${b}`;
+      lblThirdGone.textContent = `Terceros que desaparecen (solo ${a})`;
+      thirdsNote.innerHTML = `<b>Nota:</b> “Tercero nuevo” = NIT en ${b} que no está en ${a}. Si cambia solo la razón social pero el NIT es igual, no cuenta como nuevo.`;
+    }
+    refreshPeriodUI();
+    const safeTag = (v, fallback) => {
+      const s = norm(v).replace(/[^A-Za-z0-9_-]/g, "");
+      return s || fallback;
+    };
 
     function resolveMapping(rows) {
       const headerMap = new Map();
@@ -447,6 +539,9 @@
       state.rankingRows = null;
       state.cencoRows = null;
       state.deltaExport = null;
+      state.periodLabels = { A: "A", B: "B" };
+      state.sheetLabels = { A: "", B: "" };
+      refreshPeriodUI();
 
       metaX.textContent = `${f.name} (${(f.size/1024).toFixed(1)} KB) – Hojas: ${state.wb.SheetNames.length}`;
       sheetA.innerHTML = "";
@@ -488,12 +583,17 @@
 
         const cuentaFiltro = norm(filterCuenta.value);
         const { results, kpi, thirds, deltaExport, cencoRows, mapInfoA, mapInfoB } = buildComparison(rowsA, rowsB, cuentaFiltro);
+        const yA = inferYearLabel(rowsA, shA, mapInfoA, "A");
+        const yB = inferYearLabel(rowsB, shB, mapInfoB, "B");
 
         state.rankingRows = results;
         state.deltaExport = deltaExport;
         state.cencoRows = cencoRows;
+        state.periodLabels = { A: yA, B: yB };
+        state.sheetLabels = { A: shA, B: shB };
+        refreshPeriodUI();
 
-        renderKPIs(kpi, thirds, shA, shB);
+        renderKPIs(kpi, thirds);
         renderCencos(cencoRows);
         renderRanking(results);
         renderThirds(thirds);
@@ -515,25 +615,41 @@
 
     btnCSV.addEventListener("click", () => {
       if (!state.rankingRows) return;
-      const rows = [["NOMBRETER","NITTRA","IDCENCO","DESCENCO","CODICTA","DESCRITRA","Valor_A","Valor_B","Variación","Impacto_abs","%AcumuladoImpacto","Tipo"]];
+      const labelA = state.periodLabels.A;
+      const labelB = state.periodLabels.B;
+      const tagA = safeTag(labelA, "A");
+      const tagB = safeTag(labelB, "B");
+      const rows = [["NOMBRETER","NITTRA","IDCENCO","DESCENCO","CODICTA","DESCRITRA",`Valor_${labelA}`,`Valor_${labelB}`,`Variación_${labelB}-${labelA}`,"Impacto_abs","%AcumuladoImpacto","Tipo"]];
       for (const r of state.rankingRows) {
         rows.push([r.tercero, r.nit, r.cenco, r.cencoDesc, r.cuenta, r.descri, r.a, r.b, r.variacion, r.impacto, r.pctAcc / 100, r.tipo]);
       }
-      downloadXLSX("ranking_variacion.xlsx", "Ranking", rows, ["text","text","text","text","text","text","money","money","money","money","pct","text"]);
+      downloadXLSX(`ranking_variacion_${tagA}_vs_${tagB}.xlsx`, "Ranking", rows, ["text","text","text","text","text","text","money","money","money","money","pct","text"]);
     });
 
     btnCSVCenco.addEventListener("click", () => {
       if (!state.cencoRows) return;
-      const rows = [["IDCENCO","DESCENCO","Valor_A","Valor_B","Variación","%Variación"]];
+      const labelA = state.periodLabels.A;
+      const labelB = state.periodLabels.B;
+      const tagA = safeTag(labelA, "A");
+      const tagB = safeTag(labelB, "B");
+      const rows = [["IDCENCO","DESCENCO",`Valor_${labelA}`,`Valor_${labelB}`,`Variación_${labelB}-${labelA}`,"%Variación"]];
       for (const r of state.cencoRows) {
         rows.push([r.cenco, r.cencoDesc, r.a, r.b, r.variacion, r.pctVar === null ? null : (r.pctVar / 100)]);
       }
-      downloadXLSX("centros_costo_variacion.xlsx", "CentrosCosto", rows, ["text","text","money","money","money","pct"]);
+      downloadXLSX(`centros_costo_variacion_${tagA}_vs_${tagB}.xlsx`, "CentrosCosto", rows, ["text","text","money","money","money","pct"]);
     });
 
     btnCSVDelta.addEventListener("click", () => {
       if (!state.deltaExport) return;
-      downloadXLSX("nuevos_eliminados_terceros.xlsx", "Delta", state.deltaExport, ["text","text","text","text"]);
+      const labelA = state.periodLabels.A;
+      const labelB = state.periodLabels.B;
+      const tagA = safeTag(labelA, "A");
+      const tagB = safeTag(labelB, "B");
+      const rows = state.deltaExport.map((r) => r.map((c) => {
+        if (typeof c !== "string") return c;
+        return c.replace(/\bB\b/g, labelB).replace(/\bA\b/g, labelA);
+      }));
+      downloadXLSX(`nuevos_eliminados_terceros_${tagA}_vs_${tagB}.xlsx`, "Delta", rows, ["text","text","text","text"]);
     });
 
     function sheetToRows(wb, sheetName) {
@@ -554,6 +670,7 @@
       const vm = valueMode.value;
 
       const adjustMissing = (info) => {
+        info.missing = info.missing.filter((m) => m !== "fecha");
         if (!info.resolved.valor && (info.resolved.debitos || info.resolved.creditos)) {
           info.missing = info.missing.filter((m) => m !== "valor");
         }
@@ -676,13 +793,17 @@
       return { results, kpi, thirds: { newThirds, goneThirds }, deltaExport, cencoRows, mapInfoA, mapInfoB };
     }
 
-    function renderKPIs(kpi, thirds, shA, shB) {
+    function renderKPIs(kpi, thirds) {
+      const labelA = state.periodLabels.A;
+      const labelB = state.periodLabels.B;
+      const shA = state.sheetLabels.A;
+      const shB = state.sheetLabels.B;
       const items = [
-        ["Hoja A", shA],
-        ["Hoja B", shB],
-        ["Total A", fmtMoney(kpi.totalA)],
-        ["Total B", fmtMoney(kpi.totalB)],
-        ["Variación (B-A)", fmtMoney(kpi.variacionTotal)],
+        [`Hoja ${labelA}`, shA],
+        [`Hoja ${labelB}`, shB],
+        [`Total ${labelA}`, fmtMoney(kpi.totalA)],
+        [`Total ${labelB}`, fmtMoney(kpi.totalB)],
+        [`Variación (${labelB}-${labelA})`, fmtMoney(kpi.variacionTotal)],
         ["# Líneas", kpi.countLineas],
         ["# Líneas nuevas", kpi.countNuevas],
         ["# Líneas eliminadas", kpi.countEliminadas],
@@ -727,9 +848,11 @@
       const miss = (missing) => missing.length
         ? `Faltan: ${missing.map(k => labels[k] || k).join(", ")}`
         : "OK";
+      const labelA = state.periodLabels.A;
+      const labelB = state.periodLabels.B;
       colStatus.innerHTML =
-        `<div><b>Columnas detectadas A:</b> ${fmt(mapInfoA.resolved)}. ${miss(mapInfoA.missing)}</div>` +
-        `<div><b>Columnas detectadas B:</b> ${fmt(mapInfoB.resolved)}. ${miss(mapInfoB.missing)}</div>`;
+        `<div><b>Columnas detectadas ${labelA}:</b> ${fmt(mapInfoA.resolved)}. ${miss(mapInfoA.missing)}</div>` +
+        `<div><b>Columnas detectadas ${labelB}:</b> ${fmt(mapInfoB.resolved)}. ${miss(mapInfoB.missing)}</div>`;
     }
 
     function renderRanking(rows) {
