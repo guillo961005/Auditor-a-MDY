@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<html lang="es" style="--print-zoom: 1.2476;"><head>
+<html lang="es" style="--print-zoom: 1.5;"><head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Flyers BPM Inocuidad – 30 Días – Mesa de Yeguas Country Club</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Montserrat:wght@700;800;900&display=swap');
 
-  @page { margin:0; size:21.6cm 35.6cm; }
+  @page { margin:0; size:letter; }
 
   * { margin:0; padding:0; box-sizing:border-box; }
 
@@ -107,17 +107,41 @@
     .nav { display:none !important; }
     .viewer { display:none !important; }
     .print-all-container { display:block !important; }
-    .flyer-wrapper { page-break-before:always; break-before:page; page-break-inside:avoid; break-inside:avoid; width:21.6cm; box-sizing:border-box; display:flex; align-items:center; justify-content:center; padding:10mm; }
+    .flyer-wrapper { page-break-before:always; break-before:page; page-break-inside:avoid; break-inside:avoid; width:21.59cm; height:27.94cm; box-sizing:border-box; display:flex; align-items:center; justify-content:center; padding:7mm; }
     .flyer-wrapper:first-child { page-break-before:auto; break-before:auto; }
-    .flyer-wrapper .flyer { zoom:var(--print-zoom,1.4); width:420px; box-shadow:none !important; border-radius:16px !important; }
-    .flyer-icon { animation:none !important; }
+    .flyer-wrapper .flyer { zoom:var(--print-zoom,1.5); width:420px; box-shadow:none !important; border-radius:16px !important; }
+    /* Estilos compactos — deben coincidir exactamente con COMPACT_CSS en el JS */
+    .flyer-icon { animation:none !important; font-size:50px !important; }
+    .flyer-header { padding:10px 18px 7px !important; }
+    .bubble-zone { padding:0 16px 7px !important; }
+    .speech-bubble { padding:10px 13px !important; }
+    .speech-bubble p { font-size:12px !important; line-height:1.44 !important; }
+    .title-banner { padding:9px 18px !important; }
+    .title-banner h2 { font-size:16px !important; }
+    .mensaje-zone { padding:8px 16px 5px !important; }
+    .msg-card { padding:10px 13px !important; }
+    .msg-text { font-size:12.5px !important; line-height:1.48 !important; }
+    .puntos-zone { padding:7px 16px 4px !important; }
+    .section-label { padding:3px 11px !important; margin-bottom:7px !important; }
+    .punto-item { padding:4px 0 !important; }
+    .punto-text { font-size:11.5px !important; line-height:1.44 !important; }
+    .regla-zone { padding:7px 16px 4px !important; }
+    .regla-card { padding:10px 13px !important; }
+    .regla-text { font-size:12px !important; }
+    .reflexion-zone { padding:6px 16px 7px !important; }
+    .ref-card { padding:10px 13px !important; }
+    .ref-text { font-size:12px !important; }
+    .norma-bar { padding:6px 16px !important; }
+    .norma-text { font-size:9.5px !important; }
+    .bottom-strip { padding:7px 16px !important; }
+    .bottom-strip p { font-size:10.5px !important; }
   }
   body.printing-single .viewer { display:block !important; }
   body.printing-single .print-all-container { display:none !important; }
   @media print {
-    body.printing-single .viewer { display:flex !important; margin:0 !important; padding:10mm !important; box-sizing:border-box; width:21.6cm; justify-content:center; align-items:flex-start; }
+    body.printing-single .viewer { display:flex !important; margin:0 !important; padding:7mm !important; box-sizing:border-box; width:21.59cm; height:27.94cm; justify-content:center; align-items:center; }
     body.printing-single .print-all-container { display:none !important; }
-    body.printing-single .viewer .flyer { zoom:var(--print-zoom,1.4); box-shadow:none !important; border-radius:16px !important; }
+    body.printing-single .viewer .flyer { zoom:var(--print-zoom,1.5); box-shadow:none !important; border-radius:16px !important; }
   }
 
   /* ── EDIT PANEL ── */
@@ -855,19 +879,60 @@ function goTo(idx) { current = idx; render(); }
 
 // ── PRINT ──
 
-// Legal/Oficio: 21.6 cm × 35.6 cm — 10 mm margin each side — 3% safety buffer
+// Carta (Letter): 21.59 cm × 27.94 cm — 7 mm margen cada lado.
+// calcPrintZoom recibe dimensiones YA medidas con estilos compactos → sin factor de corrección.
 function calcPrintZoom(fw, fh) {
   const mmToPx = 96 / 25.4;
-  const avW = (216 - 20) * mmToPx;   // 196 mm available
-  const avH = (356 - 20) * mmToPx;   // 336 mm available
-  return Math.min(Math.max(Math.min(avW / (fw||420), avH / (fh||800)) * 0.95, 0.5), 2.5);
+  const avW = (215.9 - 14) * mmToPx;   // 201.9 mm → ~763 px
+  const avH = (279.4 - 14) * mmToPx;   // 265.4 mm → ~1003 px
+  return Math.min(Math.max(Math.min(avW / (fw||420), avH / (fh||800)) * 0.93, 0.5), 2.0);
+}
+
+// Estilos compactos que se aplican en @media print — se inyectan también al medir
+// para que el zoom sea calculado sobre la altura real de impresión (no la de pantalla).
+const COMPACT_CSS = `
+.print-measuring .flyer-header{padding:10px 18px 7px!important}
+.print-measuring .bubble-zone{padding:0 16px 7px!important}
+.print-measuring .flyer-icon{font-size:50px!important}
+.print-measuring .speech-bubble{padding:10px 13px!important}
+.print-measuring .speech-bubble p{font-size:12px!important;line-height:1.44!important}
+.print-measuring .title-banner{padding:9px 18px!important}
+.print-measuring .title-banner h2{font-size:16px!important}
+.print-measuring .mensaje-zone{padding:8px 16px 5px!important}
+.print-measuring .msg-card{padding:10px 13px!important}
+.print-measuring .msg-text{font-size:12.5px!important;line-height:1.48!important}
+.print-measuring .puntos-zone{padding:7px 16px 4px!important}
+.print-measuring .section-label{padding:3px 11px!important;margin-bottom:7px!important}
+.print-measuring .punto-item{padding:4px 0!important}
+.print-measuring .punto-text{font-size:11.5px!important;line-height:1.44!important}
+.print-measuring .regla-zone{padding:7px 16px 4px!important}
+.print-measuring .regla-card{padding:10px 13px!important}
+.print-measuring .regla-text{font-size:12px!important}
+.print-measuring .reflexion-zone{padding:6px 16px 7px!important}
+.print-measuring .ref-card{padding:10px 13px!important}
+.print-measuring .ref-text{font-size:12px!important}
+.print-measuring .norma-bar{padding:6px 16px!important}
+.print-measuring .norma-text{font-size:9.5px!important}
+.print-measuring .bottom-strip{padding:7px 16px!important}
+.print-measuring .bottom-strip p{font-size:10.5px!important}
+`;
+
+function ensureCompactStyleTag() {
+  if (!document.getElementById('print-compact-measure')) {
+    const s = document.createElement('style');
+    s.id = 'print-compact-measure';
+    s.textContent = COMPACT_CSS;
+    document.head.appendChild(s);
+  }
 }
 
 // Individual zoom per poster — each poster fills the page optimally.
 const printZooms = [];
 
 function initPrintZoom() {
+  ensureCompactStyleTag();
   const host = document.createElement('div');
+  host.className = 'print-measuring';
   host.style.cssText = 'position:fixed;top:-99999px;left:0;width:420px;visibility:hidden;pointer-events:none;z-index:-1;';
   host.innerHTML = flyers.map(f => buildFlyer(f)).join('');
   document.body.appendChild(host);
@@ -1022,9 +1087,11 @@ function applyEdits() {
   f.pie       = document.getElementById('ef-pie').value;
   const sel = document.getElementById('flyerSelect');
   sel.options[current].textContent = `Día ${f.dia}: ${f.tema.length>38 ? f.tema.substring(0,38)+'…' : f.tema}`;
-  // Recalculate this poster's zoom with updated content
+  // Recalculate zoom using compact styles (igual que initPrintZoom) para precisión
   document.fonts.ready.then(() => {
+    ensureCompactStyleTag();
     const host = document.createElement('div');
+    host.className = 'print-measuring';
     host.style.cssText = 'position:fixed;top:-99999px;left:0;width:420px;visibility:hidden;pointer-events:none;z-index:-1;';
     host.innerHTML = buildFlyer(f);
     document.body.appendChild(host);
