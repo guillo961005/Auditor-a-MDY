@@ -170,6 +170,9 @@
   .btn-export-all:hover { background:#1a3d5a; }
   .btn-edit { background:#4c3c31; border:none; border-radius:8px; padding:6px 12px; color:#E5D3B3; font-weight:800; font-size:12px; cursor:pointer; white-space:nowrap; }
   .btn-edit:hover { background:#6a5245; }
+  .btn-img-wa { background:#25D366; border:none; border-radius:8px; padding:6px 12px; color:#fff; font-weight:800; font-size:12px; cursor:pointer; white-space:nowrap; }
+  .btn-img-wa:hover { background:#1aaf54; }
+  .btn-img-wa:disabled { background:#3a5560; color:#7aabb8; cursor:default; }
   @media print { .edit-overlay,.edit-panel { display:none !important; } }
 </style>
 <style id="print-compact-measure">
@@ -197,7 +200,9 @@
 .print-measuring .norma-text{font-size:9.5px!important}
 .print-measuring .bottom-strip{padding:7px 16px!important}
 .print-measuring .bottom-strip p{font-size:10.5px!important}
-</style></head>
+</style>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js" defer></script>
+</head>
 <body class="printing-all">
 
 <nav class="nav">
@@ -209,6 +214,7 @@
     <select class="nav-select" id="flyerSelect" onchange="goTo(parseInt(this.value))"><option value="0">Día 1: ¿Quién es un manipulador de alimentos?</option><option value="1">Día 2: EPP obligatorio: cofia, tapabocas, del…</option><option value="2">Día 3: Prohibición de accesorios personales e…</option><option value="3">Día 4: Mantenimiento y cuidado del uniforme</option><option value="4">Día 5: Estado de salud y reporte de enfermeda…</option><option value="5">Día 6: No es solo lavarse: es hacerlo bien</option><option value="6">Día 7: Los 5 momentos del lavado de manos en …</option><option value="7">Día 8: Estaciones de higiene: requisitos y ma…</option><option value="8">Día 9: Principios de limpieza y desinfección …</option><option value="9">Día 10: Preparación correcta de soluciones des…</option><option value="10">Día 11: Registros obligatorios de L&amp;D: frecuen…</option><option value="11">Día 12: Productos permitidos y no permitidos e…</option><option value="12">Día 13: Rangos de temperatura segura para alim…</option><option value="13">Día 14: Registro diario de temperaturas</option><option value="14">Día 15: Acciones correctivas ante desviaciones…</option><option value="15">Día 16: PEPS (PRIMERO EN ENTRAR, PRIMERO EN SA…</option><option value="16">Día 17: Rotulación interna: nombre, fecha y vi…</option><option value="17">Día 18: Almacenamiento correcto en cuartos frí…</option><option value="18">Día 19: Separación obligatoria de químicos y a…</option><option value="19">Día 20: Contaminación: Física, Química y Bioló…</option><option value="20">Día 21: Tablas de picar por color: uso correct…</option><option value="21">Día 22: Manejo de productos abiertos y empezad…</option><option value="22">Día 23: Control de vencimientos y gestión de p…</option><option value="23">Día 24: Clasificación de residuos sólidos y có…</option><option value="24">Día 25: USO CORRECTO DE CANECAS: tapa, bolsa y…</option><option value="25">Día 26: Equipos y utensilios en buen estado: c…</option><option value="26">Día 27: Control de plagas: señales de alerta e…</option><option value="27">Día 28: Infraestructura y mantenimiento: repor…</option><option value="28">Día 29: Registros y documentación: por qué imp…</option><option value="29">Día 30: Cierre: compromiso personal con la ino…</option><option value="0">Día 1: ¿Quién es un manipulador de alimentos?</option><option value="1">Día 2: EPP obligatorio: cofia, tapabocas, del…</option><option value="2">Día 3: Prohibición de accesorios personales e…</option><option value="3">Día 4: Mantenimiento y cuidado del uniforme</option><option value="4">Día 5: Estado de salud y reporte de enfermeda…</option><option value="5">Día 6: Técnica correcta de lavado de manos – …</option><option value="6">Día 7: Los 5 momentos del lavado de manos en …</option><option value="7">Día 8: Estaciones de higiene: requisitos y ma…</option><option value="8">Día 9: Principios de limpieza y desinfección …</option><option value="9">Día 10: Preparación correcta de soluciones des…</option><option value="10">Día 11: Registros obligatorios de L&amp;D: frecuen…</option><option value="11">Día 12: Productos permitidos y no permitidos e…</option><option value="12">Día 13: Rangos de temperatura segura para alim…</option><option value="13">Día 14: Registro diario de temperaturas</option><option value="14">Día 15: Acciones correctivas ante desviaciones…</option><option value="15">Día 16: Principio PEPS: Primero en Entrar, Pri…</option><option value="16">Día 17: Rotulación interna: nombre, fecha y vi…</option><option value="17">Día 18: Almacenamiento correcto en cuartos frí…</option><option value="18">Día 19: Separación obligatoria de químicos y a…</option><option value="19">Día 20: Tipos de contaminación: física, químic…</option><option value="20">Día 21: Tablas de picar por color: uso correct…</option><option value="21">Día 22: Manejo de productos abiertos y empezad…</option><option value="22">Día 23: Control de vencimientos y gestión de p…</option><option value="23">Día 24: Clasificación de residuos sólidos y có…</option><option value="24">Día 25: Uso correcto de canecas: tapa, bolsa y…</option><option value="25">Día 26: Equipos y utensilios en buen estado: c…</option><option value="26">Día 27: Control de plagas: señales de alerta e…</option><option value="27">Día 28: Infraestructura y mantenimiento: repor…</option><option value="28">Día 29: Registros y documentación: por qué imp…</option><option value="29">Día 30: Cierre: compromiso personal con la ino…</option></select>
     <button class="btn-print-one" onclick="printCurrent()">🖨 Imprimir este</button>
     <button class="btn-pdf-all" onclick="printAll()">📄 PDF todos (30)</button>
+    <button class="btn-img-wa" id="btnImgWA" onclick="downloadImageWA()">📱 Imagen WA</button>
     <button class="btn-edit" onclick="openEdit()">✏️ Editar</button>
   </div>
 </nav>
@@ -1209,6 +1215,80 @@ function exportAllHTML() {
   html = html.replace(/\/\/ ##FLYERS_START##[\s\S]*?\/\/ ##FLYERS_END##/, `// ##FLYERS_START##\nconst flyers = ${flyersData};\n// ##FLYERS_END##`);
   dlHTML(html, 'Flyers_BPM_Editado.html');
 }
+
+// ── IMAGEN WHATSAPP ──
+async function downloadImageWA() {
+  if (typeof html2canvas === 'undefined') {
+    alert('La librería de imagen aún está cargando. Intenta en unos segundos.');
+    return;
+  }
+  const flyerEl = document.querySelector('#viewer .flyer');
+  if (!flyerEl) return;
+
+  const btn = document.getElementById('btnImgWA');
+  const origHTML = btn.innerHTML;
+  btn.innerHTML = '⏳';
+  btn.disabled = true;
+
+  // Pausar animación flotante para captura limpia
+  const icon = flyerEl.querySelector('.flyer-icon');
+  const origAnim = icon ? icon.style.animation : '';
+  if (icon) icon.style.animation = 'none';
+
+  try {
+    const SCALE = 2.5;  // resolución alta (~1050px ancho) — ideal para WhatsApp
+    const PAD   = 20;   // margen alrededor de la tarjeta (px CSS)
+
+    const canvas = await html2canvas(flyerEl, {
+      scale: SCALE,
+      backgroundColor: null,
+      useCORS: true,
+      allowTaint: false,
+      logging: false,
+      imageTimeout: 10000
+    });
+
+    // Lienzo final con fondo azul embalse y márgenes
+    const final = document.createElement('canvas');
+    final.width  = canvas.width  + PAD * 2 * SCALE;
+    final.height = canvas.height + PAD * 2 * SCALE;
+    const ctx = final.getContext('2d');
+    ctx.fillStyle = '#163E5B';
+    ctx.fillRect(0, 0, final.width, final.height);
+    ctx.drawImage(canvas, PAD * SCALE, PAD * SCALE);
+
+    const f = flyers[current];
+    const safeName = f.tema.replace(/[^\w\sáéíóúñÁÉÍÓÚÑüÜ\-]/g,'').trim().replace(/\s+/g,'_').substring(0,40);
+    const filename = `BPM_Dia${f.dia}_${safeName}.png`;
+
+    final.toBlob(async (blob) => {
+      // En móvil: Web Share API → se puede compartir directo a WhatsApp
+      if (navigator.share && navigator.canShare) {
+        const file = new File([blob], filename, { type: 'image/png' });
+        if (navigator.canShare({ files: [file] })) {
+          try {
+            await navigator.share({ files: [file], title: `BPM Día ${f.dia}: ${f.tema}` });
+            return;
+          } catch (e) { /* usuario canceló — caer en descarga */ }
+        }
+      }
+      // En escritorio: descarga directa
+      const url = URL.createObjectURL(blob);
+      const a   = document.createElement('a');
+      a.href     = url;
+      a.download = filename;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1500);
+    }, 'image/png');
+
+  } catch (err) {
+    alert('No se pudo generar la imagen: ' + err.message);
+  } finally {
+    if (icon) icon.style.animation = origAnim;
+    btn.innerHTML = origHTML;
+    btn.disabled  = false;
+  }
+}
 </script>
 
 <div class="edit-overlay open" id="editOverlay" onclick="closeEdit()"></div>
@@ -1220,6 +1300,7 @@ function exportAllHTML() {
   <div class="edit-panel-body" id="editPanelBody"></div>
   <div class="edit-panel-footer">
     <button class="btn-apply" onclick="applyEdits()">✅ Aplicar cambios y ver poster</button>
+    <button class="btn-img-wa" onclick="downloadImageWA()">📱 Descargar imagen (WhatsApp)</button>
     <button class="btn-export-one" onclick="exportCurrentHTML()">💾 Exportar este poster (HTML)</button>
     <button class="btn-export-all" onclick="exportAllHTML()">📦 Exportar todos los 30 posters (HTML)</button>
   </div>
