@@ -80,13 +80,13 @@
     </div>
 
     <script>
-        // Inicializar Iconos
+        // Desregistrar el plugin globalmente para activarlo solo por gráfica
+        Chart.unregister(ChartDataLabels);
+
         lucide.createIcons();
 
-        // Función para descargar gráficas de forma independiente
         function downloadChart(chartId, fileName) {
             const canvas = document.getElementById(chartId);
-            // Crear un canvas temporal con fondo blanco para que no sea transparente al pegar
             const tempCanvas = document.createElement('canvas');
             tempCanvas.width = canvas.width;
             tempCanvas.height = canvas.height;
@@ -94,7 +94,6 @@
             ctx.fillStyle = "white";
             ctx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
             ctx.drawImage(canvas, 0, 0);
-            
             const link = document.createElement('a');
             link.download = `${fileName}.png`;
             link.href = tempCanvas.toDataURL('image/png', 1.0);
@@ -102,55 +101,26 @@
         }
 
         const areas = ['Bienestar', 'Golf', 'A&B', 'Tenis', 'Carro Bar', 'Minimarket'];
+        const C = { navy: '#1c2e4a', steel: '#2e5f8a', teal: '#3d7068', amber: '#b8832a', rust: '#8b3d3d' };
 
-        // Paleta ejecutiva: marino profundo / azul acero / teal apagado / ámbar dorado / rojo óxido
-        const C = { navy: '#1c2e4a', steel: '#2e5f8a', teal: '#3d7068', amber: '#b8832a', rust: '#8b3d3d', slate: '#6b7d94' };
+        const fmt2 = v => Number(v).toFixed(2);
+        const labelBarV  = { display: true, anchor: 'end', align: 'end',   color: C.navy, font: { size: 11, weight: 'bold' }, formatter: fmt2 };
+        const labelBarH  = { display: true, anchor: 'end', align: 'right', color: C.navy, font: { size: 11, weight: 'bold' }, formatter: fmt2 };
+        const labelLine  = { display: true, anchor: 'top', align: 'top',   color: C.navy, font: { size: 11, weight: 'bold' }, formatter: fmt2, offset: 6 };
 
-        // Estilo común de etiquetas para barras verticales y línea
-        const labelBar = {
-            display: true,
-            anchor: 'end',
-            align: 'end',
-            color: '#1c2e4a',
-            font: { size: 11, weight: 'bold' },
-            formatter: v => v.toFixed(2)
-        };
-        // Etiquetas para barras horizontales (NPS indexAxis:'y')
-        const labelBarH = {
-            display: true,
-            anchor: 'end',
-            align: 'right',
-            color: '#1c2e4a',
-            font: { size: 11, weight: 'bold' },
-            formatter: v => v.toFixed(2)
-        };
-        // Etiquetas para gráfica de línea
-        const labelLine = {
-            display: true,
-            anchor: 'top',
-            align: 'top',
-            offset: 6,
-            color: '#1c2e4a',
-            font: { size: 11, weight: 'bold' },
-            formatter: v => v.toFixed(2)
-        };
-
-        // 1. PARTICIPACIÓN — sin etiquetas de datos
+        // 1. PARTICIPACIÓN — sin plugin datalabels
         new Chart(document.getElementById('chartVolumen'), {
             type: 'pie',
             data: {
                 labels: ['A&B (51)', 'Tenis (33)', 'Golf (24)', 'Otros (26)'],
-                datasets: [{
-                    data: [51, 33, 24, 26],
-                    backgroundColor: [C.navy, C.steel, C.teal, C.amber],
-                    hoverOffset: 15
-                }]
+                datasets: [{ data: [51, 33, 24, 26], backgroundColor: [C.navy, C.steel, C.teal, C.amber], hoverOffset: 15 }]
             },
-            options: { plugins: { legend: { position: 'bottom' }, datalabels: { display: false } } }
+            options: { plugins: { legend: { position: 'bottom' } } }
         });
 
-        // 2. NPS — semántico: alto=marino, medio=acero, bajo=ámbar, riesgo=óxido
+        // 2. NPS
         new Chart(document.getElementById('chartNPS'), {
+            plugins: [ChartDataLabels],
             type: 'bar',
             data: {
                 labels: areas,
@@ -162,7 +132,7 @@
             },
             options: {
                 indexAxis: 'y',
-                layout: { padding: { right: 40 } },
+                layout: { padding: { right: 44 } },
                 plugins: { legend: false, datalabels: labelBarH },
                 scales: { x: { display: false } }
             }
@@ -170,6 +140,7 @@
 
         // 3. SATISFACCIÓN GENERAL
         new Chart(document.getElementById('chartSatisfaccion'), {
+            plugins: [ChartDataLabels],
             type: 'line',
             data: {
                 labels: areas,
@@ -184,13 +155,14 @@
                 }]
             },
             options: {
-                layout: { padding: { top: 20 } },
+                layout: { padding: { top: 22 } },
                 plugins: { legend: false, datalabels: labelLine }
             }
         });
 
-        // 4. CSAT (Comparativa por Atributo)
+        // 4. CSAT
         new Chart(document.getElementById('chartCSAT'), {
+            plugins: [ChartDataLabels],
             type: 'bar',
             data: {
                 labels: ['Higiene', 'Pedido', 'Espera'],
@@ -200,25 +172,23 @@
                 ]
             },
             options: {
-                layout: { padding: { top: 20 } },
+                layout: { padding: { top: 22 } },
                 scales: { y: { min: 3, max: 5 } },
-                plugins: { datalabels: labelBar }
+                plugins: { datalabels: labelBarV }
             }
         });
 
-        // 5. CES (Interacción)
+        // 5. CES
         new Chart(document.getElementById('chartCES'), {
+            plugins: [ChartDataLabels],
             type: 'bar',
             data: {
                 labels: areas,
-                datasets: [{
-                    data: [4.4, 4.5, 4.1, 3.7, 4.5, 2.8],
-                    backgroundColor: C.steel
-                }]
+                datasets: [{ data: [4.4, 4.5, 4.1, 3.7, 4.5, 2.8], backgroundColor: C.steel }]
             },
             options: {
-                layout: { padding: { top: 20 } },
-                plugins: { legend: false, datalabels: labelBar },
+                layout: { padding: { top: 22 } },
+                plugins: { legend: false, datalabels: labelBarV },
                 scales: { y: { min: 0, max: 5 } }
             }
         });
