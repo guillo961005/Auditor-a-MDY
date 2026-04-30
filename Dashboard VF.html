@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <title>Dashboard Ejecutivo Mesa de Yeguas</title>
     <style>
@@ -105,7 +106,36 @@
         // Paleta ejecutiva: marino profundo / azul acero / teal apagado / ámbar dorado / rojo óxido
         const C = { navy: '#1c2e4a', steel: '#2e5f8a', teal: '#3d7068', amber: '#b8832a', rust: '#8b3d3d', slate: '#6b7d94' };
 
-        // 1. PARTICIPACIÓN (Colores diferenciados)
+        // Estilo común de etiquetas para barras verticales y línea
+        const labelBar = {
+            display: true,
+            anchor: 'end',
+            align: 'end',
+            color: '#1c2e4a',
+            font: { size: 11, weight: 'bold' },
+            formatter: v => v.toFixed(2)
+        };
+        // Etiquetas para barras horizontales (NPS indexAxis:'y')
+        const labelBarH = {
+            display: true,
+            anchor: 'end',
+            align: 'right',
+            color: '#1c2e4a',
+            font: { size: 11, weight: 'bold' },
+            formatter: v => v.toFixed(2)
+        };
+        // Etiquetas para gráfica de línea
+        const labelLine = {
+            display: true,
+            anchor: 'top',
+            align: 'top',
+            offset: 6,
+            color: '#1c2e4a',
+            font: { size: 11, weight: 'bold' },
+            formatter: v => v.toFixed(2)
+        };
+
+        // 1. PARTICIPACIÓN — sin etiquetas de datos
         new Chart(document.getElementById('chartVolumen'), {
             type: 'pie',
             data: {
@@ -116,7 +146,7 @@
                     hoverOffset: 15
                 }]
             },
-            options: { plugins: { legend: { position: 'bottom' } } }
+            options: { plugins: { legend: { position: 'bottom' }, datalabels: { display: false } } }
         });
 
         // 2. NPS — semántico: alto=marino, medio=acero, bajo=ámbar, riesgo=óxido
@@ -130,7 +160,12 @@
                     borderRadius: 5
                 }]
             },
-            options: { indexAxis: 'y', plugins: { legend: false } }
+            options: {
+                indexAxis: 'y',
+                layout: { padding: { right: 40 } },
+                plugins: { legend: false, datalabels: labelBarH },
+                scales: { x: { display: false } }
+            }
         });
 
         // 3. SATISFACCIÓN GENERAL
@@ -141,12 +176,17 @@
                 datasets: [{
                     data: [9.66, 9.25, 9.00, 8.39, 9.25, 5.50],
                     borderColor: C.navy,
+                    pointBackgroundColor: C.navy,
+                    pointRadius: 5,
                     tension: 0.4,
                     fill: true,
                     backgroundColor: 'rgba(28, 46, 74, 0.07)'
                 }]
             },
-            options: { plugins: { legend: false } }
+            options: {
+                layout: { padding: { top: 20 } },
+                plugins: { legend: false, datalabels: labelLine }
+            }
         });
 
         // 4. CSAT (Comparativa por Atributo)
@@ -159,7 +199,11 @@
                     { label: 'Golf', data: [4.7, 4.6, 4.5], backgroundColor: C.teal }
                 ]
             },
-            options: { scales: { y: { min: 3, max: 5 } } }
+            options: {
+                layout: { padding: { top: 20 } },
+                scales: { y: { min: 3, max: 5 } },
+                plugins: { datalabels: labelBar }
+            }
         });
 
         // 5. CES (Interacción)
@@ -172,7 +216,11 @@
                     backgroundColor: C.steel
                 }]
             },
-            options: { plugins: { legend: false }, scales: { y: { min: 0, max: 5 } } }
+            options: {
+                layout: { padding: { top: 20 } },
+                plugins: { legend: false, datalabels: labelBar },
+                scales: { y: { min: 0, max: 5 } }
+            }
         });
     </script>
 </body>
