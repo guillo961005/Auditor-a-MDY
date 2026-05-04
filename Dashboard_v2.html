@@ -163,12 +163,30 @@
     // ── Helpers ──────────────────────────────────────────────
     function downloadChart(id, name) {
         const c = document.getElementById(id);
+        const titleEl = c.closest('.card') && c.closest('.card').querySelector('h3');
+        const titleText = titleEl ? titleEl.textContent.trim() : '';
+
+        const PAD = 14;
+        const FONT_SIZE = 11;
+        const titleH = titleText ? FONT_SIZE + PAD * 2 : 0;
+
         const tmp = document.createElement('canvas');
-        tmp.width = c.width; tmp.height = c.height;
+        tmp.width  = c.width;
+        tmp.height = c.height + titleH;
         const ctx = tmp.getContext('2d');
+
         ctx.fillStyle = 'white';
         ctx.fillRect(0, 0, tmp.width, tmp.height);
-        ctx.drawImage(c, 0, 0);
+
+        if (titleText) {
+            ctx.fillStyle = '#94a3b8';
+            ctx.font = `700 ${FONT_SIZE}px sans-serif`;
+            ctx.textBaseline = 'middle';
+            ctx.fillText(titleText.toUpperCase(), PAD, PAD + FONT_SIZE / 2);
+        }
+
+        ctx.drawImage(c, 0, titleH);
+
         const a = document.createElement('a');
         a.download = name + '.png';
         a.href = tmp.toDataURL('image/png', 1.0);
