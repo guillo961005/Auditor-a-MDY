@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
     <title>Dashboard Ejecutivo – Mesa de Yeguas</title>
     <style>
         body { font-family: 'Segoe UI', system-ui, sans-serif; }
@@ -84,12 +85,12 @@
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div class="card">
             <button class="dl-btn" onclick="downloadChart('chartCSAT','CSAT_Por_Area')" title="Descargar imagen">📷</button>
-            <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">4.2 · CSAT – Atributos de Calidad de Servicio (/ 5.0)</h3>
+            <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">CSAT – Atributos de Calidad de Servicio (0 a 5)</h3>
             <canvas id="chartCSAT" height="190"></canvas>
         </div>
         <div class="card">
             <button class="dl-btn" onclick="downloadChart('chartCES','CES_Por_Area')" title="Descargar imagen">📷</button>
-            <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">4.2 · CES – Facilidad de Interacción por Área (/ 5.0)</h3>
+            <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">CES – Facilidad de Interacción por Área (0 a 5)</h3>
             <canvas id="chartCES" height="190"></canvas>
         </div>
     </div>
@@ -252,6 +253,7 @@
     // ── 4.2 CSAT agrupado ────────────────────────────────────
     new Chart(document.getElementById('chartCSAT'), {
         type: 'bar',
+        plugins: [ChartDataLabels],
         data: {
             labels: csatAreas,
             datasets: [
@@ -261,7 +263,16 @@
             ]
         },
         options: {
-            plugins: { legend: { position: 'bottom', labels: { font: { size: 10 }, boxWidth: 11, padding: 8 } } },
+            plugins: {
+                legend: { position: 'bottom', labels: { font: { size: 10 }, boxWidth: 11, padding: 8 } },
+                datalabels: {
+                    anchor: 'center',
+                    align: 'center',
+                    color: '#ffffff',
+                    font: { size: 9, weight: '700' },
+                    formatter: v => v.toFixed(1)
+                }
+            },
             scales: {
                 y: { min: 0, max: 5, ticks: { font: { size: 10 } }, grid: { color: '#f1f5f9' } },
                 x: { ticks: { font: { size: 11, weight: '700' } } }
@@ -273,6 +284,7 @@
     const cesVals = [4.1, 4.4, 4.5, 3.7, 2.8];
     new Chart(document.getElementById('chartCES'), {
         type: 'bar',
+        plugins: [ChartDataLabels],
         data: {
             labels: csatAreas,
             datasets: [{
@@ -283,7 +295,16 @@
             }]
         },
         options: {
-            plugins: { legend: { display: false } },
+            plugins: {
+                legend: { display: false },
+                datalabels: {
+                    anchor: 'center',
+                    align: 'center',
+                    color: '#ffffff',
+                    font: { size: 11, weight: '700' },
+                    formatter: v => v.toFixed(1)
+                }
+            },
             scales: {
                 y: { min: 0, max: 5, ticks: { font: { size: 10 } }, grid: { color: '#f1f5f9' } },
                 x: { ticks: { font: { size: 11, weight: '700' } } }
