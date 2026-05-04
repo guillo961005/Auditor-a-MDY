@@ -1,0 +1,1245 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Comunicados Cocina · Mesa de Yeguas CC</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Source+Sans+3:ital,wght@0,300;0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --v:#1B3A2D;--vm:#2A5A42;--vc:#4A8C68;--vp:#EAF2EE;
+  --cr:#F8F4EC;--co:#EDE6D6;
+  --or:#B8892A;--ol:#D4AA50;--ob:#FFF9EC;
+  --ro:#8B2020;--rb:#FDF0F0;
+  --az:#1A3B5C;--ab:#EEF4FA;
+  --tl:#1A4A4A;--tb:#EEF7F5;
+  --gt:#3A3A3A;--gs:#666;--bd:#D5CCC0;
+  --pu:#4A2080;--pb:#F3EFFE;
+  --radius:6px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{font-family:'Source Sans 3',sans-serif;background:#F0EBE0;color:var(--gt);font-size:14px;line-height:1.65;min-height:100vh;}
+
+/* ── HEADER ── */
+.hdr{background:var(--v);color:#fff;padding:28px 40px 0;border-bottom:3px solid var(--or);}
+.hdr-top{display:flex;align-items:center;justify-content:space-between;padding-bottom:20px;}
+.hdr-brand .eyebrow{font-size:10px;letter-spacing:3px;color:var(--ol);text-transform:uppercase;margin-bottom:4px;}
+.hdr-brand h1{font-family:'Playfair Display',serif;font-size:22px;font-weight:700;line-height:1.2;}
+.hdr-brand .sub{font-size:12px;color:rgba(255,255,255,.55);margin-top:2px;letter-spacing:.5px;}
+.hdr-stats{display:flex;gap:24px;text-align:center;}
+.stat-num{font-family:'Playfair Display',serif;font-size:26px;font-weight:700;color:var(--ol);line-height:1;}
+.stat-lbl{font-size:10px;color:rgba(255,255,255,.5);letter-spacing:1px;text-transform:uppercase;margin-top:2px;}
+
+/* ── TABS NAV ── */
+.tabs{display:flex;gap:0;overflow-x:auto;scrollbar-width:none;}
+.tabs::-webkit-scrollbar{display:none;}
+.tab{padding:12px 20px;font-size:12.5px;font-weight:600;color:rgba(255,255,255,.55);cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap;transition:all .2s;display:flex;align-items:center;gap:7px;letter-spacing:.3px;}
+.tab:hover{color:rgba(255,255,255,.85);background:rgba(255,255,255,.06);}
+.tab.active{color:#fff;border-bottom-color:var(--or);}
+.tab-icon{font-size:15px;}
+
+/* ── MAIN ── */
+.main{max-width:900px;margin:0 auto;padding:32px 20px 80px;}
+.section{display:none;}
+.section.active{display:block;}
+
+/* ── GROUP HEADER ── */
+.group-hdr{display:flex;align-items:center;gap:16px;margin-bottom:24px;padding-bottom:14px;border-bottom:2px solid var(--bd);}
+.group-icon{width:52px;height:52px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;}
+.group-title{font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:var(--v);}
+.group-desc{font-size:12.5px;color:var(--gs);margin-top:2px;}
+.doc-count{display:inline-flex;align-items:center;justify-content:center;background:var(--v);color:#fff;font-size:10px;font-weight:700;padding:2px 9px;border-radius:20px;margin-left:8px;letter-spacing:.5px;}
+
+/* ── DOCUMENT CARD ── */
+.doc-card{background:#fff;border:1px solid var(--bd);border-radius:var(--radius);margin-bottom:24px;overflow:hidden;}
+.doc-stripe{height:4px;}
+.stripe-reg{background:linear-gradient(90deg,var(--ro),#C0392B);}
+.stripe-ins{background:linear-gradient(90deg,var(--or),var(--ol));}
+.stripe-fun{background:linear-gradient(90deg,var(--tl),#2E7D6E);}
+.stripe-mem{background:linear-gradient(90deg,var(--v),var(--vc));}
+.stripe-avs{background:linear-gradient(90deg,var(--az),#2E5E8E);}
+
+.doc-topbar{display:flex;align-items:center;justify-content:space-between;padding:10px 20px;border-bottom:1px solid var(--bd);background:#FAFAF8;}
+.doc-code{font-size:10px;font-weight:700;letter-spacing:2px;color:var(--gs);font-family:'Source Sans 3',sans-serif;}
+.doc-badge{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:3px 12px;border-radius:20px;}
+.badge-reg{background:var(--rb);color:var(--ro);}
+.badge-ins{background:var(--ob);color:#7A5A10;}
+.badge-fun{background:var(--tb);color:var(--tl);}
+.badge-mem{background:var(--vp);color:var(--v);}
+.badge-avs{background:var(--ab);color:var(--az);}
+.doc-fecha{font-size:11px;color:var(--gs);}
+
+.doc-body{padding:22px 24px 26px;}
+
+.doc-hero{display:flex;align-items:flex-start;gap:16px;margin-bottom:16px;}
+.doc-hero-icon{font-size:32px;width:56px;height:56px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.icon-bg-reg{background:var(--rb);}
+.icon-bg-ins{background:var(--ob);}
+.icon-bg-fun{background:var(--tb);}
+.icon-bg-mem{background:var(--vp);}
+.icon-bg-avs{background:var(--ab);}
+
+.doc-titulo{font-family:'Playfair Display',serif;font-size:17px;font-weight:600;line-height:1.3;margin-bottom:4px;}
+.titulo-reg{color:var(--ro);}
+.titulo-ins{color:#7A5A10;}
+.titulo-fun{color:var(--tl);}
+.titulo-mem{color:var(--v);}
+.titulo-avs{color:var(--az);}
+
+.doc-meta{display:flex;flex-wrap:wrap;gap:12px;font-size:12px;color:var(--gs);}
+.meta-pill{display:inline-flex;align-items:center;gap:5px;background:#F4F2EE;padding:3px 10px;border-radius:20px;}
+.meta-pill strong{color:var(--gt);}
+
+.sep{border:none;border-top:1px solid var(--co);margin:14px 0;}
+
+.doc-body p{font-size:13.5px;margin-bottom:10px;line-height:1.7;}
+.doc-body ul,.doc-body ol{margin:6px 0 12px 18px;}
+.doc-body li{font-size:13.5px;margin-bottom:5px;line-height:1.6;}
+
+/* Regla boxes */
+.rule-box{border-radius:var(--radius);padding:12px 16px;margin:10px 0;font-size:13px;display:flex;gap:12px;align-items:flex-start;}
+.rule-box .rb-icon{font-size:20px;flex-shrink:0;margin-top:1px;}
+.rule-box .rb-txt{flex:1;}
+.rule-box .rb-txt strong{display:block;margin-bottom:3px;font-size:12px;letter-spacing:.5px;text-transform:uppercase;}
+.rbox-red{background:var(--rb);border-left:4px solid var(--ro);color:var(--ro);}
+.rbox-gold{background:var(--ob);border-left:4px solid var(--or);color:#7A5A10;}
+.rbox-green{background:var(--vp);border-left:4px solid var(--vc);color:var(--vm);}
+.rbox-blue{background:var(--ab);border-left:4px solid var(--az);color:var(--az);}
+.rbox-teal{background:var(--tb);border-left:4px solid var(--tl);color:var(--tl);}
+
+/* Tabla */
+.tbl{width:100%;border-collapse:collapse;font-size:13px;margin:10px 0 14px;}
+.tbl th{background:var(--v);color:#fff;padding:8px 14px;text-align:left;font-size:11.5px;letter-spacing:.5px;font-weight:600;}
+.tbl td{padding:8px 14px;border-bottom:1px solid var(--co);}
+.tbl tr:last-child td{border-bottom:none;}
+.tbl tr:nth-child(even) td{background:var(--cr);}
+
+/* Sección reglamento */
+.reg-section{margin-bottom:16px;border:1px solid var(--bd);border-radius:var(--radius);overflow:hidden;}
+.reg-section-hdr{display:flex;align-items:center;gap:10px;padding:10px 16px;background:#FAFAF8;border-bottom:1px solid var(--bd);cursor:pointer;}
+.reg-section-hdr .rs-icon{font-size:18px;}
+.reg-section-hdr .rs-title{font-size:13px;font-weight:700;color:var(--gt);flex:1;}
+.reg-section-hdr .rs-badge{font-size:10px;background:var(--rb);color:var(--ro);padding:2px 9px;border-radius:20px;font-weight:700;}
+.reg-section-body{padding:14px 16px;}
+
+/* Grid 2col */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:10px 0;}
+@media(max-width:580px){.grid2{grid-template-columns:1fr;}}
+.turno-card{background:var(--cr);border:1px solid var(--bd);border-radius:var(--radius);padding:14px 16px;}
+.turno-lbl{font-size:10.5px;font-weight:700;letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;padding-bottom:7px;border-bottom:1px solid var(--bd);}
+.turno-card ul{margin:0;padding-left:15px;}
+.turno-card li{font-size:12.5px;margin-bottom:4px;}
+
+/* Bodegas */
+.bodega-list{border:1px solid var(--bd);border-radius:var(--radius);overflow:hidden;margin:10px 0;}
+.bodega-row{display:flex;align-items:center;gap:12px;padding:10px 14px;border-bottom:1px solid var(--co);font-size:13px;}
+.bodega-row:last-child{border-bottom:none;}
+.bodega-row:nth-child(even){background:var(--cr);}
+.b-tag{background:var(--v);color:#fff;font-size:10px;font-weight:700;padding:2px 9px;border-radius:3px;white-space:nowrap;letter-spacing:.5px;}
+.b-info{flex:1;line-height:1.4;}
+.b-note{font-size:11.5px;color:var(--gs);font-style:italic;}
+.b-hora{font-size:11.5px;font-weight:700;color:var(--or);white-space:nowrap;text-align:right;}
+
+/* Horarios comedor */
+.horarios-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:14px 0;}
+@media(max-width:500px){.horarios-grid{grid-template-columns:1fr;}}
+.horario-card{text-align:center;padding:16px 12px;border-radius:var(--radius);border:1px solid var(--bd);}
+.h-icon{font-size:26px;margin-bottom:6px;}
+.h-name{font-size:11.5px;font-weight:700;color:var(--gt);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;}
+.h-time{font-family:'Playfair Display',serif;font-size:15px;font-weight:600;color:var(--az);}
+
+/* Firma */
+.firma{display:flex;align-items:flex-end;gap:12px;margin-top:22px;padding-top:16px;border-top:1px solid var(--co);}
+.firma-blk{border-bottom:1.5px solid var(--gt);padding-bottom:4px;min-width:180px;}
+.firma-nom{font-size:12.5px;font-weight:700;margin-top:5px;}
+.firma-cargo{font-size:11.5px;color:var(--gs);}
+
+/* Cartel sin comanda */
+.cartel{text-align:center;padding:28px 20px;}
+.cartel-icon{font-size:52px;margin-bottom:10px;}
+.cartel-title{font-family:'Playfair Display',serif;font-size:21px;font-weight:700;color:var(--ro);line-height:1.3;margin-bottom:14px;}
+.cartel-sub{font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--gt);}
+.cartel-nota{font-size:11.5px;color:var(--gs);margin-top:8px;font-style:italic;}
+
+/* ── PRINT BTN ── */
+.print-btn{float:right;font-size:11px;padding:4px 12px;border:1px solid var(--bd);border-radius:20px;cursor:pointer;color:var(--gs);background:#fff;transition:all .2s;display:flex;align-items:center;gap:5px;}
+.print-btn:hover{background:var(--v);color:#fff;border-color:var(--v);}
+
+/* ══════════════════════════
+   CREADOR DE COMUNICADOS
+══════════════════════════ */
+.creator{background:#fff;border:1px solid var(--bd);border-radius:var(--radius);overflow:hidden;}
+.creator-hdr{background:var(--v);color:#fff;padding:20px 24px;display:flex;align-items:center;gap:14px;}
+.creator-hdr-icon{font-size:26px;}
+.creator-hdr h2{font-family:'Playfair Display',serif;font-size:18px;font-weight:600;}
+.creator-hdr p{font-size:12px;color:rgba(255,255,255,.6);margin-top:2px;}
+
+/* Pasos */
+.steps-bar{display:flex;align-items:center;padding:18px 24px;border-bottom:1px solid var(--bd);background:#FAFAF8;gap:0;}
+.step-item{display:flex;align-items:center;gap:8px;flex:1;}
+.step-item:last-child{flex:0;}
+.step-num{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;border:2px solid var(--bd);color:var(--gs);background:#fff;transition:all .3s;flex-shrink:0;}
+.step-num.done{background:var(--vc);border-color:var(--vc);color:#fff;}
+.step-num.active{background:var(--v);border-color:var(--v);color:#fff;}
+.step-lbl{font-size:11px;font-weight:600;color:var(--gs);white-space:nowrap;}
+.step-lbl.active{color:var(--v);}
+.step-connector{flex:1;height:1px;background:var(--bd);margin:0 8px;}
+.step-connector.done{background:var(--vc);}
+
+.creator-body{padding:24px;}
+
+/* Paso 1: categoría */
+.cat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px;}
+@media(max-width:560px){.cat-grid{grid-template-columns:1fr 1fr;}}
+.cat-card{border:2px solid var(--bd);border-radius:var(--radius);padding:14px;cursor:pointer;text-align:center;transition:all .2s;}
+.cat-card:hover{border-color:var(--vc);background:var(--vp);}
+.cat-card.selected{border-color:var(--v);background:var(--vp);}
+.cat-card .cc-icon{font-size:28px;margin-bottom:8px;}
+.cat-card .cc-name{font-size:12px;font-weight:700;color:var(--gt);}
+.cat-card .cc-sub{font-size:11px;color:var(--gs);margin-top:2px;}
+
+/* Paso 2: tipo */
+.tipo-grid{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:20px;}
+.tipo-pill{border:2px solid var(--bd);border-radius:20px;padding:6px 16px;cursor:pointer;font-size:12.5px;font-weight:600;transition:all .2s;white-space:nowrap;}
+.tipo-pill:hover{border-color:var(--vc);}
+.tipo-pill.selected{border-color:var(--v);background:var(--v);color:#fff;}
+
+/* Formulario */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px;}
+@media(max-width:540px){.form-grid{grid-template-columns:1fr;}}
+.form-group{display:flex;flex-direction:column;gap:5px;}
+.form-group.full{grid-column:1/-1;}
+.form-group label{font-size:11.5px;font-weight:700;color:var(--gs);letter-spacing:.5px;text-transform:uppercase;}
+.form-group input,.form-group select,.form-group textarea{
+  padding:8px 12px;border:1px solid var(--bd);border-radius:var(--radius);font-family:'Source Sans 3',sans-serif;font-size:13.5px;color:var(--gt);background:#FAFAF8;
+  transition:border .2s;outline:none;
+}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:var(--vc);background:#fff;}
+.form-group textarea{resize:vertical;min-height:90px;}
+.code-preview{font-size:11px;color:var(--gs);margin-top:4px;font-family:monospace;background:var(--cr);padding:3px 8px;border-radius:4px;display:inline-block;}
+
+/* Íconos picker */
+.icon-picker-lbl{font-size:11.5px;font-weight:700;color:var(--gs);letter-spacing:.5px;text-transform:uppercase;margin-bottom:10px;}
+.icon-grid{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px;}
+.icon-opt{width:46px;height:46px;border:2px solid var(--bd);border-radius:var(--radius);display:flex;align-items:center;justify-content:center;font-size:22px;cursor:pointer;transition:all .2s;}
+.icon-opt:hover{border-color:var(--vc);background:var(--vp);}
+.icon-opt.selected{border-color:var(--v);background:var(--vp);}
+.icon-section-lbl{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--gs);margin:10px 0 6px;width:100%;}
+
+/* Vista previa */
+.preview-area{border:2px dashed var(--bd);border-radius:var(--radius);padding:24px;background:#FAFAF8;min-height:200px;}
+.preview-empty{text-align:center;color:var(--gs);font-size:13px;padding:40px 0;}
+.preview-empty .pe-icon{font-size:36px;margin-bottom:8px;opacity:.4;}
+
+/* Botones acción */
+.btn-row{display:flex;gap:12px;justify-content:flex-end;margin-top:20px;flex-wrap:wrap;}
+.btn{padding:9px 20px;border-radius:var(--radius);font-size:13px;font-weight:600;cursor:pointer;border:none;transition:all .2s;display:flex;align-items:center;gap:6px;font-family:'Source Sans 3',sans-serif;}
+.btn-sec{background:#fff;border:1.5px solid var(--bd);color:var(--gs);}
+.btn-sec:hover{border-color:var(--v);color:var(--v);}
+.btn-prim{background:var(--v);color:#fff;}
+.btn-prim:hover{background:var(--vm);}
+.btn-prim:disabled{background:var(--bd);cursor:not-allowed;}
+.btn-print{background:var(--az);color:#fff;}
+.btn-print:hover{background:#0F2B44;}
+
+/* ── PRINT ── */
+@media print{
+  .hdr .tabs,.print-btn,.creator,.steps-bar,.btn-row{display:none!important;}
+  body{background:white;}
+  .section{display:block!important;}
+  .doc-card{page-break-inside:avoid;border:1px solid #ccc;margin-bottom:20px;}
+  .hdr{background:var(--v)!important;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="hdr">
+  <div class="hdr-top">
+    <div class="hdr-brand">
+      <div class="eyebrow">Corporación Mesa de Yeguas Country Club</div>
+      <h1>Sistema de Comunicados — Cocina</h1>
+      <div class="sub">Chef Ejecutivo: Dominique Olivier Henri Asselin &nbsp;·&nbsp; Gestión de documentos internos</div>
+    </div>
+    <div class="hdr-stats">
+      <div><div class="stat-num">9</div><div class="stat-lbl">Comunicados</div></div>
+      <div><div class="stat-num">5</div><div class="stat-lbl">Categorías</div></div>
+      <div><div class="stat-num" id="stat-year">2026</div><div class="stat-lbl">Vigencia</div></div>
+    </div>
+  </div>
+  <nav class="tabs" role="tablist">
+    <div class="tab active" onclick="showTab('reg')" data-tab="reg"><span class="tab-icon">🚫</span> Reglamento</div>
+    <div class="tab" onclick="showTab('abs')" data-tab="abs"><span class="tab-icon">📦</span> Abastecimiento</div>
+    <div class="tab" onclick="showTab('fun')" data-tab="fun"><span class="tab-icon">👥</span> Funciones</div>
+    <div class="tab" onclick="showTab('disp')" data-tab="disp"><span class="tab-icon">📋</span> Disposiciones</div>
+    <div class="tab" onclick="showTab('com')" data-tab="com"><span class="tab-icon">🍽️</span> Comedor</div>
+    <div class="tab" style="color:var(--ol);border-left:1px solid rgba(255,255,255,.15);margin-left:8px;" onclick="showTab('crear')" data-tab="crear"><span class="tab-icon">✏️</span> Crear comunicado</div>
+  </nav>
+</div>
+
+<div class="main">
+
+<!-- ══════════════════════════
+     TAB 1: REGLAMENTO
+══════════════════════════ -->
+<div class="section active" id="sec-reg">
+  <div class="group-hdr">
+    <div class="group-icon" style="background:var(--rb);">🚫</div>
+    <div>
+      <div class="group-title">Reglamento Interno de Cocina <span class="doc-count">1 documento</span></div>
+      <div class="group-desc">Normas de conducta, prohibiciones y control de alimentos. Vigentes para todo el personal de cocina y Stewart.</div>
+    </div>
+  </div>
+
+  <div class="doc-card">
+    <div class="doc-stripe stripe-reg"></div>
+    <div class="doc-topbar">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <span class="doc-code">MDY-REG-2026-001</span>
+        <span class="doc-badge badge-reg">Reglamento</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <span class="doc-fecha">Revisión: marzo 2026</span>
+        <button class="print-btn" onclick="printDoc('doc-reg-001')">🖨️ Imprimir</button>
+      </div>
+    </div>
+    <div class="doc-body" id="doc-reg-001">
+      <div class="doc-hero">
+        <div class="doc-hero-icon icon-bg-reg">📜</div>
+        <div>
+          <div class="doc-titulo titulo-reg">Reglamento Interno — Normas Generales del Área de Cocina</div>
+          <div class="doc-meta">
+            <span class="meta-pill"><strong>Para:</strong> Personal de Cocina y Stewart</span>
+            <span class="meta-pill"><strong>Emite:</strong> Chef Ejecutivo D. Asselin</span>
+            <span class="meta-pill"><strong>Carácter:</strong> Obligatorio</span>
+          </div>
+        </div>
+      </div>
+      <hr class="sep">
+
+      <div class="reg-section">
+        <div class="reg-section-hdr">
+          <span class="rs-icon">📵</span>
+          <span class="rs-title">A. Uso de Dispositivos Móviles</span>
+          <span class="rs-badge">PROHIBIDO</span>
+        </div>
+        <div class="reg-section-body">
+          <div class="rule-box rbox-red">
+            <span class="rb-icon">🚫</span>
+            <div class="rb-txt"><strong>Prohibición general</strong>Queda prohibido el uso de celular y dispositivos móviles dentro de las instalaciones de producción y áreas de cocina.</div>
+          </div>
+          <div class="rule-box rbox-gold">
+            <span class="rb-icon">☎️</span>
+            <div class="rb-txt"><strong>Excepción autorizada</strong>Se toleran únicamente llamadas de urgencia, las cuales deberán atenderse en el comedor de personal, fuera del área de producción.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="reg-section">
+        <div class="reg-section-hdr">
+          <span class="rs-icon">🍽️</span>
+          <span class="rs-title">B. Consumo y Distribución de Alimentos</span>
+          <span class="rs-badge">PROHIBIDO</span>
+        </div>
+        <div class="reg-section-body">
+          <div class="rule-box rbox-red">
+            <span class="rb-icon">🚫</span>
+            <div class="rb-txt"><strong>Autoservicio en cocina de personal</strong>No está permitido que el personal se sirva directamente los alimentos en la cocina de personal. Únicamente la persona designada por el Chef es responsable de servir la comida al personal.</div>
+          </div>
+          <div class="rule-box rbox-red">
+            <span class="rb-icon">🚫</span>
+            <div class="rb-txt"><strong>Comer en áreas de producción</strong>Es totalmente prohibido consumir alimentos en las áreas de producción sin autorización previa, así como entregar comida a personas ajenas al equipo de cocina.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="reg-section">
+        <div class="reg-section-hdr">
+          <span class="rs-icon">🥼</span>
+          <span class="rs-title">C. Elementos de Protección Personal (EPP)</span>
+          <span class="rs-badge">OBLIGATORIO</span>
+        </div>
+        <div class="reg-section-body">
+          <div class="rule-box rbox-green">
+            <span class="rb-icon">✅</span>
+            <div class="rb-txt"><strong>Uso permanente de EPP</strong>Es obligatorio portar en todo momento todos los elementos de protección personal dentro del área de cocina, conforme a las normas de Buenas Prácticas de Manufactura (BPM) e Inocuidad.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="reg-section">
+        <div class="reg-section-hdr">
+          <span class="rs-icon">🧾</span>
+          <span class="rs-title">D. Control de Salida de Alimentos</span>
+          <span class="rs-badge">PROHIBIDO</span>
+        </div>
+        <div class="reg-section-body">
+          <div class="rule-box rbox-red">
+            <span class="rb-icon">🚫</span>
+            <div class="rb-txt"><strong>Sin comanda o soporte no deben salir alimentos</strong>Ningún alimento puede salir de la cocina sin la comanda o soporte correspondiente. Esta disposición está establecida en el reglamento interno de la empresa y su incumplimiento constituye un delito sujeto a sanción disciplinaria.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="reg-section">
+        <div class="reg-section-hdr">
+          <span class="rs-icon">🔐</span>
+          <span class="rs-title">E. Autorización para Acceso al Comedor de Personal</span>
+          <span class="rs-badge">CONTROL</span>
+        </div>
+        <div class="reg-section-body">
+          <div class="rule-box rbox-gold">
+            <span class="rb-icon">📸</span>
+            <div class="rb-txt"><strong>Autorización previa del Chef</strong>Todo traspaso al comedor de personal debe contar con autorización previa del Chef. Cada traspaso será evidenciado con fotografía y reporte para garantizar control y transparencia.</div>
+          </div>
+          <div class="rule-box rbox-gold">
+            <span class="rb-icon">📊</span>
+            <div class="rb-txt"><strong>Responsabilidad por turno</strong>Cada encargado de turno responderá por el buen funcionamiento de su área y por las diferencias que se presenten al cierre del mes.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="rule-box rbox-red" style="margin-top:16px;">
+        <span class="rb-icon">⚖️</span>
+        <div class="rb-txt"><strong>Consecuencias por incumplimiento</strong>El incumplimiento de cualquiera de las disposiciones del presente reglamento será considerado una <strong>falta grave</strong> y podrá acarrear sanciones disciplinarias conforme al reglamento interno de la empresa, incluyendo el trámite ante otras instancias disciplinarias.</div>
+      </div>
+
+      <div class="firma">
+        <div class="firma-blk"></div>
+        <div>
+          <div class="firma-nom">Dominique Olivier Henri Asselin</div>
+          <div class="firma-cargo">Chef Ejecutivo — Corporación Mesa de Yeguas CC</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════
+     TAB 2: ABASTECIMIENTO
+══════════════════════════ -->
+<div class="section" id="sec-abs">
+  <div class="group-hdr">
+    <div class="group-icon" style="background:var(--ob);">📦</div>
+    <div>
+      <div class="group-title">Protocolos de Abastecimiento <span class="doc-count">3 documentos</span></div>
+      <div class="group-desc">Instrucciones operativas para solicitud y recepción de insumos: proteínas, fruver y bodegas.</div>
+    </div>
+  </div>
+
+  <!-- INS-2023-001: Fruver -->
+  <div class="doc-card">
+    <div class="doc-stripe stripe-ins"></div>
+    <div class="doc-topbar">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <span class="doc-code">MDY-INS-2023-001</span>
+        <span class="doc-badge badge-ins">Instrucción Operativa</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <span class="doc-fecha">27 sept. 2023</span>
+        <button class="print-btn" onclick="printDoc('doc-ins-2023-001')">🖨️ Imprimir</button>
+      </div>
+    </div>
+    <div class="doc-body" id="doc-ins-2023-001">
+      <div class="doc-hero">
+        <div class="doc-hero-icon icon-bg-ins">🥦</div>
+        <div>
+          <div class="doc-titulo titulo-ins">Nueva Orden en los Pedidos de Fruver</div>
+          <div class="doc-meta">
+            <span class="meta-pill"><strong>Para:</strong> Personal de Cocina y Almacén</span>
+            <span class="meta-pill"><strong>Proveedor:</strong> Bodega 17 / Fruver</span>
+          </div>
+        </div>
+      </div>
+      <hr class="sep">
+      <div class="rule-box rbox-gold">
+        <span class="rb-icon">⏰</span>
+        <div class="rb-txt"><strong>El proveedor de Fruver entrega dos veces por semana</strong>Los pedidos deben realizarse con anticipación según el calendario siguiente:</div>
+      </div>
+      <table class="tbl">
+        <thead><tr><th>📅 Día de entrega proveedor</th><th>⏰ Hora límite entrega</th><th>📝 Pedido se realiza el</th><th>🕐 Hora límite pedido</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Martes</strong></td><td>Antes de 10:00 AM</td><td>Sábado anterior</td><td>Antes de 12:00 M</td></tr>
+          <tr><td><strong>Martes</strong> (si lunes festivo)</td><td>Antes de 10:00 AM</td><td>Viernes anterior</td><td>Antes de 12:00 M</td></tr>
+          <tr><td><strong>Viernes</strong></td><td>Antes de 10:00 AM</td><td>Jueves anterior</td><td>Antes de 12:00 M</td></tr>
+        </tbody>
+      </table>
+      <div class="firma">
+        <div class="firma-blk"></div>
+        <div><div class="firma-nom">Dominique Olivier Henri Asselin</div><div class="firma-cargo">Chef Ejecutivo</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- INS-2024-001: Proteínas -->
+  <div class="doc-card">
+    <div class="doc-stripe stripe-ins"></div>
+    <div class="doc-topbar">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <span class="doc-code">MDY-INS-2024-001</span>
+        <span class="doc-badge badge-ins">Instrucción Operativa</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <span class="doc-fecha">28 mayo 2024</span>
+        <button class="print-btn" onclick="printDoc('doc-ins-2024-001')">🖨️ Imprimir</button>
+      </div>
+    </div>
+    <div class="doc-body" id="doc-ins-2024-001">
+      <div class="doc-hero">
+        <div class="doc-hero-icon icon-bg-ins">🥩</div>
+        <div>
+          <div class="doc-titulo titulo-ins">Protocolo de Solicitud y Entrega de Proteínas — Comedor de Personal</div>
+          <div class="doc-meta">
+            <span class="meta-pill"><strong>Para:</strong> Personal de Cocina</span>
+            <span class="meta-pill"><strong>Responsable recepción:</strong> Daniel Lesmes (Porcionador)</span>
+          </div>
+        </div>
+      </div>
+      <hr class="sep">
+      <div class="rule-box rbox-gold">
+        <span class="rb-icon">📅</span>
+        <div class="rb-txt"><strong>Frecuencia de solicitud</strong>Las proteínas se solicitan <strong>una vez a la semana, los días sábado</strong>, para garantizar el servicio continuo del comedor de personal.</div>
+      </div>
+      <table class="tbl" style="margin-top:12px;">
+        <thead><tr><th>📅 Día de entrega</th><th>🥩 Proteínas que se entregan</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Sábado AM</strong> — Almacenista</td><td>Martes, Jueves y Miércoles (semana siguiente)</td></tr>
+          <tr><td><strong>Martes</strong></td><td>Jueves y Viernes</td></tr>
+          <tr><td><strong>Jueves</strong></td><td>Sábado y Domingo</td></tr>
+        </tbody>
+      </table>
+      <div class="rule-box rbox-green" style="margin-top:12px;">
+        <span class="rb-icon">✅</span>
+        <div class="rb-txt"><strong>Responsabilidad de recepción</strong>El señor <strong>Daniel Lesmes</strong> (porcionador) deberá revisar la minuta, recibir y verificar que las proteínas estén aptas para su proceso de preparación.</div>
+      </div>
+      <div class="firma">
+        <div class="firma-blk"></div>
+        <div><div class="firma-nom">Dominique Asselin</div><div class="firma-cargo">Chef Ejecutivo</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- INS-2024-002: Bodegas -->
+  <div class="doc-card">
+    <div class="doc-stripe stripe-ins"></div>
+    <div class="doc-topbar">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <span class="doc-code">MDY-INS-2024-002</span>
+        <span class="doc-badge badge-ins">Instrucción Operativa</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <span class="doc-fecha">Vigente</span>
+        <button class="print-btn" onclick="printDoc('doc-ins-2024-002')">🖨️ Imprimir</button>
+      </div>
+    </div>
+    <div class="doc-body" id="doc-ins-2024-002">
+      <div class="doc-hero">
+        <div class="doc-hero-icon icon-bg-ins">🏪</div>
+        <div>
+          <div class="doc-titulo titulo-ins">Horarios de Entrega de Pedidos — Cocina y Bodegas de Almacén</div>
+          <div class="doc-meta">
+            <span class="meta-pill"><strong>Aplica:</strong> Lunes a Sábado</span>
+            <span class="meta-pill"><strong>Inicio despacho bodegas:</strong> desde 9:00 AM</span>
+          </div>
+        </div>
+      </div>
+      <hr class="sep">
+      <p style="font-size:11.5px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--or);margin-bottom:8px;">Pedidos de cocina al almacén</p>
+      <table class="tbl" style="margin-bottom:18px;">
+        <thead><tr><th>Tipo de pedido</th><th>Hora</th></tr></thead>
+        <tbody>
+          <tr><td>Pedido regular al almacén</td><td>⏰ 8:30 AM</td></tr>
+          <tr><td>Refuerzo al almacén (tarde)</td><td>⏰ 2:30 PM</td></tr>
+        </tbody>
+      </table>
+      <p style="font-size:11.5px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--or);margin-bottom:8px;">Despacho por bodega</p>
+      <div class="bodega-list">
+        <div class="bodega-row"><span class="b-tag">BOD 17</span><div class="b-info">Verduras y Fruver<br><span class="b-note">Solo Fruver (según instrucción vigente)</span></div><span class="b-hora">Máx 11:00 AM</span></div>
+        <div class="bodega-row"><span class="b-tag">BOD 80</span><div class="b-info">Fritos, Lácteos y Embutidos<br><span class="b-note">Congelados y Panes: solo miércoles</span></div><span class="b-hora">11:00 AM</span></div>
+        <div class="bodega-row"><span class="b-tag">BOD 20</span><div class="b-info">Suministros<br><span class="b-note">Despacha únicamente los martes</span></div><span class="b-hora">Desde 9:00 AM</span></div>
+        <div class="bodega-row"><span class="b-tag">BOD 93</span><div class="b-info">Proteínas</div><span class="b-hora">Máx 11:00 AM</span></div>
+        <div class="bodega-row"><span class="b-tag">BOD 10</span><div class="b-info">Abarrotes — Martes y Sábado<br><span class="b-note">Solo pedidos, no despacho libre</span></div><span class="b-hora">10:00 AM</span></div>
+      </div>
+      <div class="firma">
+        <div class="firma-blk"></div>
+        <div><div class="firma-nom">Dominique Asselin</div><div class="firma-cargo">Chef Ejecutivo</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════
+     TAB 3: FUNCIONES
+══════════════════════════ -->
+<div class="section" id="sec-fun">
+  <div class="group-hdr">
+    <div class="group-icon" style="background:var(--tb);">👥</div>
+    <div>
+      <div class="group-title">Funciones por Cargo — Steward <span class="doc-count">2 documentos</span></div>
+      <div class="group-desc">Responsabilidades y tareas por turno para el personal Steward.</div>
+    </div>
+  </div>
+
+  <!-- FUN-2024-001 Steward AM -->
+  <div class="doc-card">
+    <div class="doc-stripe stripe-fun"></div>
+    <div class="doc-topbar">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <span class="doc-code">MDY-FUN-2024-001</span>
+        <span class="doc-badge badge-fun">Funciones / Cargo</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <span class="doc-fecha">Vigente</span>
+        <button class="print-btn" onclick="printDoc('doc-fun-2024-001')">🖨️ Imprimir</button>
+      </div>
+    </div>
+    <div class="doc-body" id="doc-fun-2024-001">
+      <div class="doc-hero">
+        <div class="doc-hero-icon icon-bg-fun">🧹</div>
+        <div>
+          <div class="doc-titulo titulo-fun">Funciones Personal Steward — Turno Mañana (AM)</div>
+          <div class="doc-meta">
+            <span class="meta-pill"><strong>Cargo:</strong> Personal Steward</span>
+            <span class="meta-pill"><strong>Turno:</strong> 6:00 AM y 7:00 AM</span>
+          </div>
+        </div>
+      </div>
+      <hr class="sep">
+      <div class="grid2">
+        <div class="turno-card" style="border-top:3px solid var(--tl);">
+          <div class="turno-lbl" style="color:var(--tl);">🌅 Turno 6:00 AM</div>
+          <ul>
+            <li>Presentación personal.</li>
+            <li>Limpieza de parrilla.</li>
+            <li>Instalación de canecas con bolsas de basura.</li>
+            <li>Aseo general cocina principal.</li>
+            <li>Piso de cocina trapeado y seco.</li>
+            <li>Máquina del platero limpia.</li>
+            <li>Aseo de escaleras y paredes.</li>
+            <li>Aseo del cuarto de abarrotes <em>(se programa).</em></li>
+            <li>Dejar parrillas sumergidas en agua con HT y jabón.</li>
+            <li>Lavado de tablas semanalmente — cloro y jabón <em>(se programa).</em></li>
+          </ul>
+        </div>
+        <div class="turno-card" style="border-top:3px solid var(--vc);">
+          <div class="turno-lbl" style="color:var(--vm);">🌄 Turno 7:00 AM</div>
+          <ul>
+            <li>Presentación personal.</li>
+            <li>Aseo general comedor de empleados.</li>
+            <li>Subir canecas de lavaza.</li>
+            <li>Limpieza de lavamanos de toda la cocina.</li>
+            <li>Aseo general punto de venta Hoyo 1 <em>(fines de semana).</em></li>
+            <li>Aceites usados empacados → Centro de acopio.</li>
+            <li>Limpieza de oficina, vidrios y pisos <em>(cada semana).</em></li>
+            <li>Lavado de tablas semanalmente — cloro y jabón <em>(se programa).</em></li>
+          </ul>
+        </div>
+      </div>
+      <div class="firma">
+        <div class="firma-blk"></div>
+        <div><div class="firma-nom">Chef Ejecutivo / Subchef</div><div class="firma-cargo">Departamento de Cocina</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FUN-2024-002 Steward PM -->
+  <div class="doc-card">
+    <div class="doc-stripe stripe-fun"></div>
+    <div class="doc-topbar">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <span class="doc-code">MDY-FUN-2024-002</span>
+        <span class="doc-badge badge-fun">Funciones / Cargo</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <span class="doc-fecha">Vigente</span>
+        <button class="print-btn" onclick="printDoc('doc-fun-2024-002')">🖨️ Imprimir</button>
+      </div>
+    </div>
+    <div class="doc-body" id="doc-fun-2024-002">
+      <div class="doc-hero">
+        <div class="doc-hero-icon icon-bg-fun">🌙</div>
+        <div>
+          <div class="doc-titulo titulo-fun">Funciones Personal Steward — Turno Tarde (PM)</div>
+          <div class="doc-meta">
+            <span class="meta-pill"><strong>Cargo:</strong> Personal Steward</span>
+            <span class="meta-pill"><strong>Turno:</strong> 1:00 PM</span>
+          </div>
+        </div>
+      </div>
+      <hr class="sep">
+      <div class="turno-card" style="border-top:3px solid var(--tl);max-width:100%;">
+        <div class="turno-lbl" style="color:var(--tl);">🕐 Turno 1:00 PM</div>
+        <div class="grid2" style="margin-top:8px;">
+          <ul style="list-style:none;padding:0;margin:0;">
+            <li style="font-size:12.5px;margin-bottom:5px;display:flex;gap:6px;"><span>•</span>Presentación personal.</li>
+            <li style="font-size:12.5px;margin-bottom:5px;display:flex;gap:6px;"><span>•</span>Aseo punto de venta Marina <em>(domingos / lunes festivo).</em></li>
+            <li style="font-size:12.5px;margin-bottom:5px;display:flex;gap:6px;"><span>•</span>Aseo de hornos <em>(revisar según necesidad).</em></li>
+            <li style="font-size:12.5px;margin-bottom:5px;display:flex;gap:6px;"><span>•</span>Limpieza de puertas de neveras.</li>
+            <li style="font-size:12.5px;margin-bottom:5px;display:flex;gap:6px;"><span>•</span>Aseo del cuarto de procesos.</li>
+            <li style="font-size:12.5px;margin-bottom:5px;display:flex;gap:6px;"><span>•</span>Ollero desocupado al cerrar.</li>
+            <li style="font-size:12.5px;margin-bottom:5px;display:flex;gap:6px;"><span>•</span>Platero desocupado al cerrar.</li>
+            <li style="font-size:12.5px;margin-bottom:5px;display:flex;gap:6px;"><span>•</span>Máquina de lavaplatos lavada.</li>
+          </ul>
+          <ul style="list-style:none;padding:0;margin:0;">
+            <li style="font-size:12.5px;margin-bottom:5px;display:flex;gap:6px;"><span>•</span>Limpieza cocina caliente y cocina fría.</li>
+            <li style="font-size:12.5px;margin-bottom:5px;display:flex;gap:6px;"><span>•</span>Aseo freidoras y planchas.</li>
+            <li style="font-size:12.5px;margin-bottom:5px;display:flex;gap:6px;"><span>•</span>Sacar basuras y lavaza.</li>
+            <li style="font-size:12.5px;margin-bottom:5px;display:flex;gap:6px;"><span>•</span>Aseo zonas de producción, mesones y paredes.</li>
+            <li style="font-size:12.5px;margin-bottom:5px;display:flex;gap:6px;"><span>•</span>Limpieza del cuarto de aseo.</li>
+            <li style="font-size:12.5px;margin-bottom:5px;display:flex;gap:6px;"><span>•</span>Campanas extractoras <em>(se programa).</em></li>
+            <li style="font-size:12.5px;margin-bottom:5px;display:flex;gap:6px;"><span>•</span>Lavado paredes detrás neveras y rejillas de pasillos.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="firma">
+        <div class="firma-blk"></div>
+        <div><div class="firma-nom">Dominique Asselin</div><div class="firma-cargo">Chef Ejecutivo</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════
+     TAB 4: DISPOSICIONES
+══════════════════════════ -->
+<div class="section" id="sec-disp">
+  <div class="group-hdr">
+    <div class="group-icon" style="background:var(--vp);">📋</div>
+    <div>
+      <div class="group-title">Disposiciones Administrativas <span class="doc-count">2 documentos</span></div>
+      <div class="group-desc">Memorandos internos sobre organización del personal y asignación de responsabilidades operativas.</div>
+    </div>
+  </div>
+
+  <!-- MEM-2024-001 Compensación horas -->
+  <div class="doc-card">
+    <div class="doc-stripe stripe-mem"></div>
+    <div class="doc-topbar">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <span class="doc-code">MDY-MEM-2024-001</span>
+        <span class="doc-badge badge-mem">Memorando</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <span class="doc-fecha">19 julio 2024</span>
+        <button class="print-btn" onclick="printDoc('doc-mem-2024-001')">🖨️ Imprimir</button>
+      </div>
+    </div>
+    <div class="doc-body" id="doc-mem-2024-001">
+      <div class="doc-hero">
+        <div class="doc-hero-icon icon-bg-mem">⏱️</div>
+        <div>
+          <div class="doc-titulo titulo-mem">Compensación de Horas Semanales — Día de Descanso Mensual</div>
+          <div class="doc-meta">
+            <span class="meta-pill"><strong>De:</strong> Asselin Dominique</span>
+            <span class="meta-pill"><strong>Para:</strong> Personal de Cocina y Stewart</span>
+          </div>
+        </div>
+      </div>
+      <hr class="sep">
+      <div class="rule-box rbox-green">
+        <span class="rb-icon">📅</span>
+        <div class="rb-txt"><strong>Esquema acordado por unanimidad</strong>La reducción de 2 horas de carga laboral semanal (establecida por ley) se acumulará durante <strong>4 semanas</strong>, completando un total de <strong>8 horas</strong>, compensadas con <strong>1 día de descanso al mes</strong>.</div>
+      </div>
+      <p>El día de descanso será asignado según la necesidad operacional del Club. Para inquietudes, acercarse directamente a la oficina del Chef.</p>
+      <div class="firma">
+        <div class="firma-blk"></div>
+        <div><div class="firma-nom">Dominique Olivier Henri Asselin</div><div class="firma-cargo">Chef Ejecutivo</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MEM-2024-002 Cuarto congelación -->
+  <div class="doc-card">
+    <div class="doc-stripe stripe-mem"></div>
+    <div class="doc-topbar">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <span class="doc-code">MDY-MEM-2024-002</span>
+        <span class="doc-badge badge-mem">Memorando</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <span class="doc-fecha">14 marzo 2026</span>
+        <button class="print-btn" onclick="printDoc('doc-mem-2024-002')">🖨️ Imprimir</button>
+      </div>
+    </div>
+    <div class="doc-body" id="doc-mem-2024-002">
+      <div class="doc-hero">
+        <div class="doc-hero-icon icon-bg-mem">🧊</div>
+        <div>
+          <div class="doc-titulo titulo-mem">Responsabilidades sobre el Cuarto de Congelación</div>
+          <div class="doc-meta">
+            <span class="meta-pill"><strong>De:</strong> Dominique Asselin</span>
+            <span class="meta-pill"><strong>Para:</strong> Cocina</span>
+            <span class="meta-pill"><strong>Responsable:</strong> Porcionador</span>
+          </div>
+        </div>
+      </div>
+      <hr class="sep">
+      <div class="rule-box rbox-green">
+        <span class="rb-icon">👤</span>
+        <div class="rb-txt"><strong>Encargado único: el porcionador</strong>A partir de la fecha, el porcionador es el único responsable del cuarto de congelación: organización y rotulación al día. En días de descanso o vacaciones, se designará otra persona con el mismo criterio.</div>
+      </div>
+      <div class="rule-box rbox-green">
+        <span class="rb-icon">📊</span>
+        <div class="rb-txt"><strong>Cocinero uno</strong>Tendrá la obligación de mantener los inventarios al día y asegurar el aprovisionamiento oportuno en la cocina.</div>
+      </div>
+      <div class="rule-box rbox-red">
+        <span class="rb-icon">🚫</span>
+        <div class="rb-txt"><strong>Restricción de acceso</strong>En ningún momento se deberá recurrir a un Stewart u otra persona sin conocimiento para el manejo del cuarto de congelación. Esto genera desorden y no rotación de productos.</div>
+      </div>
+      <div class="firma">
+        <div class="firma-blk"></div>
+        <div><div class="firma-nom">Dominique Asselin</div><div class="firma-cargo">Chef Ejecutivo</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════
+     TAB 5: COMEDOR
+══════════════════════════ -->
+<div class="section" id="sec-com">
+  <div class="group-hdr">
+    <div class="group-icon" style="background:var(--ab);">🍽️</div>
+    <div>
+      <div class="group-title">Comedor de Personal <span class="doc-count">1 documento</span></div>
+      <div class="group-desc">Horarios de servicio, responsabilidades al cierre y disposiciones para el comedor de empleados.</div>
+    </div>
+  </div>
+
+  <!-- AVS-2026-001 -->
+  <div class="doc-card">
+    <div class="doc-stripe stripe-avs"></div>
+    <div class="doc-topbar">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <span class="doc-code">MDY-AVS-2026-001</span>
+        <span class="doc-badge badge-avs">Aviso</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <span class="doc-fecha">Vigente 2026</span>
+        <button class="print-btn" onclick="printDoc('doc-avs-2026-001')">🖨️ Imprimir</button>
+      </div>
+    </div>
+    <div class="doc-body" id="doc-avs-2026-001">
+      <div class="doc-hero">
+        <div class="doc-hero-icon icon-bg-avs">🍽️</div>
+        <div>
+          <div class="doc-titulo titulo-avs">Horarios y Responsabilidades — Comedor de Personal</div>
+          <div class="doc-meta">
+            <span class="meta-pill"><strong>Para:</strong> Todos los colaboradores</span>
+            <span class="meta-pill"><strong>Autoriza excepciones:</strong> Chef o Dirección</span>
+          </div>
+        </div>
+      </div>
+      <hr class="sep">
+      <div class="horarios-grid">
+        <div class="horario-card" style="background:var(--cr);">
+          <div class="h-icon">🌅</div>
+          <div class="h-name">Desayuno</div>
+          <div class="h-time">6:30 – 8:30 AM</div>
+        </div>
+        <div class="horario-card" style="background:var(--cr);">
+          <div class="h-icon">☀️</div>
+          <div class="h-name">Almuerzo</div>
+          <div class="h-time">11:00 AM – 3:00 PM</div>
+        </div>
+        <div class="horario-card" style="background:var(--cr);">
+          <div class="h-icon">🌙</div>
+          <div class="h-name">Cena</div>
+          <div class="h-time">5:30 – 7:00 PM</div>
+        </div>
+      </div>
+      <div class="rule-box rbox-gold">
+        <span class="rb-icon">⚠️</span>
+        <div class="rb-txt"><strong>Nota importante</strong>Cualquier excepción a los horarios debe ser autorizada previamente por el Chef o la Dirección.</div>
+      </div>
+      <p style="font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--az);margin:16px 0 8px;">Al finalizar el servicio de almuerzo, el encargado de turno deberá:</p>
+      <ul>
+        <li><strong>Cerrar la cocina</strong> siguiendo los protocolos establecidos.</li>
+        <li><strong>Realizar la limpieza completa del área</strong>, asegurando orden, higiene y buen funcionamiento para el siguiente servicio.</li>
+      </ul>
+      <div class="rule-box rbox-blue" style="margin-top:14px;">
+        <span class="rb-icon">🕓</span>
+        <div class="rb-txt"><strong>Almuerzo del personal de cocina: 3:30 PM – 4:30 PM (estricto)</strong>Este horario debe respetarse para garantizar la correcta preparación y cumplimiento del servicio de cena. Es responsabilidad de cada colaborador ajustarse a esta disposición.</div>
+      </div>
+      <div class="firma">
+        <div class="firma-blk"></div>
+        <div><div class="firma-nom">Asselin Dominique</div><div class="firma-cargo">Chef Ejecutivo</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════
+     TAB 6: CREADOR
+══════════════════════════ -->
+<div class="section" id="sec-crear">
+  <div class="creator">
+    <div class="creator-hdr">
+      <div class="creator-hdr-icon">✏️</div>
+      <div>
+        <h2>Crear Nuevo Comunicado</h2>
+        <p>Seleccione la categoría, el tipo de documento y complete los campos. Se generará la codificación automáticamente.</p>
+      </div>
+    </div>
+
+    <!-- PASOS -->
+    <div class="steps-bar">
+      <div class="step-item">
+        <div class="step-num active" id="sn1">1</div>
+        <div class="step-lbl active" id="sl1">Categoría y tipo</div>
+      </div>
+      <div class="step-connector" id="sc1"></div>
+      <div class="step-item">
+        <div class="step-num" id="sn2">2</div>
+        <div class="step-lbl" id="sl2">Contenido</div>
+      </div>
+      <div class="step-connector" id="sc2"></div>
+      <div class="step-item">
+        <div class="step-num" id="sn3">3</div>
+        <div class="step-lbl" id="sl3">Ícono</div>
+      </div>
+      <div class="step-connector" id="sc3"></div>
+      <div class="step-item">
+        <div class="step-num" id="sn4">4</div>
+        <div class="step-lbl" id="sl4">Vista previa</div>
+      </div>
+    </div>
+
+    <div class="creator-body">
+
+      <!-- PASO 1 -->
+      <div id="cp1">
+        <p style="font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--gs);margin-bottom:12px;">1. ¿A qué categoría pertenece este comunicado?</p>
+        <div class="cat-grid">
+          <div class="cat-card" onclick="selectCat(this,'reg')" data-val="reg"><div class="cc-icon">🚫</div><div class="cc-name">Reglamento</div><div class="cc-sub">Normas y prohibiciones</div></div>
+          <div class="cat-card" onclick="selectCat(this,'abs')" data-val="abs"><div class="cc-icon">📦</div><div class="cc-name">Abastecimiento</div><div class="cc-sub">Pedidos e insumos</div></div>
+          <div class="cat-card" onclick="selectCat(this,'fun')" data-val="fun"><div class="cc-icon">👥</div><div class="cc-name">Funciones</div><div class="cc-sub">Responsabilidades por cargo</div></div>
+          <div class="cat-card" onclick="selectCat(this,'disp')" data-val="disp"><div class="cc-icon">📋</div><div class="cc-name">Disposición</div><div class="cc-sub">Memorando administrativo</div></div>
+          <div class="cat-card" onclick="selectCat(this,'com')" data-val="com"><div class="cc-icon">🍽️</div><div class="cc-name">Comedor</div><div class="cc-sub">Horarios y servicio</div></div>
+          <div class="cat-card" onclick="selectCat(this,'gen')" data-val="gen"><div class="cc-icon">📢</div><div class="cc-name">General</div><div class="cc-sub">Otro comunicado</div></div>
+        </div>
+
+        <div id="tipo-selector" style="display:none;">
+          <p style="font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--gs);margin-bottom:10px;">2. Tipo de documento</p>
+          <div class="tipo-grid" id="tipo-pills"></div>
+        </div>
+
+        <div class="btn-row">
+          <button class="btn btn-prim" id="btn-p1" onclick="goStep(2)" disabled>Continuar →</button>
+        </div>
+      </div>
+
+      <!-- PASO 2 -->
+      <div id="cp2" style="display:none;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+          <div id="p2-icon" style="font-size:24px;"></div>
+          <div>
+            <div style="font-size:13px;font-weight:700;color:var(--gt);" id="p2-tipo-name"></div>
+            <div class="code-preview" id="p2-code">MDY-???-2026-XXX</div>
+          </div>
+        </div>
+        <div class="form-grid" id="form-fields"></div>
+        <div class="btn-row">
+          <button class="btn btn-sec" onclick="goStep(1)">← Volver</button>
+          <button class="btn btn-prim" id="btn-p2" onclick="goStep(3)">Continuar →</button>
+        </div>
+      </div>
+
+      <!-- PASO 3 -->
+      <div id="cp3" style="display:none;">
+        <div class="icon-picker-lbl">Seleccione un ícono principal para el comunicado</div>
+        <div class="icon-grid" id="icon-grid">
+          <div class="icon-section-lbl">Espacios y equipos</div>
+          <div class="icon-opt" onclick="selIcon(this,'🍳')">🍳</div>
+          <div class="icon-opt" onclick="selIcon(this,'🧊')">🧊</div>
+          <div class="icon-opt" onclick="selIcon(this,'🧹')">🧹</div>
+          <div class="icon-opt" onclick="selIcon(this,'📦')">📦</div>
+          <div class="icon-opt" onclick="selIcon(this,'🍽️')">🍽️</div>
+          <div class="icon-opt" onclick="selIcon(this,'🥩')">🥩</div>
+          <div class="icon-opt" onclick="selIcon(this,'🥦')">🥦</div>
+          <div class="icon-opt" onclick="selIcon(this,'🏪')">🏪</div>
+          <div class="icon-opt" onclick="selIcon(this,'🔥')">🔥</div>
+          <div class="icon-opt" onclick="selIcon(this,'🧼')">🧼</div>
+
+          <div class="icon-section-lbl">Alertas y control</div>
+          <div class="icon-opt" onclick="selIcon(this,'🚫')">🚫</div>
+          <div class="icon-opt" onclick="selIcon(this,'⚠️')">⚠️</div>
+          <div class="icon-opt" onclick="selIcon(this,'✅')">✅</div>
+          <div class="icon-opt" onclick="selIcon(this,'📋')">📋</div>
+          <div class="icon-opt" onclick="selIcon(this,'⏰')">⏰</div>
+          <div class="icon-opt" onclick="selIcon(this,'🔒')">🔒</div>
+          <div class="icon-opt" onclick="selIcon(this,'📵')">📵</div>
+          <div class="icon-opt" onclick="selIcon(this,'🧾')">🧾</div>
+          <div class="icon-opt" onclick="selIcon(this,'📸')">📸</div>
+          <div class="icon-opt" onclick="selIcon(this,'⚖️')">⚖️</div>
+
+          <div class="icon-section-lbl">Personal y gestión</div>
+          <div class="icon-opt" onclick="selIcon(this,'👥')">👥</div>
+          <div class="icon-opt" onclick="selIcon(this,'👤')">👤</div>
+          <div class="icon-opt" onclick="selIcon(this,'🧑‍🍳')">🧑‍🍳</div>
+          <div class="icon-opt" onclick="selIcon(this,'📢')">📢</div>
+          <div class="icon-opt" onclick="selIcon(this,'📝')">📝</div>
+          <div class="icon-opt" onclick="selIcon(this,'🗓️')">🗓️</div>
+          <div class="icon-opt" onclick="selIcon(this,'⚙️')">⚙️</div>
+          <div class="icon-opt" onclick="selIcon(this,'📊')">📊</div>
+          <div class="icon-opt" onclick="selIcon(this,'🔑')">🔑</div>
+          <div class="icon-opt" onclick="selIcon(this,'📜')">📜</div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-sec" onclick="goStep(2)">← Volver</button>
+          <button class="btn btn-prim" id="btn-p3" onclick="goStep(4)" disabled>Ver vista previa →</button>
+        </div>
+      </div>
+
+      <!-- PASO 4: PREVIEW -->
+      <div id="cp4" style="display:none;">
+        <div id="preview-output" class="preview-area">
+          <div class="preview-empty">
+            <div class="pe-icon">👁️</div>
+            <div>La vista previa aparecerá aquí</div>
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-sec" onclick="goStep(3)">← Editar</button>
+          <button class="btn btn-sec" onclick="resetCreator()">🔄 Nuevo comunicado</button>
+          <button class="btn btn-print" onclick="printPreview()">🖨️ Imprimir este comunicado</button>
+        </div>
+      </div>
+
+    </div><!-- /creator-body -->
+  </div><!-- /creator -->
+</div>
+
+</div><!-- /main -->
+
+<div style="background:var(--v);color:rgba(255,255,255,.4);text-align:center;padding:16px;font-size:11px;letter-spacing:1px;">
+  Corporación Mesa de Yeguas Country Club &nbsp;·&nbsp; Comunicados Internos — Cocina &nbsp;·&nbsp; Documento de uso interno &nbsp;·&nbsp; <span id="foot-year"></span>
+</div>
+
+<script>
+// ── TABS ──
+function showTab(t){
+  document.querySelectorAll('.tab').forEach(el=>el.classList.remove('active'));
+  document.querySelectorAll('.section').forEach(el=>el.classList.remove('active'));
+  document.querySelector('[data-tab="'+t+'"]').classList.add('active');
+  document.getElementById('sec-'+t).classList.add('active');
+}
+
+// ── PRINT single doc ──
+function printDoc(id){
+  const el=document.getElementById(id);
+  const win=window.open('','_blank','width=800,height=600');
+  win.document.write('<html><head><title>Comunicado MDY</title>');
+  win.document.write('<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">');
+  win.document.write('<style>body{font-family:Source Sans 3,sans-serif;max-width:750px;margin:40px auto;color:#3A3A3A;font-size:14px;line-height:1.65;} .doc-hero{display:flex;gap:16px;align-items:flex-start;margin-bottom:14px;} .doc-hero-icon{font-size:32px;} .doc-titulo{font-family:Playfair Display,serif;font-size:18px;font-weight:700;color:#1B3A2D;margin-bottom:4px;} .rule-box{padding:10px 14px;margin:8px 0;border-radius:4px;font-size:13px;display:flex;gap:10px;} .rbox-red{background:#FDF0F0;border-left:4px solid #8B2020;color:#8B2020;} .rbox-gold{background:#FFF9EC;border-left:4px solid #B8892A;color:#7A5A10;} .rbox-green{background:#EAF2EE;border-left:4px solid #4A8C68;color:#2A5A42;} .rbox-blue{background:#EEF4FA;border-left:4px solid #1A3B5C;color:#1A3B5C;} .tbl{width:100%;border-collapse:collapse;font-size:13px;margin:10px 0;} .tbl th{background:#1B3A2D;color:#fff;padding:7px 12px;text-align:left;} .tbl td{padding:7px 12px;border-bottom:1px solid #EDE6D6;} .sep{border:none;border-top:1px solid #D5CCC0;margin:12px 0;} p{margin-bottom:10px;font-size:13.5px;} ul{margin:6px 0 12px 18px;} li{font-size:13.5px;margin-bottom:4px;} .firma{margin-top:24px;padding-top:14px;border-top:1px solid #EDE6D6;} .firma-blk{width:180px;border-bottom:1.5px solid #3A3A3A;padding-bottom:4px;margin-bottom:4px;} .firma-nom{font-size:12.5px;font-weight:700;} .firma-cargo{font-size:11.5px;color:#666;} .doc-meta{display:flex;flex-wrap:wrap;gap:8px;font-size:12px;color:#666;margin-top:6px;} .meta-pill{background:#F4F2EE;padding:2px 9px;border-radius:20px;} .bodega-row{display:flex;gap:10px;padding:8px 12px;border-bottom:1px solid #EDE6D6;font-size:13px;} .b-tag{background:#1B3A2D;color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:3px;} .b-info{flex:1;} .b-hora{font-weight:700;color:#B8892A;font-size:11.5px;} .horarios-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:12px 0;} .horario-card{text-align:center;padding:12px;border:1px solid #D5CCC0;border-radius:4px;} .h-icon{font-size:22px;} .h-name{font-size:11px;font-weight:700;text-transform:uppercase;} .h-time{font-family:Playfair Display,serif;font-size:14px;font-weight:600;color:#1A3B5C;} .turno-card{background:#F8F4EC;border:1px solid #D5CCC0;border-radius:4px;padding:12px;} .turno-lbl{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid #D5CCC0;} .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;} .reg-section{margin-bottom:12px;border:1px solid #D5CCC0;border-radius:4px;overflow:hidden;} .reg-section-hdr{display:flex;align-items:center;gap:8px;padding:8px 12px;background:#FAFAF8;border-bottom:1px solid #D5CCC0;} .rs-icon{font-size:16px;} .rs-title{font-size:13px;font-weight:700;flex:1;} .rs-badge{font-size:10px;background:#FDF0F0;color:#8B2020;padding:2px 8px;border-radius:20px;font-weight:700;} .reg-section-body{padding:12px;} .rb-icon{font-size:18px;} .rb-txt strong{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;}</style>');
+  win.document.write('</head><body>');
+  win.document.write('<div style="text-align:center;margin-bottom:20px;padding-bottom:12px;border-bottom:3px solid #B8892A;"><div style="font-size:10px;letter-spacing:3px;color:#B8892A;margin-bottom:4px;">CORPORACIÓN MESA DE YEGUAS COUNTRY CLUB</div><div style="font-family:Playfair Display,serif;font-size:14px;font-weight:700;color:#1B3A2D;">Comunicados Internos — Cocina</div></div>');
+  win.document.write(el.innerHTML);
+  win.document.write('</body></html>');
+  win.document.close();
+  win.focus();
+  setTimeout(()=>{win.print();},600);
+}
+
+// ── CREADOR ──
+let selCatVal='', selTipoVal='', formData={}, selIconVal='';
+
+const TIPOS={
+  reg:[{v:'REG',l:'Reglamento',icon:'📜'},{v:'NIM',l:'Nota Importante',icon:'⚠️'}],
+  abs:[{v:'INS',l:'Instrucción Operativa',icon:'⚙️'},{v:'AVS',l:'Aviso',icon:'📢'}],
+  fun:[{v:'FUN',l:'Funciones / Cargo',icon:'👥'}],
+  disp:[{v:'MEM',l:'Memorando',icon:'📋'},{v:'INS',l:'Instrucción Operativa',icon:'⚙️'}],
+  com:[{v:'AVS',l:'Aviso',icon:'📢'},{v:'MEM',l:'Memorando',icon:'📋'}],
+  gen:[{v:'MEM',l:'Memorando',icon:'📋'},{v:'AVS',l:'Aviso',icon:'📢'},{v:'NIM',l:'Nota Importante',icon:'⚠️'},{v:'INS',l:'Instrucción Operativa',icon:'⚙️'}]
+};
+
+const CODES={REG:1,MEM:2,INS:4,FUN:2,AVS:1,NIM:0};
+
+function selectCat(el, val){
+  document.querySelectorAll('.cat-card').forEach(c=>c.classList.remove('selected'));
+  el.classList.add('selected');
+  selCatVal=val; selTipoVal='';
+  const ts=document.getElementById('tipo-selector');
+  const pills=document.getElementById('tipo-pills');
+  pills.innerHTML='';
+  TIPOS[val].forEach(t=>{
+    const d=document.createElement('div');
+    d.className='tipo-pill';
+    d.innerHTML=t.icon+' '+t.l;
+    d.dataset.val=t.v;
+    d.dataset.icon=t.icon;
+    d.onclick=()=>selectTipo(d,t.v,t.icon,t.l);
+    pills.appendChild(d);
+  });
+  ts.style.display='block';
+  document.getElementById('btn-p1').disabled=true;
+}
+
+function selectTipo(el,val,icon,label){
+  document.querySelectorAll('.tipo-pill').forEach(p=>p.classList.remove('selected'));
+  el.classList.add('selected');
+  selTipoVal=val;
+  document.getElementById('btn-p1').disabled=false;
+  buildForm(val,icon,label);
+}
+
+function buildForm(tipo,icon,label){
+  document.getElementById('p2-icon').textContent=icon;
+  document.getElementById('p2-tipo-name').textContent=label;
+  const yr=new Date().getFullYear();
+  const seq=String((CODES[tipo]||0)+1).padStart(3,'0');
+  document.getElementById('p2-code').textContent='MDY-'+tipo+'-'+yr+'-'+seq;
+
+  const ff=document.getElementById('form-fields');
+  const base=`
+    <div class="form-group"><label>Fecha del comunicado</label><input type="date" id="f-fecha" value="${new Date().toISOString().split('T')[0]}"></div>
+    <div class="form-group"><label>Destinatario (Para)</label><input type="text" id="f-para" placeholder="Personal de Cocina y Stewart"></div>
+    <div class="form-group"><label>Remitente (De)</label><input type="text" id="f-de" value="Dominique Olivier Henri Asselin — Chef Ejecutivo"></div>
+    <div class="form-group"><label>Cargo del remitente</label><input type="text" id="f-cargo" value="Chef Ejecutivo"></div>
+    <div class="form-group full"><label>Asunto / Título del comunicado</label><input type="text" id="f-titulo" placeholder="Ej: Protocolo de manejo de residuos en cocina"></div>
+    <div class="form-group full"><label>Cuerpo del comunicado</label><textarea id="f-cuerpo" placeholder="Redacte aquí el contenido principal del comunicado. Para listas, use cada línea con un guión: - Item 1&#10;- Item 2"></textarea></div>`;
+
+  const extra= tipo==='REG'||tipo==='NIM' ? `<div class="form-group full"><label>Consecuencia por incumplimiento</label><input type="text" id="f-sancion" placeholder="Falta grave — sanción disciplinaria según reglamento interno"></div>` :
+    tipo==='FUN' ? `<div class="form-group"><label>Turno / Horario</label><input type="text" id="f-turno" placeholder="Ej: Turno AM — 6:00 AM"></div><div class="form-group"><label>Cargo específico</label><input type="text" id="f-cargo2" placeholder="Ej: Personal Steward"></div>` :
+    tipo==='INS' ? `<div class="form-group full"><label>Instrucción adicional / Nota operativa</label><textarea id="f-nota" style="min-height:60px" placeholder="Ej: Esta instrucción reemplaza la circular anterior..."></textarea></div>` : '';
+
+  ff.innerHTML=base+extra;
+}
+
+function selIcon(el,val){
+  document.querySelectorAll('.icon-opt').forEach(i=>i.classList.remove('selected'));
+  el.classList.add('selected');
+  selIconVal=val;
+  document.getElementById('btn-p3').disabled=false;
+}
+
+function goStep(n){
+  [1,2,3,4].forEach(i=>{
+    document.getElementById('cp'+i).style.display=i===n?'block':'none';
+    const sn=document.getElementById('sn'+i);
+    const sl=document.getElementById('sl'+i);
+    sn.className='step-num'+(i<n?' done':i===n?' active':'');
+    sl.className='step-lbl'+(i===n?' active':'');
+    if(i<4) document.getElementById('sc'+i).className='step-connector'+(i<n?' done':'');
+  });
+  if(n===4) buildPreview();
+}
+
+function fv(id){const el=document.getElementById(id);return el?el.value.trim():'';}
+
+function buildPreview(){
+  const yr=new Date().getFullYear();
+  const tipo=selTipoVal;
+  const seq=String((CODES[tipo]||0)+1).padStart(3,'0');
+  const code='MDY-'+tipo+'-'+yr+'-'+seq;
+  const titulo=fv('f-titulo')||'(Sin título)';
+  const para=fv('f-para')||'Personal de Cocina';
+  const de=fv('f-de')||'Chef Ejecutivo';
+  const cargo=fv('f-cargo')||'Chef Ejecutivo';
+  const cuerpo=fv('f-cuerpo')||'';
+  const icon=selIconVal||'📋';
+  const fecha=fv('f-fecha');
+  const fdisplay=fecha?new Date(fecha+'T12:00:00').toLocaleDateString('es-CO',{day:'numeric',month:'long',year:'numeric'}):'';
+
+  const badgeMap={REG:'badge-reg',MEM:'badge-mem',INS:'badge-ins',FUN:'badge-fun',AVS:'badge-avs',NIM:'badge-reg'};
+  const tipoMap={REG:'Reglamento',MEM:'Memorando',INS:'Instrucción Operativa',FUN:'Funciones / Cargo',AVS:'Aviso',NIM:'Nota Importante'};
+  const stripeMap={REG:'stripe-reg',MEM:'stripe-mem',INS:'stripe-ins',FUN:'stripe-fun',AVS:'stripe-avs',NIM:'stripe-reg'};
+  const tituloMap={REG:'titulo-reg',MEM:'titulo-mem',INS:'titulo-ins',FUN:'titulo-fun',AVS:'titulo-avs',NIM:'titulo-reg'};
+  const iconBgMap={REG:'icon-bg-reg',MEM:'icon-bg-mem',INS:'icon-bg-ins',FUN:'icon-bg-fun',AVS:'icon-bg-avs',NIM:'icon-bg-reg'};
+
+  let cuerpoHTML='';
+  cuerpo.split('\n').forEach(line=>{
+    line=line.trim();
+    if(!line) return;
+    if(line.startsWith('-')){
+      if(!cuerpoHTML.endsWith('</ul>')) cuerpoHTML+='<ul>';
+      cuerpoHTML+='<li>'+line.slice(1).trim()+'</li>';
+    } else {
+      if(cuerpoHTML.endsWith('</li>')) cuerpoHTML+='</ul>';
+      cuerpoHTML+='<p>'+line+'</p>';
+    }
+  });
+  if(cuerpoHTML.endsWith('</li>')) cuerpoHTML+='</ul>';
+
+  let extraHTML='';
+  if(tipo==='REG'||tipo==='NIM'){
+    const san=fv('f-sancion');
+    if(san) extraHTML=`<div class="rule-box rbox-red" style="margin-top:12px;"><span class="rb-icon">⚖️</span><div class="rb-txt"><strong>Consecuencia por incumplimiento</strong>${san}</div></div>`;
+  }else if(tipo==='FUN'){
+    const t=fv('f-turno');const c=fv('f-cargo2');
+    if(t||c) extraHTML=`<div class="rule-box rbox-teal" style="margin-top:10px;"><span class="rb-icon">🕐</span><div class="rb-txt"><strong>${t||'Turno'}</strong>Cargo: ${c||cargo}</div></div>`;
+  }else if(tipo==='INS'){
+    const nota=fv('f-nota');
+    if(nota) extraHTML=`<div class="rule-box rbox-gold" style="margin-top:10px;"><span class="rb-icon">ℹ️</span><div class="rb-txt"><strong>Nota operativa</strong>${nota}</div></div>`;
+  }
+
+  document.getElementById('preview-output').innerHTML=`
+  <div style="border:1px solid var(--bd);border-radius:var(--radius);overflow:hidden;background:#fff;">
+    <div class="doc-stripe ${stripeMap[tipo]||'stripe-mem'}"></div>
+    <div class="doc-topbar">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <span class="doc-code">${code}</span>
+        <span class="doc-badge ${badgeMap[tipo]||'badge-mem'}">${tipoMap[tipo]||tipo}</span>
+      </div>
+      <span class="doc-fecha">${fdisplay}</span>
+    </div>
+    <div class="doc-body">
+      <div class="doc-hero">
+        <div class="doc-hero-icon ${iconBgMap[tipo]||'icon-bg-mem'}">${icon}</div>
+        <div>
+          <div class="doc-titulo ${tituloMap[tipo]||'titulo-mem'}">${titulo}</div>
+          <div class="doc-meta">
+            <span class="meta-pill"><strong>Para:</strong> ${para}</span>
+            <span class="meta-pill"><strong>De:</strong> ${de}</span>
+          </div>
+        </div>
+      </div>
+      <hr class="sep">
+      ${cuerpoHTML}
+      ${extraHTML}
+      <div class="firma">
+        <div class="firma-blk"></div>
+        <div><div class="firma-nom">${de}</div><div class="firma-cargo">${cargo}</div></div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function printPreview(){
+  const content=document.getElementById('preview-output').innerHTML;
+  printDoc_raw(content);
+}
+
+function printDoc_raw(html){
+  const win=window.open('','_blank','width=800,height=600');
+  win.document.write('<html><head><title>Comunicado MDY</title>');
+  win.document.write('<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">');
+  win.document.write('<style>:root{--bd:#D5CCC0;--cr:#F8F4EC;--co:#EDE6D6;--v:#1B3A2D;--vc:#4A8C68;--vm:#2A5A42;--or:#B8892A;--ro:#8B2020;--rb:#FDF0F0;--ob:#FFF9EC;--vp:#EAF2EE;--ab:#EEF4FA;--az:#1A3B5C;--tl:#1A4A4A;--tb:#EEF7F5;--gs:#666;--gt:#3A3A3A;--radius:6px;}body{font-family:Source Sans 3,sans-serif;max-width:720px;margin:32px auto;font-size:14px;color:#3A3A3A;line-height:1.65;}.doc-stripe{height:4px;}.stripe-reg{background:#8B2020;}.stripe-ins{background:#B8892A;}.stripe-fun{background:#1A4A4A;}.stripe-mem{background:#1B3A2D;}.stripe-avs{background:#1A3B5C;}.doc-topbar{display:flex;align-items:center;justify-content:space-between;padding:9px 18px;background:#FAFAF8;border-bottom:1px solid #D5CCC0;}.doc-code{font-size:10px;font-weight:700;letter-spacing:2px;color:#666;}.doc-badge{font-size:10px;font-weight:700;letter-spacing:1.5px;padding:2px 10px;border-radius:20px;}.badge-reg,.badge-avs.rojo{background:#FDF0F0;color:#8B2020;}.badge-ins{background:#FFF9EC;color:#7A5A10;}.badge-fun{background:#EEF7F5;color:#1A4A4A;}.badge-mem{background:#EAF2EE;color:#1B3A2D;}.badge-avs{background:#EEF4FA;color:#1A3B5C;}.doc-fecha{font-size:11px;color:#666;}.doc-body{padding:20px 22px 24px;}.doc-hero{display:flex;gap:14px;align-items:flex-start;margin-bottom:14px;}.doc-hero-icon{font-size:28px;width:50px;height:50px;border-radius:10px;display:flex;align-items:center;justify-content:center;}.icon-bg-reg{background:#FDF0F0;}.icon-bg-ins{background:#FFF9EC;}.icon-bg-fun{background:#EEF7F5;}.icon-bg-mem{background:#EAF2EE;}.icon-bg-avs{background:#EEF4FA;}.doc-titulo{font-family:Playfair Display,serif;font-size:17px;font-weight:600;margin-bottom:4px;}.titulo-reg{color:#8B2020;}.titulo-ins{color:#7A5A10;}.titulo-fun{color:#1A4A4A;}.titulo-mem{color:#1B3A2D;}.titulo-avs{color:#1A3B5C;}.doc-meta{display:flex;flex-wrap:wrap;gap:8px;font-size:12px;color:#666;}.meta-pill{background:#F4F2EE;padding:2px 9px;border-radius:20px;}.sep{border:none;border-top:1px solid #EDE6D6;margin:12px 0;}p{font-size:13.5px;margin-bottom:10px;}ul{margin:6px 0 12px 18px;}li{font-size:13.5px;margin-bottom:4px;}.rule-box{padding:10px 14px;margin:8px 0;border-radius:4px;font-size:13px;display:flex;gap:10px;}.rbox-red{background:#FDF0F0;border-left:4px solid #8B2020;color:#8B2020;}.rbox-gold{background:#FFF9EC;border-left:4px solid #B8892A;color:#7A5A10;}.rbox-green{background:#EAF2EE;border-left:4px solid #4A8C68;color:#2A5A42;}.rbox-blue{background:#EEF4FA;border-left:4px solid #1A3B5C;color:#1A3B5C;}.rbox-teal{background:#EEF7F5;border-left:4px solid #1A4A4A;color:#1A4A4A;}.rb-icon{font-size:18px;}.rb-txt strong{display:block;font-size:11px;letter-spacing:.5px;text-transform:uppercase;margin-bottom:2px;}.firma{margin-top:22px;padding-top:14px;border-top:1px solid #EDE6D6;}.firma-blk{width:180px;border-bottom:1.5px solid #3A3A3A;padding-bottom:4px;margin-bottom:4px;}.firma-nom{font-size:12.5px;font-weight:700;}.firma-cargo{font-size:11.5px;color:#666;}.tbl{width:100%;border-collapse:collapse;font-size:13px;margin:10px 0;}.tbl th{background:#1B3A2D;color:#fff;padding:7px 12px;text-align:left;font-size:11.5px;}.tbl td{padding:7px 12px;border-bottom:1px solid #EDE6D6;}.bodega-list{border:1px solid #D5CCC0;border-radius:4px;overflow:hidden;}.bodega-row{display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:1px solid #EDE6D6;font-size:13px;}.b-tag{background:#1B3A2D;color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:3px;}.b-info{flex:1;}.b-hora{font-size:11.5px;font-weight:700;color:#B8892A;}.b-note{font-size:11.5px;color:#666;font-style:italic;}.horarios-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:12px 0;}.horario-card{text-align:center;padding:12px;border:1px solid #D5CCC0;border-radius:4px;}.h-icon{font-size:22px;}.h-name{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;}.h-time{font-family:Playfair Display,serif;font-size:14px;font-weight:600;color:#1A3B5C;}.reg-section{margin-bottom:12px;border:1px solid #D5CCC0;border-radius:4px;overflow:hidden;}.reg-section-hdr{display:flex;align-items:center;gap:8px;padding:8px 12px;background:#FAFAF8;border-bottom:1px solid #D5CCC0;}.rs-icon{font-size:16px;}.rs-title{font-size:13px;font-weight:700;flex:1;}.rs-badge{font-size:10px;background:#FDF0F0;color:#8B2020;padding:2px 8px;border-radius:20px;font-weight:700;}.reg-section-body{padding:12px;}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}.turno-card{background:#F8F4EC;border:1px solid #D5CCC0;border-radius:4px;padding:12px;}.turno-lbl{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid #D5CCC0;}</style>');
+  win.document.write('</head><body>');
+  win.document.write('<div style="text-align:center;margin-bottom:20px;padding-bottom:12px;border-bottom:3px solid #B8892A;"><div style="font-size:10px;letter-spacing:3px;color:#B8892A;margin-bottom:4px;">CORPORACIÓN MESA DE YEGUAS COUNTRY CLUB</div><div style="font-family:Playfair Display,serif;font-size:14px;font-weight:700;color:#1B3A2D;">Comunicados Internos — Cocina</div></div>');
+  win.document.write(html);
+  win.document.write('</body></html>');
+  win.document.close();
+  win.focus();
+  setTimeout(()=>{win.print();},700);
+}
+
+function resetCreator(){
+  selCatVal=''; selTipoVal=''; selIconVal='';
+  document.querySelectorAll('.cat-card').forEach(c=>c.classList.remove('selected'));
+  document.querySelectorAll('.tipo-pill').forEach(p=>p.classList.remove('selected'));
+  document.querySelectorAll('.icon-opt').forEach(i=>i.classList.remove('selected'));
+  document.getElementById('tipo-selector').style.display='none';
+  document.getElementById('btn-p1').disabled=true;
+  document.getElementById('btn-p3').disabled=true;
+  document.getElementById('preview-output').innerHTML='<div class="preview-empty"><div class="pe-icon">👁️</div><div>La vista previa aparecerá aquí</div></div>';
+  goStep(1);
+}
+
+document.getElementById('foot-year').textContent=new Date().getFullYear();
+document.getElementById('stat-year').textContent=new Date().getFullYear();
+</script>
+</body>
+</html>
