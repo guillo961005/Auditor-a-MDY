@@ -115,7 +115,7 @@ body{font-family:'Source Sans 3',sans-serif;background:#F0EBE0;color:var(--gt);f
 .tbl tr:last-child td{border-bottom:none;}
 .tbl tr:nth-child(even) td{background:var(--cr);}
 
-/* Sección reglamento */
+/* Sección normas */
 .reg-section{margin-bottom:16px;border:1px solid var(--bd);border-radius:var(--radius);overflow:hidden;}
 .reg-section-hdr{display:flex;align-items:center;gap:10px;padding:10px 16px;background:#FAFAF8;border-bottom:1px solid var(--bd);cursor:pointer;}
 .reg-section-hdr .rs-icon{font-size:18px;}
@@ -165,6 +165,25 @@ body{font-family:'Source Sans 3',sans-serif;background:#F0EBE0;color:var(--gt);f
 /* ── PRINT BTN ── */
 .print-btn{float:right;font-size:11px;padding:4px 12px;border:1px solid var(--bd);border-radius:20px;cursor:pointer;color:var(--gs);background:#fff;transition:all .2s;display:flex;align-items:center;gap:5px;}
 .print-btn:hover{background:var(--v);color:#fff;border-color:var(--v);}
+
+/* ── EDIT BTN ── */
+.edit-btn{font-size:11px;padding:4px 12px;border:1px solid var(--vc);border-radius:20px;cursor:pointer;color:var(--vm);background:#fff;transition:all .2s;display:flex;align-items:center;gap:5px;}
+.edit-btn:hover{background:var(--vm);color:#fff;border-color:var(--vm);}
+.edit-btn.active{background:var(--or);color:#fff;border-color:var(--or);}
+.doc-body.editing{background:#FFFEF5;outline:2px dashed var(--or);outline-offset:2px;border-radius:0 0 var(--radius) var(--radius);}
+.edit-toolbar{display:none;align-items:center;gap:8px;padding:8px 20px;background:#FFFEF5;border-bottom:1px solid var(--or);font-size:11.5px;color:var(--or);}
+.edit-toolbar.visible{display:flex;}
+.btn-save-edit{font-size:11.5px;padding:5px 14px;border:none;border-radius:20px;cursor:pointer;color:#fff;background:var(--vc);font-weight:600;font-family:'Source Sans 3',sans-serif;}
+.btn-save-edit:hover{background:var(--vm);}
+.btn-cancel-edit{font-size:11.5px;padding:5px 14px;border:1.5px solid var(--bd);border-radius:20px;cursor:pointer;color:var(--gs);background:#fff;font-family:'Source Sans 3',sans-serif;}
+.btn-cancel-edit:hover{border-color:var(--ro);color:var(--ro);}
+.edit-hint{font-size:11px;color:var(--or);font-style:italic;}
+
+/* Sección buenas prácticas label */
+.section-label{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;margin:18px 0 10px;display:flex;align-items:center;gap:8px;padding:6px 0;}
+.section-label.prohib{color:var(--ro);border-bottom:1px solid var(--rb);}
+.section-label.buenas{color:var(--vm);border-bottom:1px solid var(--vp);}
+.rs-badge-green{font-size:10px;background:var(--vp);color:var(--vm);border:1px solid var(--vc);padding:2px 9px;border-radius:20px;font-weight:700;}
 
 /* ══════════════════════════
    CREADOR DE COMUNICADOS
@@ -264,13 +283,13 @@ body{font-family:'Source Sans 3',sans-serif;background:#F0EBE0;color:var(--gt);f
       <div class="sub">Chef Ejecutivo: Dominique Olivier Henri Asselin &nbsp;·&nbsp; Gestión de documentos internos</div>
     </div>
     <div class="hdr-stats">
-      <div><div class="stat-num">9</div><div class="stat-lbl">Comunicados</div></div>
+      <div><div class="stat-num">8</div><div class="stat-lbl">Comunicados</div></div>
       <div><div class="stat-num">5</div><div class="stat-lbl">Categorías</div></div>
       <div><div class="stat-num" id="stat-year">2026</div><div class="stat-lbl">Vigencia</div></div>
     </div>
   </div>
   <nav class="tabs" role="tablist">
-    <div class="tab active" onclick="showTab('reg')" data-tab="reg"><span class="tab-icon">🚫</span> Reglamento</div>
+    <div class="tab active" onclick="showTab('reg')" data-tab="reg"><span class="tab-icon">📋</span> Normas y Buenas Prácticas</div>
     <div class="tab" onclick="showTab('abs')" data-tab="abs"><span class="tab-icon">📦</span> Abastecimiento</div>
     <div class="tab" onclick="showTab('fun')" data-tab="fun"><span class="tab-icon">👥</span> Funciones</div>
     <div class="tab" onclick="showTab('disp')" data-tab="disp"><span class="tab-icon">📋</span> Disposiciones</div>
@@ -282,14 +301,14 @@ body{font-family:'Source Sans 3',sans-serif;background:#F0EBE0;color:var(--gt);f
 <div class="main">
 
 <!-- ══════════════════════════
-     TAB 1: REGLAMENTO
+     TAB 1: NORMAS Y BUENAS PRÁCTICAS
 ══════════════════════════ -->
 <div class="section active" id="sec-reg">
   <div class="group-hdr">
-    <div class="group-icon" style="background:var(--rb);">🚫</div>
+    <div class="group-icon" style="background:var(--vp);">📋</div>
     <div>
-      <div class="group-title">Reglamento Interno de Cocina <span class="doc-count">1 documento</span></div>
-      <div class="group-desc">Normas de conducta, prohibiciones y control de alimentos. Vigentes para todo el personal de cocina y Stewart.</div>
+      <div class="group-title">Normas y Buenas Prácticas de Cocina <span class="doc-count">1 documento</span></div>
+      <div class="group-desc">Conductas obligatorias, prohibiciones y buenas prácticas del área de cocina. Vigentes para todo el personal de cocina y Stewart.</div>
     </div>
   </div>
 
@@ -297,19 +316,25 @@ body{font-family:'Source Sans 3',sans-serif;background:#F0EBE0;color:var(--gt);f
     <div class="doc-stripe stripe-reg"></div>
     <div class="doc-topbar">
       <div style="display:flex;align-items:center;gap:12px;">
-        <span class="doc-code">MDY-REG-2026-001</span>
-        <span class="doc-badge badge-reg">Reglamento</span>
+        <span class="doc-code">MDY-NBP-2026-001</span>
+        <span class="doc-badge badge-reg">Normas y Buenas Prácticas</span>
       </div>
       <div style="display:flex;align-items:center;gap:12px;">
         <span class="doc-fecha">Revisión: marzo 2026</span>
-        <button class="print-btn" onclick="printDoc('doc-reg-001')">🖨️ Imprimir</button>
+        <button class="edit-btn" id="edit-btn-doc-nbp-001" onclick="toggleEdit('doc-nbp-001')">✏️ Editar</button>
+        <button class="print-btn" onclick="printDoc('doc-nbp-001')">🖨️ Imprimir</button>
       </div>
     </div>
-    <div class="doc-body" id="doc-reg-001">
+    <div class="edit-toolbar" id="toolbar-doc-nbp-001">
+      <span class="edit-hint">✏️ Modo edición activo — haga clic sobre cualquier texto para modificarlo</span>
+      <button class="btn-save-edit" onclick="saveEdit('doc-nbp-001')">💾 Guardar cambios</button>
+      <button class="btn-cancel-edit" onclick="cancelEdit('doc-nbp-001')">✕ Cancelar</button>
+    </div>
+    <div class="doc-body" id="doc-nbp-001">
       <div class="doc-hero">
-        <div class="doc-hero-icon icon-bg-reg">📜</div>
+        <div class="doc-hero-icon icon-bg-reg">📋</div>
         <div>
-          <div class="doc-titulo titulo-reg">Reglamento Interno — Normas Generales del Área de Cocina</div>
+          <div class="doc-titulo titulo-reg">Normas y Buenas Prácticas — Área de Cocina</div>
           <div class="doc-meta">
             <span class="meta-pill"><strong>Para:</strong> Personal de Cocina y Stewart</span>
             <span class="meta-pill"><strong>Emite:</strong> Chef Ejecutivo D. Asselin</span>
@@ -318,6 +343,9 @@ body{font-family:'Source Sans 3',sans-serif;background:#F0EBE0;color:var(--gt);f
         </div>
       </div>
       <hr class="sep">
+
+      <!-- PROHIBICIONES -->
+      <div class="section-label prohib"><span>🚫</span> Prohibiciones</div>
 
       <div class="reg-section">
         <div class="reg-section-hdr">
@@ -357,53 +385,74 @@ body{font-family:'Source Sans 3',sans-serif;background:#F0EBE0;color:var(--gt);f
 
       <div class="reg-section">
         <div class="reg-section-hdr">
-          <span class="rs-icon">🥼</span>
-          <span class="rs-title">C. Elementos de Protección Personal (EPP)</span>
-          <span class="rs-badge">OBLIGATORIO</span>
-        </div>
-        <div class="reg-section-body">
-          <div class="rule-box rbox-green">
-            <span class="rb-icon">✅</span>
-            <div class="rb-txt"><strong>Uso permanente de EPP</strong>Es obligatorio portar en todo momento todos los elementos de protección personal dentro del área de cocina, conforme a las normas de Buenas Prácticas de Manufactura (BPM) e Inocuidad.</div>
-          </div>
-        </div>
-      </div>
-
-      <div class="reg-section">
-        <div class="reg-section-hdr">
           <span class="rs-icon">🧾</span>
-          <span class="rs-title">D. Control de Salida de Alimentos</span>
+          <span class="rs-title">C. Control de Salida de Alimentos</span>
           <span class="rs-badge">PROHIBIDO</span>
         </div>
         <div class="reg-section-body">
           <div class="rule-box rbox-red">
             <span class="rb-icon">🚫</span>
-            <div class="rb-txt"><strong>Sin comanda o soporte no deben salir alimentos</strong>Ningún alimento puede salir de la cocina sin la comanda o soporte correspondiente. Esta disposición está establecida en el reglamento interno de la empresa y su incumplimiento constituye un delito sujeto a sanción disciplinaria.</div>
+            <div class="rb-txt"><strong>Sin comanda o soporte no deben salir alimentos</strong>Ningún alimento puede salir de la cocina sin la comanda o soporte correspondiente. Su incumplimiento constituye una <strong>falta grave</strong> sujeta a sanción disciplinaria.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CONTINÚA ASÍ — BUENAS PRÁCTICAS -->
+      <div class="section-label buenas"><span>✅</span> Continúa así — Buenas Prácticas</div>
+
+      <div class="reg-section">
+        <div class="reg-section-hdr" style="background:var(--vp);">
+          <span class="rs-icon">🥼</span>
+          <span class="rs-title">D. Uso de Elementos de Protección Personal (EPP)</span>
+          <span class="rs-badge-green">BUENA PRÁCTICA</span>
+        </div>
+        <div class="reg-section-body">
+          <div class="rule-box rbox-green">
+            <span class="rb-icon">✅</span>
+            <div class="rb-txt"><strong>Uso permanente de EPP</strong>El equipo mantiene el uso correcto de todos los elementos de protección personal en todo momento dentro del área de cocina, conforme a las normas de Buenas Prácticas de Manufactura (BPM) e Inocuidad. ¡Sigan así, es la mejor manera de cuidarse y cuidar al equipo!</div>
           </div>
         </div>
       </div>
 
       <div class="reg-section">
-        <div class="reg-section-hdr">
+        <div class="reg-section-hdr" style="background:var(--vp);">
           <span class="rs-icon">🔐</span>
-          <span class="rs-title">E. Autorización para Acceso al Comedor de Personal</span>
-          <span class="rs-badge">CONTROL</span>
+          <span class="rs-title">E. Autorización y Control — Acceso al Comedor de Personal</span>
+          <span class="rs-badge-green">BUENA PRÁCTICA</span>
         </div>
         <div class="reg-section-body">
-          <div class="rule-box rbox-gold">
+          <div class="rule-box rbox-green">
             <span class="rb-icon">📸</span>
-            <div class="rb-txt"><strong>Autorización previa del Chef</strong>Todo traspaso al comedor de personal debe contar con autorización previa del Chef. Cada traspaso será evidenciado con fotografía y reporte para garantizar control y transparencia.</div>
+            <div class="rb-txt"><strong>Autorización previa del Chef</strong>Todo traspaso al comedor de personal debe contar con autorización previa del Chef. Cada traspaso es evidenciado con fotografía y reporte, lo que garantiza transparencia y un excelente control. ¡Continúen con esta práctica!</div>
+          </div>
+          <div class="rule-box rbox-green">
+            <span class="rb-icon">📊</span>
+            <div class="rb-txt"><strong>Responsabilidad por turno</strong>Cada encargado de turno responde por el buen funcionamiento de su área y por las diferencias que se presenten al cierre del mes. Esta responsabilidad compartida fortalece el equipo.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="reg-section">
+        <div class="reg-section-hdr" style="background:var(--vp);">
+          <span class="rs-icon">☎️</span>
+          <span class="rs-title">F. Manejo Correcto de Excepciones</span>
+          <span class="rs-badge-green">BUENA PRÁCTICA</span>
+        </div>
+        <div class="reg-section-body">
+          <div class="rule-box rbox-green">
+            <span class="rb-icon">✅</span>
+            <div class="rb-txt"><strong>Atención de emergencias personales</strong>Cuando se presenta una urgencia personal (llamada, situación familiar), el equipo la maneja de forma responsable: sale al comedor de personal, atiende la situación y regresa a su estación. Este comportamiento refleja madurez y profesionalismo.</div>
           </div>
           <div class="rule-box rbox-gold">
-            <span class="rb-icon">📊</span>
-            <div class="rb-txt"><strong>Responsabilidad por turno</strong>Cada encargado de turno responderá por el buen funcionamiento de su área y por las diferencias que se presenten al cierre del mes.</div>
+            <span class="rb-icon">⚠️</span>
+            <div class="rb-txt"><strong>Recuerden</strong>Cualquier excepción a las normas generales debe ser consultada y autorizada previamente por el Chef Ejecutivo. La comunicación oportuna es clave.</div>
           </div>
         </div>
       </div>
 
       <div class="rule-box rbox-red" style="margin-top:16px;">
         <span class="rb-icon">⚖️</span>
-        <div class="rb-txt"><strong>Consecuencias por incumplimiento</strong>El incumplimiento de cualquiera de las disposiciones del presente reglamento será considerado una <strong>falta grave</strong> y podrá acarrear sanciones disciplinarias conforme al reglamento interno de la empresa, incluyendo el trámite ante otras instancias disciplinarias.</div>
+        <div class="rb-txt"><strong>Consecuencias por incumplimiento</strong>El incumplimiento de cualquiera de las presentes disposiciones será considerado una <strong>falta grave</strong> y podrá acarrear sanciones disciplinarias, incluyendo el trámite ante otras instancias según corresponda.</div>
       </div>
 
       <div class="firma">
@@ -439,8 +488,14 @@ body{font-family:'Source Sans 3',sans-serif;background:#F0EBE0;color:var(--gt);f
       </div>
       <div style="display:flex;align-items:center;gap:12px;">
         <span class="doc-fecha">27 sept. 2023</span>
+        <button class="edit-btn" id="edit-btn-doc-ins-2023-001" onclick="toggleEdit('doc-ins-2023-001')">✏️ Editar</button>
         <button class="print-btn" onclick="printDoc('doc-ins-2023-001')">🖨️ Imprimir</button>
       </div>
+    </div>
+    <div class="edit-toolbar" id="toolbar-doc-ins-2023-001">
+      <span class="edit-hint">✏️ Modo edición activo — haga clic sobre cualquier texto para modificarlo</span>
+      <button class="btn-save-edit" onclick="saveEdit('doc-ins-2023-001')">💾 Guardar cambios</button>
+      <button class="btn-cancel-edit" onclick="cancelEdit('doc-ins-2023-001')">✕ Cancelar</button>
     </div>
     <div class="doc-body" id="doc-ins-2023-001">
       <div class="doc-hero">
@@ -483,8 +538,14 @@ body{font-family:'Source Sans 3',sans-serif;background:#F0EBE0;color:var(--gt);f
       </div>
       <div style="display:flex;align-items:center;gap:12px;">
         <span class="doc-fecha">28 mayo 2024</span>
+        <button class="edit-btn" id="edit-btn-doc-ins-2024-001" onclick="toggleEdit('doc-ins-2024-001')">✏️ Editar</button>
         <button class="print-btn" onclick="printDoc('doc-ins-2024-001')">🖨️ Imprimir</button>
       </div>
+    </div>
+    <div class="edit-toolbar" id="toolbar-doc-ins-2024-001">
+      <span class="edit-hint">✏️ Modo edición activo — haga clic sobre cualquier texto para modificarlo</span>
+      <button class="btn-save-edit" onclick="saveEdit('doc-ins-2024-001')">💾 Guardar cambios</button>
+      <button class="btn-cancel-edit" onclick="cancelEdit('doc-ins-2024-001')">✕ Cancelar</button>
     </div>
     <div class="doc-body" id="doc-ins-2024-001">
       <div class="doc-hero">
@@ -531,8 +592,14 @@ body{font-family:'Source Sans 3',sans-serif;background:#F0EBE0;color:var(--gt);f
       </div>
       <div style="display:flex;align-items:center;gap:12px;">
         <span class="doc-fecha">Vigente</span>
+        <button class="edit-btn" id="edit-btn-doc-ins-2024-002" onclick="toggleEdit('doc-ins-2024-002')">✏️ Editar</button>
         <button class="print-btn" onclick="printDoc('doc-ins-2024-002')">🖨️ Imprimir</button>
       </div>
+    </div>
+    <div class="edit-toolbar" id="toolbar-doc-ins-2024-002">
+      <span class="edit-hint">✏️ Modo edición activo — haga clic sobre cualquier texto para modificarlo</span>
+      <button class="btn-save-edit" onclick="saveEdit('doc-ins-2024-002')">💾 Guardar cambios</button>
+      <button class="btn-cancel-edit" onclick="cancelEdit('doc-ins-2024-002')">✕ Cancelar</button>
     </div>
     <div class="doc-body" id="doc-ins-2024-002">
       <div class="doc-hero">
@@ -592,8 +659,14 @@ body{font-family:'Source Sans 3',sans-serif;background:#F0EBE0;color:var(--gt);f
       </div>
       <div style="display:flex;align-items:center;gap:12px;">
         <span class="doc-fecha">Vigente</span>
+        <button class="edit-btn" id="edit-btn-doc-fun-2024-001" onclick="toggleEdit('doc-fun-2024-001')">✏️ Editar</button>
         <button class="print-btn" onclick="printDoc('doc-fun-2024-001')">🖨️ Imprimir</button>
       </div>
+    </div>
+    <div class="edit-toolbar" id="toolbar-doc-fun-2024-001">
+      <span class="edit-hint">✏️ Modo edición activo — haga clic sobre cualquier texto para modificarlo</span>
+      <button class="btn-save-edit" onclick="saveEdit('doc-fun-2024-001')">💾 Guardar cambios</button>
+      <button class="btn-cancel-edit" onclick="cancelEdit('doc-fun-2024-001')">✕ Cancelar</button>
     </div>
     <div class="doc-body" id="doc-fun-2024-001">
       <div class="doc-hero">
@@ -654,8 +727,14 @@ body{font-family:'Source Sans 3',sans-serif;background:#F0EBE0;color:var(--gt);f
       </div>
       <div style="display:flex;align-items:center;gap:12px;">
         <span class="doc-fecha">Vigente</span>
+        <button class="edit-btn" id="edit-btn-doc-fun-2024-002" onclick="toggleEdit('doc-fun-2024-002')">✏️ Editar</button>
         <button class="print-btn" onclick="printDoc('doc-fun-2024-002')">🖨️ Imprimir</button>
       </div>
+    </div>
+    <div class="edit-toolbar" id="toolbar-doc-fun-2024-002">
+      <span class="edit-hint">✏️ Modo edición activo — haga clic sobre cualquier texto para modificarlo</span>
+      <button class="btn-save-edit" onclick="saveEdit('doc-fun-2024-002')">💾 Guardar cambios</button>
+      <button class="btn-cancel-edit" onclick="cancelEdit('doc-fun-2024-002')">✕ Cancelar</button>
     </div>
     <div class="doc-body" id="doc-fun-2024-002">
       <div class="doc-hero">
@@ -708,45 +787,8 @@ body{font-family:'Source Sans 3',sans-serif;background:#F0EBE0;color:var(--gt);f
   <div class="group-hdr">
     <div class="group-icon" style="background:var(--vp);">📋</div>
     <div>
-      <div class="group-title">Disposiciones Administrativas <span class="doc-count">2 documentos</span></div>
+      <div class="group-title">Disposiciones Administrativas <span class="doc-count">1 documento</span></div>
       <div class="group-desc">Memorandos internos sobre organización del personal y asignación de responsabilidades operativas.</div>
-    </div>
-  </div>
-
-  <!-- MEM-2024-001 Compensación horas -->
-  <div class="doc-card">
-    <div class="doc-stripe stripe-mem"></div>
-    <div class="doc-topbar">
-      <div style="display:flex;align-items:center;gap:12px;">
-        <span class="doc-code">MDY-MEM-2024-001</span>
-        <span class="doc-badge badge-mem">Memorando</span>
-      </div>
-      <div style="display:flex;align-items:center;gap:12px;">
-        <span class="doc-fecha">19 julio 2024</span>
-        <button class="print-btn" onclick="printDoc('doc-mem-2024-001')">🖨️ Imprimir</button>
-      </div>
-    </div>
-    <div class="doc-body" id="doc-mem-2024-001">
-      <div class="doc-hero">
-        <div class="doc-hero-icon icon-bg-mem">⏱️</div>
-        <div>
-          <div class="doc-titulo titulo-mem">Compensación de Horas Semanales — Día de Descanso Mensual</div>
-          <div class="doc-meta">
-            <span class="meta-pill"><strong>De:</strong> Asselin Dominique</span>
-            <span class="meta-pill"><strong>Para:</strong> Personal de Cocina y Stewart</span>
-          </div>
-        </div>
-      </div>
-      <hr class="sep">
-      <div class="rule-box rbox-green">
-        <span class="rb-icon">📅</span>
-        <div class="rb-txt"><strong>Esquema acordado por unanimidad</strong>La reducción de 2 horas de carga laboral semanal (establecida por ley) se acumulará durante <strong>4 semanas</strong>, completando un total de <strong>8 horas</strong>, compensadas con <strong>1 día de descanso al mes</strong>.</div>
-      </div>
-      <p>El día de descanso será asignado según la necesidad operacional del Club. Para inquietudes, acercarse directamente a la oficina del Chef.</p>
-      <div class="firma">
-        <div class="firma-blk"></div>
-        <div><div class="firma-nom">Dominique Olivier Henri Asselin</div><div class="firma-cargo">Chef Ejecutivo</div></div>
-      </div>
     </div>
   </div>
 
@@ -760,8 +802,14 @@ body{font-family:'Source Sans 3',sans-serif;background:#F0EBE0;color:var(--gt);f
       </div>
       <div style="display:flex;align-items:center;gap:12px;">
         <span class="doc-fecha">14 marzo 2026</span>
+        <button class="edit-btn" id="edit-btn-doc-mem-2024-002" onclick="toggleEdit('doc-mem-2024-002')">✏️ Editar</button>
         <button class="print-btn" onclick="printDoc('doc-mem-2024-002')">🖨️ Imprimir</button>
       </div>
+    </div>
+    <div class="edit-toolbar" id="toolbar-doc-mem-2024-002">
+      <span class="edit-hint">✏️ Modo edición activo — haga clic sobre cualquier texto para modificarlo</span>
+      <button class="btn-save-edit" onclick="saveEdit('doc-mem-2024-002')">💾 Guardar cambios</button>
+      <button class="btn-cancel-edit" onclick="cancelEdit('doc-mem-2024-002')">✕ Cancelar</button>
     </div>
     <div class="doc-body" id="doc-mem-2024-002">
       <div class="doc-hero">
@@ -818,8 +866,14 @@ body{font-family:'Source Sans 3',sans-serif;background:#F0EBE0;color:var(--gt);f
       </div>
       <div style="display:flex;align-items:center;gap:12px;">
         <span class="doc-fecha">Vigente 2026</span>
+        <button class="edit-btn" id="edit-btn-doc-avs-2026-001" onclick="toggleEdit('doc-avs-2026-001')">✏️ Editar</button>
         <button class="print-btn" onclick="printDoc('doc-avs-2026-001')">🖨️ Imprimir</button>
       </div>
+    </div>
+    <div class="edit-toolbar" id="toolbar-doc-avs-2026-001">
+      <span class="edit-hint">✏️ Modo edición activo — haga clic sobre cualquier texto para modificarlo</span>
+      <button class="btn-save-edit" onclick="saveEdit('doc-avs-2026-001')">💾 Guardar cambios</button>
+      <button class="btn-cancel-edit" onclick="cancelEdit('doc-avs-2026-001')">✕ Cancelar</button>
     </div>
     <div class="doc-body" id="doc-avs-2026-001">
       <div class="doc-hero">
@@ -913,7 +967,7 @@ body{font-family:'Source Sans 3',sans-serif;background:#F0EBE0;color:var(--gt);f
       <div id="cp1">
         <p style="font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--gs);margin-bottom:12px;">1. ¿A qué categoría pertenece este comunicado?</p>
         <div class="cat-grid">
-          <div class="cat-card" onclick="selectCat(this,'reg')" data-val="reg"><div class="cc-icon">🚫</div><div class="cc-name">Reglamento</div><div class="cc-sub">Normas y prohibiciones</div></div>
+          <div class="cat-card" onclick="selectCat(this,'reg')" data-val="reg"><div class="cc-icon">📋</div><div class="cc-name">Normas / Prácticas</div><div class="cc-sub">Prohibiciones y buenas prácticas</div></div>
           <div class="cat-card" onclick="selectCat(this,'abs')" data-val="abs"><div class="cc-icon">📦</div><div class="cc-name">Abastecimiento</div><div class="cc-sub">Pedidos e insumos</div></div>
           <div class="cat-card" onclick="selectCat(this,'fun')" data-val="fun"><div class="cc-icon">👥</div><div class="cc-name">Funciones</div><div class="cc-sub">Responsabilidades por cargo</div></div>
           <div class="cat-card" onclick="selectCat(this,'disp')" data-val="disp"><div class="cc-icon">📋</div><div class="cc-name">Disposición</div><div class="cc-sub">Memorando administrativo</div></div>
@@ -1047,7 +1101,7 @@ function printDoc(id){
 let selCatVal='', selTipoVal='', formData={}, selIconVal='';
 
 const TIPOS={
-  reg:[{v:'REG',l:'Reglamento',icon:'📜'},{v:'NIM',l:'Nota Importante',icon:'⚠️'}],
+  reg:[{v:'NBP',l:'Normas y Buenas Prácticas',icon:'📋'},{v:'NIM',l:'Nota Importante',icon:'⚠️'}],
   abs:[{v:'INS',l:'Instrucción Operativa',icon:'⚙️'},{v:'AVS',l:'Aviso',icon:'📢'}],
   fun:[{v:'FUN',l:'Funciones / Cargo',icon:'👥'}],
   disp:[{v:'MEM',l:'Memorando',icon:'📋'},{v:'INS',l:'Instrucción Operativa',icon:'⚙️'}],
@@ -1055,7 +1109,7 @@ const TIPOS={
   gen:[{v:'MEM',l:'Memorando',icon:'📋'},{v:'AVS',l:'Aviso',icon:'📢'},{v:'NIM',l:'Nota Importante',icon:'⚠️'},{v:'INS',l:'Instrucción Operativa',icon:'⚙️'}]
 };
 
-const CODES={REG:1,MEM:2,INS:4,FUN:2,AVS:1,NIM:0};
+const CODES={NBP:1,REG:1,MEM:1,INS:4,FUN:2,AVS:1,NIM:0};
 
 function selectCat(el, val){
   document.querySelectorAll('.cat-card').forEach(c=>c.classList.remove('selected'));
@@ -1101,7 +1155,7 @@ function buildForm(tipo,icon,label){
     <div class="form-group full"><label>Asunto / Título del comunicado</label><input type="text" id="f-titulo" placeholder="Ej: Protocolo de manejo de residuos en cocina"></div>
     <div class="form-group full"><label>Cuerpo del comunicado</label><textarea id="f-cuerpo" placeholder="Redacte aquí el contenido principal del comunicado. Para listas, use cada línea con un guión: - Item 1&#10;- Item 2"></textarea></div>`;
 
-  const extra= tipo==='REG'||tipo==='NIM' ? `<div class="form-group full"><label>Consecuencia por incumplimiento</label><input type="text" id="f-sancion" placeholder="Falta grave — sanción disciplinaria según reglamento interno"></div>` :
+  const extra= tipo==='NBP'||tipo==='REG'||tipo==='NIM' ? `<div class="form-group full"><label>Consecuencia por incumplimiento</label><input type="text" id="f-sancion" placeholder="Falta grave — sanción disciplinaria según corresponda"></div>` :
     tipo==='FUN' ? `<div class="form-group"><label>Turno / Horario</label><input type="text" id="f-turno" placeholder="Ej: Turno AM — 6:00 AM"></div><div class="form-group"><label>Cargo específico</label><input type="text" id="f-cargo2" placeholder="Ej: Personal Steward"></div>` :
     tipo==='INS' ? `<div class="form-group full"><label>Instrucción adicional / Nota operativa</label><textarea id="f-nota" style="min-height:60px" placeholder="Ej: Esta instrucción reemplaza la circular anterior..."></textarea></div>` : '';
 
@@ -1143,11 +1197,11 @@ function buildPreview(){
   const fecha=fv('f-fecha');
   const fdisplay=fecha?new Date(fecha+'T12:00:00').toLocaleDateString('es-CO',{day:'numeric',month:'long',year:'numeric'}):'';
 
-  const badgeMap={REG:'badge-reg',MEM:'badge-mem',INS:'badge-ins',FUN:'badge-fun',AVS:'badge-avs',NIM:'badge-reg'};
-  const tipoMap={REG:'Reglamento',MEM:'Memorando',INS:'Instrucción Operativa',FUN:'Funciones / Cargo',AVS:'Aviso',NIM:'Nota Importante'};
-  const stripeMap={REG:'stripe-reg',MEM:'stripe-mem',INS:'stripe-ins',FUN:'stripe-fun',AVS:'stripe-avs',NIM:'stripe-reg'};
-  const tituloMap={REG:'titulo-reg',MEM:'titulo-mem',INS:'titulo-ins',FUN:'titulo-fun',AVS:'titulo-avs',NIM:'titulo-reg'};
-  const iconBgMap={REG:'icon-bg-reg',MEM:'icon-bg-mem',INS:'icon-bg-ins',FUN:'icon-bg-fun',AVS:'icon-bg-avs',NIM:'icon-bg-reg'};
+  const badgeMap={NBP:'badge-reg',REG:'badge-reg',MEM:'badge-mem',INS:'badge-ins',FUN:'badge-fun',AVS:'badge-avs',NIM:'badge-reg'};
+  const tipoMap={NBP:'Normas y Buenas Prácticas',REG:'Normas y Buenas Prácticas',MEM:'Memorando',INS:'Instrucción Operativa',FUN:'Funciones / Cargo',AVS:'Aviso',NIM:'Nota Importante'};
+  const stripeMap={NBP:'stripe-reg',REG:'stripe-reg',MEM:'stripe-mem',INS:'stripe-ins',FUN:'stripe-fun',AVS:'stripe-avs',NIM:'stripe-reg'};
+  const tituloMap={NBP:'titulo-reg',REG:'titulo-reg',MEM:'titulo-mem',INS:'titulo-ins',FUN:'titulo-fun',AVS:'titulo-avs',NIM:'titulo-reg'};
+  const iconBgMap={NBP:'icon-bg-reg',REG:'icon-bg-reg',MEM:'icon-bg-mem',INS:'icon-bg-ins',FUN:'icon-bg-fun',AVS:'icon-bg-avs',NIM:'icon-bg-reg'};
 
   let cuerpoHTML='';
   cuerpo.split('\n').forEach(line=>{
@@ -1164,7 +1218,7 @@ function buildPreview(){
   if(cuerpoHTML.endsWith('</li>')) cuerpoHTML+='</ul>';
 
   let extraHTML='';
-  if(tipo==='REG'||tipo==='NIM'){
+  if(tipo==='NBP'||tipo==='REG'||tipo==='NIM'){
     const san=fv('f-sancion');
     if(san) extraHTML=`<div class="rule-box rbox-red" style="margin-top:12px;"><span class="rb-icon">⚖️</span><div class="rb-txt"><strong>Consecuencia por incumplimiento</strong>${san}</div></div>`;
   }else if(tipo==='FUN'){
@@ -1240,6 +1294,91 @@ function resetCreator(){
 
 document.getElementById('foot-year').textContent=new Date().getFullYear();
 document.getElementById('stat-year').textContent=new Date().getFullYear();
+
+// ── EDITOR DE COMUNICADOS ──
+const EDIT_ORIGINALS={};
+
+function toggleEdit(docId){
+  const body=document.getElementById(docId);
+  const toolbar=document.getElementById('toolbar-'+docId);
+  const btn=document.getElementById('edit-btn-'+docId);
+  const isEditing=body.classList.contains('editing');
+  if(isEditing){
+    cancelEdit(docId);
+  } else {
+    // Guardar contenido original antes de editar
+    if(!EDIT_ORIGINALS[docId]) EDIT_ORIGINALS[docId]=body.innerHTML;
+    body.contentEditable='true';
+    body.classList.add('editing');
+    toolbar.classList.add('visible');
+    btn.classList.add('active');
+    btn.textContent='✕ Salir';
+    body.focus();
+  }
+}
+
+function saveEdit(docId){
+  const body=document.getElementById(docId);
+  const toolbar=document.getElementById('toolbar-'+docId);
+  const btn=document.getElementById('edit-btn-'+docId);
+  body.contentEditable='false';
+  body.classList.remove('editing');
+  toolbar.classList.remove('visible');
+  btn.classList.remove('active');
+  btn.textContent='✏️ Editar';
+  // Guardar en localStorage
+  try{
+    localStorage.setItem('mdy_doc_'+docId, body.innerHTML);
+    showToast('Cambios guardados correctamente');
+  }catch(e){
+    showToast('No se pudo guardar (almacenamiento lleno)');
+  }
+  // Actualizar el original guardado
+  EDIT_ORIGINALS[docId]=body.innerHTML;
+}
+
+function cancelEdit(docId){
+  const body=document.getElementById(docId);
+  const toolbar=document.getElementById('toolbar-'+docId);
+  const btn=document.getElementById('edit-btn-'+docId);
+  // Restaurar contenido original (antes de esta sesión de edición)
+  if(EDIT_ORIGINALS[docId]) body.innerHTML=EDIT_ORIGINALS[docId];
+  body.contentEditable='false';
+  body.classList.remove('editing');
+  toolbar.classList.remove('visible');
+  btn.classList.remove('active');
+  btn.textContent='✏️ Editar';
+}
+
+function showToast(msg){
+  let t=document.getElementById('mdy-toast');
+  if(!t){
+    t=document.createElement('div');
+    t.id='mdy-toast';
+    t.style.cssText='position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:var(--v);color:#fff;padding:10px 22px;border-radius:30px;font-size:13px;font-weight:600;box-shadow:0 4px 16px rgba(0,0,0,.25);z-index:9999;transition:opacity .4s;';
+    document.body.appendChild(t);
+  }
+  t.textContent=msg;
+  t.style.opacity='1';
+  clearTimeout(t._to);
+  t._to=setTimeout(()=>{t.style.opacity='0';},2800);
+}
+
+// Restaurar ediciones guardadas desde localStorage al cargar
+(function loadSavedEdits(){
+  const ids=['doc-nbp-001','doc-ins-2023-001','doc-ins-2024-001','doc-ins-2024-002',
+             'doc-fun-2024-001','doc-fun-2024-002','doc-mem-2024-002','doc-avs-2026-001'];
+  ids.forEach(id=>{
+    try{
+      const saved=localStorage.getItem('mdy_doc_'+id);
+      if(saved){
+        const el=document.getElementById(id);
+        if(el) el.innerHTML=saved;
+        EDIT_ORIGINALS[id]=saved;
+      }
+    }catch(e){}
+  });
+})();
 </script>
 </body>
 </html>
