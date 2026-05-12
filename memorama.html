@@ -3,122 +3,351 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Juego de Pares – Inocuidad de Alimentos | Mesa de Yeguas</title>
+<title>Memorama — Inocuidad de Alimentos | Mesa de Yeguas</title>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-body{font-family:Arial,Helvetica,sans-serif;background:#e4e7eb;color:#222}
 
-.topbar{background:#0d2d45;color:#fff;padding:14px 24px;display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap}
-.topbar h1{font-size:17px;margin-bottom:3px;letter-spacing:.3px}
-.topbar p{font-size:10.5px;opacity:.62;line-height:1.6}
-.btn-print{background:#f0a500;color:#111;border:none;padding:10px 22px;border-radius:6px;font-size:12.5px;font-weight:700;cursor:pointer;letter-spacing:.4px;white-space:nowrap;flex-shrink:0}
-.btn-print:hover{background:#d4920a}
+body{
+  font-family:Arial,Helvetica,sans-serif;
+  background:#0b1a2b;
+  color:#fff;
+  min-height:100vh;
+  display:flex;
+  flex-direction:column;
+}
 
-.legend{background:#14406a;color:#fff;padding:8px 24px;font-size:10.5px;display:flex;gap:18px;flex-wrap:wrap;align-items:center;border-top:1px solid rgba(255,255,255,.1)}
-.dot{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:5px;vertical-align:middle}
+/* ── Header ───────────────────────────────────────────── */
+.topbar{
+  background:#071320;
+  border-bottom:2px solid #1a3a5c;
+  padding:12px 24px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:10px;
+  flex-shrink:0;
+}
+.topbar-title h1{font-size:18px;letter-spacing:.3px}
+.topbar-title p{font-size:11px;opacity:.5;margin-top:3px}
+.topbar-btns{display:flex;gap:8px;flex-shrink:0}
 
-.instr{background:#1a5276;color:#fff;padding:10px 24px;font-size:10.5px;line-height:1.75;border-top:1px solid rgba(255,255,255,.1)}
-.sec-label{background:#2471a3;color:#fff;padding:7px 22px;font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase}
+/* ── Buttons ──────────────────────────────────────────── */
+.btn{
+  border:none;
+  padding:9px 20px;
+  border-radius:7px;
+  font-size:13px;
+  font-weight:700;
+  cursor:pointer;
+  letter-spacing:.3px;
+  transition:background .18s, transform .1s;
+}
+.btn:active{transform:scale(.96)}
+.btn-shuffle{background:#1a5276;color:#fff}
+.btn-shuffle:hover{background:#2471a3}
+.btn-restart{background:#e0950a;color:#111}
+.btn-restart:hover{background:#f0a500}
 
-.grid{display:flex;flex-wrap:wrap;gap:10px;padding:14px;background:#c8cdd4}
-.grid-backs{background:#b0b8c4}
+/* ── Stats bar ────────────────────────────────────────── */
+.statsbar{
+  background:#091828;
+  padding:8px 24px;
+  display:flex;
+  gap:0;
+  align-items:stretch;
+  border-bottom:1px solid #1a3a5c;
+  flex-shrink:0;
+}
+.stat{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  padding:4px 28px 4px 0;
+  margin-right:28px;
+  border-right:1px solid rgba(255,255,255,.08);
+}
+.stat:last-child{border-right:none}
+.stat-val{
+  font-size:24px;
+  font-weight:700;
+  color:#f0a500;
+  line-height:1;
+  min-width:48px;
+  text-align:center;
+}
+.stat-lbl{font-size:9.5px;opacity:.45;text-transform:uppercase;letter-spacing:.7px;margin-top:3px}
 
-.card{width:190px;height:265px;border-radius:10px;padding:14px 12px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;position:relative;overflow:hidden;break-inside:avoid;page-break-inside:avoid}
+/* ── Board ────────────────────────────────────────────── */
+.board-wrap{
+  flex:1;
+  padding:16px 20px;
+  display:flex;
+  justify-content:center;
+  align-items:flex-start;
+  overflow-y:auto;
+}
+#board{
+  display:grid;
+  grid-template-columns:repeat(8,1fr);
+  gap:10px;
+  width:100%;
+  max-width:1180px;
+}
 
-.cc{background:linear-gradient(155deg,#0e7c7b,#076260);border:2.5px solid #055050;color:#fff;box-shadow:2px 3px 10px rgba(0,0,0,.22)}
-.cc .num{position:absolute;top:8px;right:10px;font-size:9px;opacity:.32;font-weight:700}
-.cc .tag{font-size:8px;letter-spacing:1.8px;text-transform:uppercase;opacity:.6;background:rgba(255,255,255,.12);padding:2px 10px;border-radius:20px;margin-bottom:12px}
-.cc .ico{font-size:42px;margin-bottom:10px;line-height:1}
-.cc .wrd{font-size:16px;font-weight:700;line-height:1.25}
+/* ── Card shell ───────────────────────────────────────── */
+.card-wrap{
+  aspect-ratio:3/4;
+  perspective:800px;
+  cursor:pointer;
+  user-select:none;
+}
+.card-wrap:not(.flipped):not(.matched):hover .card-inner{
+  transform:translateY(-3px) scale(1.03);
+  filter:brightness(1.1);
+}
+.card-wrap.locked-ui{cursor:default}
 
-.dc{background:linear-gradient(155deg,#c97e0e,#a56808);border:2.5px solid #875508;color:#fff9ee;box-shadow:2px 3px 10px rgba(0,0,0,.18)}
-.dc .num{position:absolute;top:8px;right:10px;font-size:9px;opacity:.32;font-weight:700}
-.dc .tag{font-size:8px;letter-spacing:1.8px;text-transform:uppercase;opacity:.55;background:rgba(0,0,0,.12);padding:2px 10px;border-radius:20px;margin-bottom:12px;color:#fff9ee}
-.dc .dtxt{font-size:14px;line-height:1.55;color:#fff9ee}
+.card-inner{
+  width:100%;
+  height:100%;
+  position:relative;
+  transform-style:preserve-3d;
+  transition:transform .55s cubic-bezier(.4,0,.2,1),
+             filter .18s, box-shadow .18s;
+}
+.card-wrap.flipped .card-inner,
+.card-wrap.matched .card-inner{
+  transform:rotateY(180deg);
+}
 
-.bc{background:#0d2d45;border:2.5px solid #081e2e;color:#fff;box-shadow:2px 3px 10px rgba(0,0,0,.28)}
-.bc .bgpat{position:absolute;inset:0;display:grid;grid-template-columns:repeat(3,1fr);gap:2px;padding:10px;opacity:.09;font-size:28px;align-items:center;justify-items:center;pointer-events:none}
-.bc .bcnt{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;gap:7px}
-.bc .bico{font-size:50px}
-.bc .bln{width:42px;height:1px;background:rgba(255,255,255,.22)}
-.bc .bttl{font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;text-align:center;line-height:1.4}
-.bc .bsub{font-size:8.5px;opacity:.42;letter-spacing:.8px;text-transform:uppercase}
+/* ── Face base ────────────────────────────────────────── */
+.face{
+  position:absolute;
+  inset:0;
+  border-radius:10px;
+  backface-visibility:hidden;
+  -webkit-backface-visibility:hidden;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  padding:10px 9px;
+  text-align:center;
+  overflow:hidden;
+}
 
-@media print{
-  @page{size:A4 portrait;margin:5mm}
-  .topbar,.legend,.instr,.sec-label{display:none!important}
-  body{background:#fff}
-  *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important}
+/* ── Back face (dorsal) ───────────────────────────────── */
+.face.back{
+  background:linear-gradient(150deg,#0d2d45 0%,#071e2e 100%);
+  border:2px solid #1a4060;
+  box-shadow:inset 0 0 30px rgba(0,0,0,.3);
+}
+.back-pat{
+  position:absolute;
+  inset:0;
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:2px;
+  padding:6px;
+  opacity:.07;
+  font-size:18px;
+  align-items:center;
+  justify-items:center;
+  pointer-events:none;
+}
+.back-cnt{
+  position:relative;
+  z-index:1;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:6px;
+}
+.back-ico{font-size:30px;line-height:1}
+.back-line{width:30px;height:1px;background:rgba(255,255,255,.18)}
+.back-ttl{
+  font-size:8.5px;
+  font-weight:700;
+  letter-spacing:1.3px;
+  text-transform:uppercase;
+  line-height:1.5;
+  opacity:.65;
+  text-align:center;
+}
+.back-sub{font-size:7px;opacity:.3;letter-spacing:.6px;text-transform:uppercase}
 
-  /* Frentes: flujo continuo, salto al terminar para separar de dorsales */
-  /* @page margin 5mm + grid padding 3mm => 281mm útiles => 4 filas × 68mm + 3 gaps × 3mm = 281mm exactos */
-  .grid{
-    display:grid!important;
-    grid-template-columns:repeat(3,62mm)!important;
-    gap:3mm!important;
-    padding:3mm!important;
-    background:#fff!important;
-    page-break-after:always!important
-  }
+/* ── Front face — concept ─────────────────────────────── */
+.face.cc{
+  background:linear-gradient(150deg,#0e7c7b 0%,#065655 100%);
+  border:2px solid #055050;
+  transform:rotateY(180deg);
+}
+.face.cc .tag{
+  font-size:7.5px;
+  letter-spacing:1.6px;
+  text-transform:uppercase;
+  opacity:.7;
+  background:rgba(255,255,255,.13);
+  padding:2px 9px;
+  border-radius:20px;
+  margin-bottom:9px;
+  color:#fff;
+  flex-shrink:0;
+}
+.face.cc .ico{font-size:30px;margin-bottom:8px;line-height:1;flex-shrink:0}
+.face.cc .wrd{font-size:13px;font-weight:700;line-height:1.3;color:#fff}
 
-  /* Dorsales: flujo continuo, sin salto al final */
-  .grid-backs{
-    display:grid!important;
-    grid-template-columns:repeat(3,62mm)!important;
-    gap:3mm!important;
-    padding:3mm!important;
-    background:#fff!important;
-    page-break-after:auto!important
-  }
+/* ── Front face — definition ──────────────────────────── */
+.face.dc{
+  background:linear-gradient(150deg,#c97e0e 0%,#8a5507 100%);
+  border:2px solid #7a4b06;
+  transform:rotateY(180deg);
+}
+.face.dc .tag{
+  font-size:7.5px;
+  letter-spacing:1.6px;
+  text-transform:uppercase;
+  opacity:.65;
+  background:rgba(0,0,0,.18);
+  padding:2px 9px;
+  border-radius:20px;
+  margin-bottom:9px;
+  color:#fff8e8;
+  flex-shrink:0;
+}
+.face.dc .dtxt{
+  font-size:11.5px;
+  line-height:1.55;
+  color:#fff8e8;
+}
 
-  /* Ficha: 62mm x 68mm => 3 cols x 4 filas por A4 */
-  .card{width:62mm!important;height:68mm!important;border-radius:6px!important;box-shadow:none!important;padding:9px 8px!important}
+/* ── Matched state ────────────────────────────────────── */
+.card-wrap.matched .card-inner{
+  filter:drop-shadow(0 0 8px rgba(74,222,128,.55));
+}
+.card-wrap.matched .face.cc{border-color:#4ade80}
+.card-wrap.matched .face.dc{border-color:#4ade80}
 
-  .cc .ico{font-size:28px!important;margin-bottom:7px!important}
-  .cc .wrd{font-size:13px!important;line-height:1.2!important}
-  .cc .tag{font-size:7px!important;margin-bottom:8px!important;padding:2px 8px!important}
+/* ── No-match shake ───────────────────────────────────── */
+@keyframes shake{
+  0%,100%{transform:rotateY(180deg) translateX(0)}
+  20%    {transform:rotateY(180deg) translateX(-5px)}
+  40%    {transform:rotateY(180deg) translateX(5px)}
+  60%    {transform:rotateY(180deg) translateX(-4px)}
+  80%    {transform:rotateY(180deg) translateX(4px)}
+}
+.card-wrap.no-match .card-inner{animation:shake .45s ease}
 
-  .dc .dtxt{font-size:12px!important;line-height:1.45!important}
-  .dc .tag{font-size:7px!important;margin-bottom:8px!important;padding:2px 8px!important}
+/* ── Win overlay ──────────────────────────────────────── */
+.win-overlay{
+  display:none;
+  position:fixed;
+  inset:0;
+  background:rgba(5,15,28,.85);
+  z-index:200;
+  align-items:center;
+  justify-content:center;
+  backdrop-filter:blur(4px);
+}
+.win-overlay.show{display:flex}
 
-  .bc .bico{font-size:34px!important}
-  .bc .bttl{font-size:11px!important;letter-spacing:1.2px!important}
-  .bc .bsub{font-size:7.5px!important}
-  .bc .bgpat{font-size:20px!important}
-  .bc .bln{width:34px!important}
+.win-box{
+  background:linear-gradient(160deg,#0d2340,#091828);
+  border:2px solid #2471a3;
+  border-radius:18px;
+  padding:44px 56px;
+  text-align:center;
+  max-width:420px;
+  width:90%;
+  box-shadow:0 12px 60px rgba(0,0,0,.7),
+             0 0 0 1px rgba(255,255,255,.05);
+  animation:pop .4s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes pop{from{transform:scale(.7);opacity:0}to{transform:scale(1);opacity:1}}
+.win-emoji{font-size:58px;margin-bottom:10px;display:block}
+.win-box h2{font-size:27px;margin-bottom:6px;color:#f0a500;letter-spacing:.5px}
+.win-box .win-sub{font-size:13px;opacity:.55;margin-bottom:20px}
+.win-stats{
+  display:flex;
+  gap:12px;
+  justify-content:center;
+  margin-bottom:28px;
+}
+.win-stat{
+  background:rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.1);
+  border-radius:10px;
+  padding:14px 24px;
+  flex:1;
+}
+.win-stat-val{font-size:28px;font-weight:700;color:#f0a500;line-height:1}
+.win-stat-lbl{font-size:9px;opacity:.45;text-transform:uppercase;letter-spacing:.7px;margin-top:4px}
+.win-box .btn{width:100%;padding:13px;font-size:15px;border-radius:9px}
+
+/* ── Responsive ───────────────────────────────────────── */
+@media(max-width:960px){
+  #board{grid-template-columns:repeat(5,1fr)}
+}
+@media(max-width:580px){
+  #board{grid-template-columns:repeat(4,1fr);gap:7px}
+  .topbar{padding:10px 14px}
+  .statsbar{padding:6px 14px}
+  .stat{padding:4px 16px 4px 0;margin-right:16px}
 }
 </style>
 </head>
 <body>
 
 <div class="topbar">
-  <div>
-    <h1>🃏 Juego de Pares — Inocuidad de Alimentos</h1>
+  <div class="topbar-title">
+    <h1>🃏 Memorama — Inocuidad de Alimentos</h1>
     <p>20 pares · Resoluciones 2674/2013 y 5109/2005 · Corporación Mesa de Yeguas Country Club</p>
   </div>
-  <button class="btn-print" onclick="window.print()">🖨️ Imprimir fichas</button>
+  <div class="topbar-btns">
+    <button class="btn btn-shuffle" id="btn-shuffle">🔀 Mezclar</button>
+    <button class="btn btn-restart" id="btn-restart">🔄 Reiniciar</button>
+  </div>
 </div>
 
-<div class="legend">
-  <span><span class="dot" style="background:#0e7c7b"></span>Fichas de CONCEPTO (20)</span>
-  <span><span class="dot" style="background:#c97e0e"></span>Fichas de DEFINICIÓN (20)</span>
-  <span><span class="dot" style="background:#0d2d45"></span>Dorsal para todas las fichas (40)</span>
-  <span style="opacity:.55">3 fichas por fila · 12 fichas por hoja A4 · sin saltos internos</span>
+<div class="statsbar">
+  <div class="stat">
+    <span class="stat-val" id="stat-pairs">0 / 20</span>
+    <span class="stat-lbl">Pares</span>
+  </div>
+  <div class="stat">
+    <span class="stat-val" id="stat-turns">0</span>
+    <span class="stat-lbl">Intentos</span>
+  </div>
+  <div class="stat">
+    <span class="stat-val" id="stat-time">0:00</span>
+    <span class="stat-lbl">Tiempo</span>
+  </div>
 </div>
 
-<div class="instr">
-  <strong>Cómo imprimir:</strong>
-  Chrome o Edge → botón "Imprimir fichas" → activar <em>Gráficos de fondo</em> en opciones avanzadas ·
-  Los conceptos y definiciones fluyen juntos en un bloque; los dorsales inician en hoja nueva automáticamente ·
-  Imprimir en cartulina · Recortar · Pegar dorsal en el reverso de cada ficha ·
-  <strong>Juego:</strong> Mezclar boca abajo · Voltear 2 fichas por turno · Gana quien más pares encuentre.
+<div class="board-wrap">
+  <div id="board"></div>
 </div>
 
-<div class="sec-label">📗📙 Frentes — Conceptos y Definiciones (fluyen juntos · 12 fichas por hoja al imprimir)</div>
-<div class="grid" id="fronts-grid"></div>
-
-<div class="sec-label">📘 Dorsales (inician en nueva hoja al imprimir · 12 fichas por hoja)</div>
-<div class="grid grid-backs" id="backs-grid"></div>
+<div class="win-overlay" id="win-overlay">
+  <div class="win-box">
+    <span class="win-emoji">🏆</span>
+    <h2>¡Felicitaciones!</h2>
+    <p class="win-sub">Encontraste todos los pares</p>
+    <div class="win-stats">
+      <div class="win-stat">
+        <div class="win-stat-val" id="win-turns">—</div>
+        <div class="win-stat-lbl">Intentos</div>
+      </div>
+      <div class="win-stat">
+        <div class="win-stat-val" id="win-time">—</div>
+        <div class="win-stat-lbl">Tiempo</div>
+      </div>
+    </div>
+    <button class="btn btn-restart" id="btn-win-restart">🔄 Jugar de nuevo</button>
+  </div>
+</div>
 
 <script>
 const terms = [
@@ -126,7 +355,7 @@ const terms = [
     def: "Animal (roedor, insecto o ave) que puede causar daños o contaminar los alimentos directa o indirectamente." },
   { id:  2, word: "Alimento",                    icon: "🥗",
     def: "Producto natural o artificial que, al ser ingerido, aporta nutrientes y energía al organismo para los procesos biológicos." },
-  { id:  3, word: "Lote",                         icon: "📦",
+  { id:  3, word: "Lote",                        icon: "📦",
     def: "Conjunto de unidades de alimento producidas en condiciones esencialmente iguales, identificadas con el mismo código de producción." },
   { id:  4, word: "Vida útil",                   icon: "⏳",
     def: "Período durante el cual el alimento mantiene sus cualidades específicas bajo las condiciones adecuadas de almacenamiento." },
@@ -164,26 +393,182 @@ const terms = [
     def: "Capacidad de rastrear un alimento hacia adelante y hacia atrás en todas las etapas de producción y distribución, partiendo del número de lote." }
 ];
 
-const patEmojis = ['🛡️','🧼','🌡️','🔬','🥗','❄️','✅','🦠','🔍'];
+const PAT = ['🛡️','🧼','🌡️','🔬','🥗','❄️','✅','🦠','🔍'];
 
-function conceptCard(t) {
-  return `<div class="card cc"><span class="tag">Concepto</span><span class="ico">${t.icon}</span><span class="wrd">${t.word}</span></div>`;
+/* ── State ─────────────────────────────────────────────── */
+let deck    = [];   // array of card objects in current order
+let flipped = [];   // indices of currently face-up (unmatched) cards
+let matched = new Set(); // indices of matched cards
+let locked  = false;
+let turns   = 0;
+let t0      = null; // timestamp when first card was flipped
+let timerId = null;
+
+/* ── Helpers ───────────────────────────────────────────── */
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
 }
 
-function defCard(t) {
-  return `<div class="card dc"><span class="tag">Definición</span><p class="dtxt">${t.def}</p></div>`;
+function buildDeck() {
+  const d = [];
+  terms.forEach(t => {
+    d.push({ id: t.id, type: 'concept', word: t.word, icon: t.icon });
+    d.push({ id: t.id, type: 'def',     def:  t.def });
+  });
+  return shuffle(d);
 }
 
-function backCard() {
-  const pats = patEmojis.map(e=>`<span>${e}</span>`).join('');
-  return `<div class="card bc"><div class="bgpat">${pats}</div><div class="bcnt"><span class="bico">🛡️</span><span class="bln"></span><span class="bttl">Inocuidad<br>de Alimentos</span><span class="bln"></span><span class="bsub">Mesa de Yeguas · MDY</span></div></div>`;
+function fmtTime(ms) {
+  const s = Math.floor(ms / 1000);
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 }
 
-document.getElementById('fronts-grid').innerHTML =
-  terms.map(conceptCard).join('') + terms.map(defCard).join('');
+/* ── Rendering ─────────────────────────────────────────── */
+function backFace() {
+  const pats = PAT.map(e => `<span>${e}</span>`).join('');
+  return `<div class="face back">
+    <div class="back-pat">${pats}</div>
+    <div class="back-cnt">
+      <span class="back-ico">🛡️</span>
+      <span class="back-line"></span>
+      <span class="back-ttl">Inocuidad<br>de Alimentos</span>
+      <span class="back-line"></span>
+      <span class="back-sub">Mesa de Yeguas · MDY</span>
+    </div>
+  </div>`;
+}
 
-document.getElementById('backs-grid').innerHTML =
-  Array(40).fill(0).map(backCard).join('');
+function frontFace(card) {
+  if (card.type === 'concept') {
+    return `<div class="face cc">
+      <span class="tag">Concepto</span>
+      <span class="ico">${card.icon}</span>
+      <span class="wrd">${card.word}</span>
+    </div>`;
+  }
+  return `<div class="face dc">
+    <span class="tag">Definición</span>
+    <p class="dtxt">${card.def}</p>
+  </div>`;
+}
+
+function renderBoard() {
+  const board = document.getElementById('board');
+  board.innerHTML = deck
+    .map((card, i) => `
+      <div class="card-wrap" data-i="${i}">
+        <div class="card-inner">
+          ${backFace()}
+          ${frontFace(card)}
+        </div>
+      </div>`)
+    .join('');
+
+  board.querySelectorAll('.card-wrap').forEach(el => {
+    el.addEventListener('click', () => onFlip(+el.dataset.i));
+  });
+}
+
+/* ── Game logic ────────────────────────────────────────── */
+function onFlip(i) {
+  if (locked || flipped.includes(i) || matched.has(i)) return;
+
+  // Start timer on first flip
+  if (t0 === null) {
+    t0 = Date.now();
+    timerId = setInterval(() => {
+      document.getElementById('stat-time').textContent = fmtTime(Date.now() - t0);
+    }, 500);
+  }
+
+  const el = document.querySelector(`[data-i="${i}"]`);
+  el.classList.add('flipped');
+  flipped.push(i);
+
+  if (flipped.length === 2) {
+    locked = true;
+    turns++;
+    document.getElementById('stat-turns').textContent = turns;
+    setTimeout(checkMatch, 700);
+  }
+}
+
+function checkMatch() {
+  const [i1, i2] = flipped;
+  const c1 = deck[i1], c2 = deck[i2];
+  const el1 = document.querySelector(`[data-i="${i1}"]`);
+  const el2 = document.querySelector(`[data-i="${i2}"]`);
+
+  if (c1.id === c2.id && c1.type !== c2.type) {
+    // ✓ Match
+    el1.classList.add('matched');
+    el2.classList.add('matched');
+    matched.add(i1);
+    matched.add(i2);
+    flipped = [];
+    locked  = false;
+    const pairs = matched.size / 2;
+    document.getElementById('stat-pairs').textContent = `${pairs} / 20`;
+    if (matched.size === 40) showWin();
+  } else {
+    // ✗ No match — shake then flip back
+    el1.classList.add('no-match');
+    el2.classList.add('no-match');
+    setTimeout(() => {
+      el1.classList.remove('flipped', 'no-match');
+      el2.classList.remove('flipped', 'no-match');
+      flipped = [];
+      locked  = false;
+    }, 500);
+  }
+}
+
+/* ── Win screen ────────────────────────────────────────── */
+function showWin() {
+  clearInterval(timerId);
+  const elapsed = fmtTime(t0 ? Date.now() - t0 : 0);
+  document.getElementById('win-turns').textContent = turns;
+  document.getElementById('win-time').textContent  = elapsed;
+  document.getElementById('win-overlay').classList.add('show');
+}
+
+/* ── Reset / shuffle ───────────────────────────────────── */
+function resetState() {
+  clearInterval(timerId);
+  timerId = null;
+  t0      = null;
+  flipped = [];
+  matched = new Set();
+  locked  = false;
+  turns   = 0;
+  document.getElementById('stat-pairs').textContent = '0 / 20';
+  document.getElementById('stat-turns').textContent = '0';
+  document.getElementById('stat-time').textContent  = '0:00';
+  document.getElementById('win-overlay').classList.remove('show');
+}
+
+function shuffleGame() {
+  resetState();
+  deck = buildDeck();
+  renderBoard();
+}
+
+// Reiniciar keeps a fresh shuffle too (same UX, explicit action)
+function restartGame() { shuffleGame(); }
+
+/* ── Button wiring ─────────────────────────────────────── */
+document.getElementById('btn-shuffle').addEventListener('click', shuffleGame);
+document.getElementById('btn-restart').addEventListener('click', restartGame);
+document.getElementById('btn-win-restart').addEventListener('click', restartGame);
+
+/* ── Init ──────────────────────────────────────────────── */
+deck = buildDeck();
+renderBoard();
 </script>
 </body>
 </html>
