@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Juego de Pares – Inocuidad de Alimentos | Mesa de Yeguas</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Arial,Helvetica,sans-serif;background:#e4e7eb;color:#222}
+
+.topbar{background:#0d2d45;color:#fff;padding:14px 24px;display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap}
+.topbar h1{font-size:17px;margin-bottom:3px;letter-spacing:.3px}
+.topbar p{font-size:10.5px;opacity:.62;line-height:1.6}
+.btn-print{background:#f0a500;color:#111;border:none;padding:10px 22px;border-radius:6px;font-size:12.5px;font-weight:700;cursor:pointer;letter-spacing:.4px;white-space:nowrap;flex-shrink:0}
+.btn-print:hover{background:#d4920a}
+
+.legend{background:#14406a;color:#fff;padding:8px 24px;font-size:10.5px;display:flex;gap:18px;flex-wrap:wrap;align-items:center;border-top:1px solid rgba(255,255,255,.1)}
+.dot{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:5px;vertical-align:middle}
+
+.instr{background:#1a5276;color:#fff;padding:10px 24px;font-size:10.5px;line-height:1.75;border-top:1px solid rgba(255,255,255,.1)}
+.sec-label{background:#2471a3;color:#fff;padding:7px 22px;font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase}
+
+.grid{display:flex;flex-wrap:wrap;gap:10px;padding:14px;background:#c8cdd4}
+.grid-backs{background:#b0b8c4}
+
+.card{width:190px;height:265px;border-radius:10px;padding:14px 12px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;position:relative;overflow:hidden;break-inside:avoid;page-break-inside:avoid}
+
+.cc{background:linear-gradient(155deg,#0e7c7b,#076260);border:2.5px solid #055050;color:#fff;box-shadow:2px 3px 10px rgba(0,0,0,.22)}
+.cc .num{position:absolute;top:8px;right:10px;font-size:9px;opacity:.32;font-weight:700}
+.cc .tag{font-size:8px;letter-spacing:1.8px;text-transform:uppercase;opacity:.6;background:rgba(255,255,255,.12);padding:2px 10px;border-radius:20px;margin-bottom:12px}
+.cc .ico{font-size:42px;margin-bottom:10px;line-height:1}
+.cc .wrd{font-size:16px;font-weight:700;line-height:1.25}
+
+.dc{background:linear-gradient(155deg,#c97e0e,#a56808);border:2.5px solid #875508;color:#fff9ee;box-shadow:2px 3px 10px rgba(0,0,0,.18)}
+.dc .num{position:absolute;top:8px;right:10px;font-size:9px;opacity:.32;font-weight:700}
+.dc .tag{font-size:8px;letter-spacing:1.8px;text-transform:uppercase;opacity:.55;background:rgba(0,0,0,.12);padding:2px 10px;border-radius:20px;margin-bottom:12px;color:#fff9ee}
+.dc .dtxt{font-size:12px;line-height:1.55;color:#fff9ee}
+
+.bc{background:#0d2d45;border:2.5px solid #081e2e;color:#fff;box-shadow:2px 3px 10px rgba(0,0,0,.28)}
+.bc .bgpat{position:absolute;inset:0;display:grid;grid-template-columns:repeat(3,1fr);gap:2px;padding:10px;opacity:.09;font-size:28px;align-items:center;justify-items:center;pointer-events:none}
+.bc .bcnt{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;gap:7px}
+.bc .bico{font-size:50px}
+.bc .bln{width:42px;height:1px;background:rgba(255,255,255,.22)}
+.bc .bttl{font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;text-align:center;line-height:1.4}
+.bc .bsub{font-size:8.5px;opacity:.42;letter-spacing:.8px;text-transform:uppercase}
+
+@media print{
+  .topbar,.legend,.instr,.sec-label{display:none!important}
+  body{background:#fff}
+  *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important}
+
+  /* Frentes: flujo continuo, salto al terminar para separar de dorsales */
+  .grid{
+    display:grid!important;
+    grid-template-columns:repeat(3,62mm)!important;
+    gap:3mm!important;
+    padding:8mm!important;
+    background:#fff!important;
+    page-break-after:always!important
+  }
+
+  /* Dorsales: flujo continuo, sin salto al final */
+  .grid-backs{
+    display:grid!important;
+    grid-template-columns:repeat(3,62mm)!important;
+    gap:3mm!important;
+    padding:8mm!important;
+    background:#fff!important;
+    page-break-after:auto!important
+  }
+
+  /* Ficha: 62mm x 68mm => 3 cols x 4 filas por A4 */
+  .card{width:62mm!important;height:68mm!important;border-radius:6px!important;box-shadow:none!important;padding:9px 8px!important}
+
+  .cc .ico{font-size:28px!important;margin-bottom:7px!important}
+  .cc .wrd{font-size:13px!important;line-height:1.2!important}
+  .cc .tag{font-size:7px!important;margin-bottom:8px!important;padding:2px 8px!important}
+  .cc .num{font-size:8px!important}
+
+  .dc .dtxt{font-size:10.5px!important;line-height:1.45!important}
+  .dc .tag{font-size:7px!important;margin-bottom:8px!important;padding:2px 8px!important}
+  .dc .num{font-size:8px!important}
+
+  .bc .bico{font-size:34px!important}
+  .bc .bttl{font-size:11px!important;letter-spacing:1.2px!important}
+  .bc .bsub{font-size:7.5px!important}
+  .bc .bgpat{font-size:20px!important}
+  .bc .bln{width:34px!important}
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div>
+    <h1>🃏 Juego de Pares — Inocuidad de Alimentos</h1>
+    <p>20 pares · Resoluciones 2674/2013 y 5109/2005 · Corporación Mesa de Yeguas Country Club</p>
+  </div>
+  <button class="btn-print" onclick="window.print()">🖨️ Imprimir fichas</button>
+</div>
+
+<div class="legend">
+  <span><span class="dot" style="background:#0e7c7b"></span>Fichas de CONCEPTO (20)</span>
+  <span><span class="dot" style="background:#c97e0e"></span>Fichas de DEFINICIÓN (20)</span>
+  <span><span class="dot" style="background:#0d2d45"></span>Dorsal para todas las fichas (40)</span>
+  <span style="opacity:.55">3 fichas por fila · 12 fichas por hoja A4 · sin saltos internos</span>
+</div>
+
+<div class="instr">
+  <strong>Cómo imprimir:</strong>
+  Chrome o Edge → botón "Imprimir fichas" → activar <em>Gráficos de fondo</em> en opciones avanzadas ·
+  Los conceptos y definiciones fluyen juntos en un bloque; los dorsales inician en hoja nueva automáticamente ·
+  Imprimir en cartulina · Recortar · Pegar dorsal en el reverso de cada ficha ·
+  <strong>Juego:</strong> Mezclar boca abajo · Voltear 2 fichas por turno · Gana quien más pares encuentre.
+</div>
+
+<div class="sec-label">📗📙 Frentes — Conceptos y Definiciones (fluyen juntos · 12 fichas por hoja al imprimir)</div>
+<div class="grid" id="fronts-grid"></div>
+
+<div class="sec-label">📘 Dorsales (inician en nueva hoja al imprimir · 12 fichas por hoja)</div>
+<div class="grid grid-backs" id="backs-grid"></div>
+
+<script>
+const terms = [
+  { id:  1, word: "Plaga",                       icon: "🐀",
+    def: "Animal (roedor, insecto o ave) que puede causar daños o contaminar los alimentos directa o indirectamente." },
+  { id:  2, word: "Alimento",                    icon: "🥗",
+    def: "Producto natural o artificial que, al ser ingerido, aporta nutrientes y energía al organismo para los procesos biológicos." },
+  { id:  3, word: "Lote",                         icon: "📦",
+    def: "Conjunto de unidades de alimento producidas en condiciones esencialmente iguales, identificadas con el mismo código de producción." },
+  { id:  4, word: "Vida útil",                   icon: "⏳",
+    def: "Período durante el cual el alimento mantiene sus cualidades específicas bajo las condiciones adecuadas de almacenamiento." },
+  { id:  5, word: "Materia prima",               icon: "🌾",
+    def: "Sustancia natural o artificial empleada por la industria alimentaria para su utilización directa o conversión en alimentos de consumo humano." },
+  { id:  6, word: "Rotulado o etiquetado",       icon: "🏷️",
+    def: "Material escrito, impreso o gráfico que acompaña al alimento envasado o se expone cerca de él, incluido el de carácter promocional." },
+  { id:  7, word: "Rótulo o etiqueta",           icon: "📋",
+    def: "Marbete, marca, imagen u otra materia descriptiva o gráfica adherida, impresa o marcada en el envase de un alimento." },
+  { id:  8, word: "Alimento alterado",           icon: "⚠️",
+    def: "Alimento que sufre modificación o degradación parcial o total de sus constituyentes propios por agentes físicos, químicos o biológicos." },
+  { id:  9, word: "Alimento adulterado",         icon: "🚫",
+    def: "Alimento al que se le sustraen elementos, se le adicionan sustancias no autorizadas u ocultan sus condiciones originales de forma fraudulenta." },
+  { id: 10, word: "BPM",                         icon: "✅",
+    def: "Principios básicos de higiene en la manipulación, elaboración, envasado y distribución de alimentos para garantizar condiciones sanitarias adecuadas." },
+  { id: 11, word: "Higiene de alimentos",        icon: "🧼",
+    def: "Condiciones y medidas necesarias para asegurar la inocuidad y aptitud de los alimentos en cualquier etapa de su manejo." },
+  { id: 12, word: "Inocuidad de los alimentos",  icon: "🛡️",
+    def: "Garantía de que los alimentos no causarán daño al consumidor cuando se preparen y consuman de acuerdo con el uso al que se destinan." },
+  { id: 13, word: "Manipulador de alimentos",    icon: "👨‍🍳",
+    def: "Persona que interviene directamente, de forma permanente u ocasional, en fabricación, preparación, envase, almacenamiento o expendio de alimentos." },
+  { id: 14, word: "Bacterias",                   icon: "🦠",
+    def: "Microorganismos unicelulares que pueden contaminar alimentos y causar enfermedades de transmisión alimentaria (ETAs) si se ingieren en cantidades peligrosas." },
+  { id: 15, word: "Portador",                    icon: "😷",
+    def: "Persona que alberga un microorganismo patógeno sin mostrar síntomas de enfermedad, pero que puede transmitirlo a los alimentos que manipula." },
+  { id: 16, word: "Esporos",                     icon: "🔬",
+    def: "Estructura de resistencia formada por ciertas bacterias para sobrevivir condiciones adversas como calor extremo, desecación o desinfectantes." },
+  { id: 17, word: "Peligros en los alimentos",   icon: "⚡",
+    def: "Agentes de naturaleza biológica, química o física presentes en el alimento que pueden causar un efecto adverso a la salud del consumidor." },
+  { id: 18, word: "Tipos de contaminación",      icon: "☣️",
+    def: "Formas en que un alimento puede contaminarse: biológica (microorganismos), química (sustancias tóxicas) o física (objetos extraños)." },
+  { id: 19, word: "Cadena de frío",              icon: "❄️",
+    def: "Etapas de almacenamiento y distribución bajo temperatura controlada (refrigeración o congelación) para preservar la inocuidad de alimentos perecederos." },
+  { id: 20, word: "Trazabilidad",                icon: "🔍",
+    def: "Capacidad de rastrear un alimento hacia adelante y hacia atrás en todas las etapas de producción y distribución, partiendo del número de lote." }
+];
+
+const patEmojis = ['🛡️','🧼','🌡️','🔬','🥗','❄️','✅','🦠','🔍'];
+
+function conceptCard(t) {
+  const n = String(t.id).padStart(2,'0');
+  return `<div class="card cc"><span class="num">${n}</span><span class="tag">Concepto</span><span class="ico">${t.icon}</span><span class="wrd">${t.word}</span></div>`;
+}
+
+function defCard(t) {
+  const n = String(t.id).padStart(2,'0');
+  return `<div class="card dc"><span class="num">${n}</span><span class="tag">Definición</span><p class="dtxt">${t.def}</p></div>`;
+}
+
+function backCard() {
+  const pats = patEmojis.map(e=>`<span>${e}</span>`).join('');
+  return `<div class="card bc"><div class="bgpat">${pats}</div><div class="bcnt"><span class="bico">🛡️</span><span class="bln"></span><span class="bttl">Inocuidad<br>de Alimentos</span><span class="bln"></span><span class="bsub">Mesa de Yeguas · MDY</span></div></div>`;
+}
+
+document.getElementById('fronts-grid').innerHTML =
+  terms.map(conceptCard).join('') + terms.map(defCard).join('');
+
+document.getElementById('backs-grid').innerHTML =
+  Array(40).fill(0).map(backCard).join('');
+</script>
+</body>
+</html>
