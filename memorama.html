@@ -209,23 +209,49 @@ body{
   background:linear-gradient(150deg,#c97e0e 0%,#8a5507 100%);
   border:2px solid #7a4b06;
   transform:rotateY(180deg);
+  padding:7px 8px;
+  overflow-y:auto;
+  overflow-x:hidden;
 }
+.face.dc::-webkit-scrollbar{width:3px}
+.face.dc::-webkit-scrollbar-track{background:rgba(0,0,0,.2);border-radius:2px}
+.face.dc::-webkit-scrollbar-thumb{background:rgba(255,255,255,.25);border-radius:2px}
 .face.dc .tag{
-  font-size:7.5px;
-  letter-spacing:1.6px;
+  font-size:7px;
+  letter-spacing:1.3px;
   text-transform:uppercase;
   opacity:.65;
   background:rgba(0,0,0,.18);
-  padding:2px 9px;
+  padding:2px 8px;
   border-radius:20px;
-  margin-bottom:9px;
+  margin-bottom:5px;
   color:#fff8e8;
   flex-shrink:0;
 }
 .face.dc .dtxt{
-  font-size:11.5px;
-  line-height:1.55;
+  font-size:10px;
+  line-height:1.45;
   color:#fff8e8;
+}
+
+/* ── Countdown badge ──────────────────────────────────── */
+.countdown-badge{
+  position:absolute;
+  bottom:7px;
+  right:8px;
+  z-index:10;
+  background:rgba(0,0,0,.55);
+  color:#fff;
+  font-size:11px;
+  font-weight:700;
+  width:22px;
+  height:22px;
+  border-radius:50%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border:1px solid rgba(255,255,255,.25);
+  pointer-events:none;
 }
 
 /* ── Matched state ────────────────────────────────────── */
@@ -521,15 +547,35 @@ function checkMatch() {
     document.getElementById('stat-pairs').textContent = `${pairs} / 20`;
     if (matched.size === 40) showWin();
   } else {
-    // ✗ No match — shake then flip back
+    // ✗ No match — shake, then flip back
     el1.classList.add('no-match');
     el2.classList.add('no-match');
+
+    const hasDefinition = c1.type === 'def' || c2.type === 'def';
+    const delay = hasDefinition ? 10000 : 1500;
+
+    // Countdown badge on the definition card(s)
+    if (hasDefinition) {
+      const defEl = c1.type === 'def' ? el1 : el2;
+      const badge = document.createElement('div');
+      badge.className = 'countdown-badge';
+      badge.textContent = Math.round(delay / 1000);
+      defEl.appendChild(badge);
+      let remaining = Math.round(delay / 1000) - 1;
+      const tick = setInterval(() => {
+        if (remaining <= 0) { clearInterval(tick); return; }
+        badge.textContent = remaining--;
+      }, 1000);
+    }
+
     setTimeout(() => {
       el1.classList.remove('flipped', 'no-match');
       el2.classList.remove('flipped', 'no-match');
+      el1.querySelectorAll('.countdown-badge').forEach(b => b.remove());
+      el2.querySelectorAll('.countdown-badge').forEach(b => b.remove());
       flipped = [];
       locked  = false;
-    }, 500);
+    }, delay);
   }
 }
 
