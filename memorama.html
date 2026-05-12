@@ -255,11 +255,18 @@ body{
 }
 
 /* ── Matched state ────────────────────────────────────── */
-.card-wrap.matched .card-inner{
-  filter:drop-shadow(0 0 8px rgba(74,222,128,.55));
+.card-wrap.matched{
+  /* glow en el contenedor externo para no romper el preserve-3d del card-inner */
+  filter:drop-shadow(0 0 7px #4ade80) drop-shadow(0 0 14px rgba(74,222,128,.35));
 }
-.card-wrap.matched .face.cc{border-color:#4ade80}
-.card-wrap.matched .face.dc{border-color:#4ade80}
+.card-wrap.matched .card-inner{
+  transform:rotateY(180deg) !important;
+}
+.card-wrap.matched .face.cc,
+.card-wrap.matched .face.dc{
+  border-color:#4ade80;
+  border-width:2.5px;
+}
 
 /* ── No-match shake ───────────────────────────────────── */
 @keyframes shake{
