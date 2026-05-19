@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <title>Dashboard General de Progreso – Fase 1</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
 <style>
 /* ════════════════════════════════════════════════════
    ROOT & RESET
@@ -13,54 +14,59 @@
   --gold:#B8962E; --orange:#d9601a; --bg:#c0d9ee;
   --card-hdr1:#2b6090; --card-hdr2:#1e5490; --card-hdr3:#1A3560;
   --tl-bg:#ffffff; --body-bg:#e8f2fa;
-  /* ─ scalable ─ */
-  --fs:10px;          /* base font – controls all em sizes */
-  --icon-h:96px;      /* icon illustration area height    */
-  --card-p:7px;       /* card body padding                */
+  --fs:10px;
+  --icon-h:96px;
+  --card-p:7px;
 }
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Segoe UI',Calibri,Arial,sans-serif;background:#8bafc8;
-     min-width:1420px}
+body{font-family:'Segoe UI',Calibri,Arial,sans-serif;background:#8bafc8;min-width:1420px}
 [contenteditable]{cursor:text;border-radius:2px;transition:outline .15s}
 [contenteditable]:hover{outline:1px dashed #b8c8d8}
 [contenteditable]:focus{outline:2px solid var(--gold);background:rgba(184,150,46,.06)}
 
 /* ════════════════════════════════════════════════════
-   FLOATING CONTROL PANEL
+   CONTROL PANEL
 ════════════════════════════════════════════════════ */
 #ctrl{
   position:fixed;top:10px;right:10px;z-index:9999;
   background:#0e2240;color:#d0e0f0;border-radius:8px;
   padding:10px 14px;font-family:'Segoe UI',sans-serif;
-  font-size:11px;min-width:220px;box-shadow:0 4px 20px rgba(0,0,0,.5);
-  border:1px solid #2a4870;
+  font-size:11px;min-width:230px;max-height:92vh;overflow-y:auto;
+  box-shadow:0 4px 20px rgba(0,0,0,.5);border:1px solid #2a4870;
 }
 #ctrl h4{color:#B8962E;font-size:12px;margin-bottom:8px;
   border-bottom:1px solid #1e3a5f;padding-bottom:5px;text-transform:uppercase;letter-spacing:.5px}
-#ctrl label{display:block;color:#90b0d0;font-size:10px;margin-bottom:2px;margin-top:6px}
+#ctrl .sect{border-top:1px solid #1e3a5f;margin-top:8px;padding-top:7px}
+#ctrl .sect-lbl{color:#B8962E;font-size:10px;font-weight:700;text-transform:uppercase;
+  letter-spacing:.4px;margin-bottom:5px;display:block}
+#ctrl label{display:block;color:#90b0d0;font-size:10px;margin-bottom:2px;margin-top:5px}
 #ctrl .row{display:flex;gap:4px;flex-wrap:wrap}
 #ctrl button{
   background:#1A3560;color:#d0e8ff;border:1px solid #2a5090;border-radius:4px;
   padding:4px 9px;font-size:10px;cursor:pointer;flex:1;text-align:center}
 #ctrl button:hover,#ctrl button.on{background:var(--gold);color:#fff;border-color:var(--gold)}
 #ctrl input[type=range]{width:100%;accent-color:var(--gold);margin-top:3px}
-#ctrl .dl-row{display:flex;gap:4px;margin-top:10px;border-top:1px solid #1e3a5f;padding-top:8px}
-#ctrl .dl-row button{background:#B8962E;border-color:#c8a020;color:#fff;font-weight:600}
+#ctrl .dl-row{display:flex;gap:4px;margin-top:10px;flex-wrap:wrap}
+#ctrl .dl-row button{background:#B8962E;border-color:#c8a020;color:#fff;font-weight:600;font-size:10px}
 #ctrl .dl-row button:hover{background:#d4b030}
-#ctrl .dl-row button.sec{background:#1A3560;border-color:#2a5090}
+#ctrl .dl-row button.sec{background:#1A3560;border-color:#2a5090;font-weight:400}
 #ctrl .dl-row button.sec:hover{background:#234f8a}
+#ctrl .edit-hint{color:#5a7090;font-size:9px;margin-top:5px;line-height:1.5}
+#ctrl #edit-btn.on{background:#1a6a30;border-color:#28a040;color:#a0ffb0}
+#ctrl #edit-btn.on:hover{background:#228b40}
 
 /* ════════════════════════════════════════════════════
-   DASHBOARD WRAPPER
+   DASHBOARD
 ════════════════════════════════════════════════════ */
 #dashboard{
   width:1380px;margin:10px auto;background:var(--bg);
   border-radius:8px;overflow:hidden;font-size:var(--fs);
   box-shadow:0 6px 30px rgba(0,0,0,.35);
+  position:relative;
 }
 
 /* ════════════════════════════════════════════════════
-   HEADER BAR
+   HEADER
 ════════════════════════════════════════════════════ */
 .hdr{display:flex;align-items:stretch;background:var(--navy);min-height:60px}
 .hdr-l{display:flex;align-items:center;gap:1em;padding:.7em 1.4em;flex:1}
@@ -72,8 +78,7 @@ body{font-family:'Segoe UI',Calibri,Arial,sans-serif;background:#8bafc8;
 .hdr-r{
   background:#fff;min-width:300px;border-left:5px solid var(--gold);
   padding:.6em 1.2em;display:flex;flex-direction:column;justify-content:center}
-.estado-lbl{font-size:.95em;font-weight:700;color:#666;text-transform:uppercase;
-  letter-spacing:.07em;text-align:right}
+.estado-lbl{font-size:.95em;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:.07em;text-align:right}
 .pct-row{display:flex;align-items:baseline;gap:.6em;margin-top:.1em}
 .pct-num{font-size:3.8em;font-weight:900;color:var(--navy);line-height:1}
 .pct-text{font-size:1.1em;color:#555;font-weight:600}
@@ -89,8 +94,7 @@ body{font-family:'Segoe UI',Calibri,Arial,sans-serif;background:#8bafc8;
    TIMELINE
 ════════════════════════════════════════════════════ */
 .tl-wrap{background:var(--tl-bg);margin:0 8px;padding:.9em 1.2em 1em;border:1px solid #c0d2e4}
-.tl-heading{font-size:1em;font-weight:700;color:var(--navy);text-transform:uppercase;
-  letter-spacing:.07em;margin-bottom:.8em}
+.tl-heading{font-size:1em;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.07em;margin-bottom:.8em}
 .tl-track{position:relative;display:flex;justify-content:space-between;align-items:flex-start}
 .tl-line{position:absolute;top:1.2em;left:30px;right:30px;height:3px;background:var(--navy);z-index:0}
 .tl-item{display:flex;flex-direction:column;align-items:center;width:160px;z-index:1}
@@ -107,12 +111,10 @@ body{font-family:'Segoe UI',Calibri,Arial,sans-serif;background:#8bafc8;
    CARDS ROW
 ════════════════════════════════════════════════════ */
 .cards-row{display:flex;gap:6px;padding:7px 8px 0}
-.card{flex:1;background:#fff;border:1.5px solid #b0c8e0;border-radius:6px;
-      overflow:hidden;display:flex;flex-direction:column}
+.card{flex:1;background:#fff;border:1.5px solid #b0c8e0;border-radius:6px;overflow:hidden;display:flex;flex-direction:column}
 .card-hdr{padding:.55em .7em;display:flex;flex-direction:column;gap:.15em;min-height:58px}
 .card-num{font-size:1.7em;font-weight:900;color:#fff;line-height:1}
-.card-name{font-size:.9em;font-weight:700;color:#fff;text-transform:uppercase;
-  letter-spacing:.04em;line-height:1.2}
+.card-name{font-size:.9em;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:.04em;line-height:1.2}
 .icon-area{
   background:var(--body-bg);display:flex;align-items:center;justify-content:center;
   height:var(--icon-h);padding:.5em;border-top:1px solid #c8dcea}
@@ -132,8 +134,7 @@ body{font-family:'Segoe UI',Calibri,Arial,sans-serif;background:#8bafc8;
 .bp{border-radius:6px;overflow:hidden;border:1.5px solid #8aaacf;display:flex;flex-direction:column}
 .bp-hdr{
   background:var(--navy);color:#fff;padding:.55em .9em;
-  font-size:.95em;font-weight:700;text-transform:uppercase;letter-spacing:.04em;
-  line-height:1.3}
+  font-size:.95em;font-weight:700;text-transform:uppercase;letter-spacing:.04em;line-height:1.3}
 .bp-hdr .req{font-weight:400;font-size:.85em;font-style:italic;color:#a8c0d8}
 .bp-body{background:var(--body-bg);padding:.7em .9em;flex:1;display:flex;flex-direction:column;gap:.7em}
 .bp-item{display:flex;gap:.7em;align-items:flex-start}
@@ -149,20 +150,235 @@ body{font-family:'Segoe UI',Calibri,Arial,sans-serif;background:#8bafc8;
 .bg-item .gi{font-size:1.9em}
 .bg-item .gl{font-size:.82em;color:var(--navy);text-align:center;font-weight:600;line-height:1.3}
 
+/* ════════════════════════════════════════════════════
+   EDIT MODE — HOVER HINTS
+════════════════════════════════════════════════════ */
+body.edit-mode #dashboard *:not(#sel-box):not(.sel-handle):not(#drag-handle):not(script):not(style):hover{
+  outline:1px dashed rgba(74,158,255,.45);
+  outline-offset:1px;
+  cursor:pointer !important;
+}
+body.edit-mode [contenteditable]:focus{
+  outline:1px dashed rgba(74,158,255,.45) !important;
+  background:transparent !important;
+}
+
+/* ════════════════════════════════════════════════════
+   SELECTION BOX (fixed, viewport-relative)
+════════════════════════════════════════════════════ */
+#sel-box{
+  position:fixed;
+  border:2px solid #4a9eff;
+  z-index:10000;
+  display:none;
+  box-sizing:border-box;
+  pointer-events:none;
+}
+#drag-handle{
+  position:absolute;inset:0;
+  cursor:move;
+  pointer-events:all;
+  background:transparent;
+}
+.sel-handle{
+  position:absolute;
+  width:10px;height:10px;
+  background:#fff;
+  border:2px solid #4a9eff;
+  border-radius:2px;
+  pointer-events:all;
+  z-index:1;
+}
+.sel-handle[data-dir=nw]{top:-5px;left:-5px;cursor:nw-resize}
+.sel-handle[data-dir=n] {top:-5px;left:calc(50% - 5px);cursor:n-resize}
+.sel-handle[data-dir=ne]{top:-5px;right:-5px;cursor:ne-resize}
+.sel-handle[data-dir=e] {top:calc(50% - 5px);right:-5px;cursor:e-resize}
+.sel-handle[data-dir=se]{bottom:-5px;right:-5px;cursor:se-resize}
+.sel-handle[data-dir=s] {bottom:-5px;left:calc(50% - 5px);cursor:s-resize}
+.sel-handle[data-dir=sw]{bottom:-5px;left:-5px;cursor:sw-resize}
+.sel-handle[data-dir=w] {top:calc(50% - 5px);left:-5px;cursor:w-resize}
+
+/* ════════════════════════════════════════════════════
+   MINI TOOLBAR (fixed, near selection)
+════════════════════════════════════════════════════ */
+#sel-toolbar{
+  position:fixed;
+  z-index:10001;
+  background:#0c1e38;
+  border:1px solid #2a4870;
+  border-radius:7px;
+  padding:5px 9px;
+  display:none;
+  gap:5px;
+  align-items:center;
+  box-shadow:0 3px 16px rgba(0,0,0,.6);
+  white-space:nowrap;
+  font-family:'Segoe UI',sans-serif;
+  font-size:11px;
+  color:#d0e0f0;
+}
+#sel-toolbar button{
+  background:#1A3560;color:#d0e8ff;border:1px solid #2a5090;
+  border-radius:4px;padding:3px 8px;font-size:11px;cursor:pointer;
+}
+#sel-toolbar button:hover{background:var(--gold);color:#fff;border-color:var(--gold)}
+#sel-toolbar .tb-sep{width:1px;height:16px;background:#2a4870;margin:0 2px}
+#sel-toolbar #fs-val{
+  color:#a0c0e0;font-size:10px;min-width:30px;text-align:center;
+  background:#0a1828;border:1px solid #1e3a5f;border-radius:3px;padding:2px 5px;
+}
+#sel-toolbar .tb-del{background:#5a1010 !important;border-color:#8b2020 !important}
+#sel-toolbar .tb-del:hover{background:#8b1a1a !important}
+
+/* ════════════════════════════════════════════════════
+   INSERT MODAL
+════════════════════════════════════════════════════ */
+#insert-modal{
+  position:fixed;inset:0;
+  background:rgba(0,0,0,.65);
+  z-index:20000;
+  display:none;
+  align-items:center;
+  justify-content:center;
+}
+.ins-box{
+  background:#0e2240;color:#d0e0f0;border-radius:10px;
+  padding:22px 24px;min-width:460px;max-width:600px;
+  border:1px solid #2a4870;box-shadow:0 10px 50px rgba(0,0,0,.7);
+  position:relative;max-height:85vh;overflow-y:auto;
+}
+.ins-box h3{color:#B8962E;margin-bottom:14px;font-size:13px;text-transform:uppercase;letter-spacing:.5px}
+.ins-close{
+  position:sticky;float:right;top:0;
+  background:#1A3560;color:#d0e8ff;border:1px solid #2a5090;
+  border-radius:50%;width:26px;height:26px;cursor:pointer;font-size:13px;
+  line-height:24px;text-align:center;
+}
+.ins-close:hover{background:#8b1a1a;border-color:#c02020}
+.ins-section{margin-bottom:16px;border-top:1px solid #1e3a5f;padding-top:12px}
+.ins-section:first-of-type{border-top:none;padding-top:0}
+.ins-section h4{color:#90b0d0;font-size:10px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:9px}
+.emoji-grid{display:flex;flex-wrap:wrap;gap:5px}
+.emoji-btn{
+  font-size:22px;background:#1A3560;border:1px solid #2a5090;
+  border-radius:6px;padding:4px 7px;cursor:pointer;line-height:1.25;
+  transition:background .1s;
+}
+.emoji-btn:hover{background:var(--gold);border-color:var(--gold)}
+.ins-row{display:flex;gap:8px;align-items:center;margin-top:6px}
+.ins-row input[type=text]{
+  flex:1;background:#1A3560;color:#d0e8ff;border:1px solid #2a5090;
+  border-radius:4px;padding:6px 10px;font-size:12px;font-family:inherit;
+}
+.ins-row input[type=text]::placeholder{color:#4a6080}
+.ins-row button,.ins-upload-btn{
+  background:#B8962E;color:#fff;border:1px solid #c8a020;border-radius:4px;
+  padding:6px 15px;font-size:12px;cursor:pointer;white-space:nowrap;font-family:inherit;
+}
+.ins-upload-btn{display:inline-block;cursor:pointer}
+.ins-upload-btn:hover,.ins-row button:hover{background:#d4b030}
+.ins-row input[type=file]{display:none}
+.ins-size-row{display:flex;gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap}
+.ins-size-row label{color:#90b0d0;font-size:10px}
+.ins-size-row input[type=range]{accent-color:var(--gold);width:100px}
+.ins-size-row span{color:#d0e8ff;font-size:11px;min-width:35px}
+
+/* FREE ELEMENTS (inserted) */
+.free-el{
+  position:absolute;
+  z-index:50;
+  cursor:move;
+  user-select:none;
+}
+.free-el.free-text{
+  color:#1A3560;font-weight:700;
+  background:rgba(255,255,255,.9);
+  padding:4px 10px;border-radius:4px;
+  font-size:16px;line-height:1.4;
+  cursor:move;
+}
+
 @media print{
-  #ctrl{display:none!important}
-  body{background:#fff}
-  #dashboard{margin:0;box-shadow:none}
+  #ctrl,#sel-box,#sel-toolbar,#insert-modal{display:none!important}
+  body{background:#fff;min-width:unset}
+  #dashboard{margin:0;box-shadow:none;width:100%;overflow:visible}
 }
 </style>
 </head>
 <body>
 
-<!-- ═══════════════════  CONTROL PANEL  ═══════════════════ -->
-<div id="ctrl">
-  <h4>⚙ Ajuste de tamaños</h4>
+<!-- ═══════════  SELECTION BOX  ═══════════ -->
+<div id="sel-box">
+  <div class="sel-handle" data-dir="nw"></div>
+  <div class="sel-handle" data-dir="n"></div>
+  <div class="sel-handle" data-dir="ne"></div>
+  <div class="sel-handle" data-dir="e"></div>
+  <div class="sel-handle" data-dir="se"></div>
+  <div class="sel-handle" data-dir="s"></div>
+  <div class="sel-handle" data-dir="sw"></div>
+  <div class="sel-handle" data-dir="w"></div>
+  <div id="drag-handle"></div>
+</div>
 
-  <label>Tamaño de texto</label>
+<!-- ═══════════  MINI TOOLBAR  ═══════════ -->
+<div id="sel-toolbar">
+  <button onclick="adjFS(-2)" title="Reducir fuente (A−)">A−</button>
+  <span id="fs-val">—</span>
+  <button onclick="adjFS(+2)" title="Aumentar fuente (A+)">A+</button>
+  <div class="tb-sep"></div>
+  <button onclick="adjSize(-10,-10)" title="Reducir tamaño">◧−</button>
+  <button onclick="adjSize(+10,+10)" title="Aumentar tamaño">◧+</button>
+  <div class="tb-sep"></div>
+  <button onclick="duplicateSel()" title="Duplicar (Ctrl+D)">⧉</button>
+  <button onclick="deleteSel()" class="tb-del" title="Eliminar (Supr)">🗑</button>
+</div>
+
+<!-- ═══════════  INSERT MODAL  ═══════════ -->
+<div id="insert-modal" onclick="if(event.target===this)closeInsert()">
+  <div class="ins-box">
+    <button class="ins-close" onclick="closeInsert()">✕</button>
+    <h3>➕ Insertar elemento</h3>
+
+    <div class="ins-section">
+      <h4>Emoji / Ícono — clic para insertar</h4>
+      <div class="emoji-grid" id="emoji-grid"></div>
+    </div>
+
+    <div class="ins-section">
+      <h4>Imagen desde archivo</h4>
+      <label class="ins-upload-btn">
+        📁 Elegir imagen…
+        <input type="file" accept="image/*" onchange="insertImageFile(this)">
+      </label>
+      <div class="ins-size-row" id="img-size-row" style="display:none">
+        <label>Ancho:</label>
+        <input type="range" id="img-w-range" min="20" max="400" value="120"
+          oninput="document.getElementById('img-w-val').textContent=this.value+'px'">
+        <span id="img-w-val">120px</span>
+      </div>
+    </div>
+
+    <div class="ins-section">
+      <h4>Bloque de texto libre</h4>
+      <div class="ins-row">
+        <input type="text" id="ins-text-val" placeholder="Escribir texto…" onkeydown="if(event.key==='Enter')insertFreeText()">
+        <button onclick="insertFreeText()">Insertar</button>
+      </div>
+      <div class="ins-size-row">
+        <label>Tamaño:</label>
+        <input type="range" id="ins-fs-range" min="8" max="72" value="16"
+          oninput="document.getElementById('ins-fs-val').textContent=this.value+'px'">
+        <span id="ins-fs-val">16px</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════  CONTROL PANEL  ═══════════ -->
+<div id="ctrl">
+  <h4>⚙ Controles del Dashboard</h4>
+
+  <label>Tamaño de texto (global)</label>
   <div class="row" id="fs-btns">
     <button onclick="setFS(8)"  data-v="8">A−−</button>
     <button onclick="setFS(9)"  data-v="9">A−</button>
@@ -171,7 +387,7 @@ body{font-family:'Segoe UI',Calibri,Arial,sans-serif;background:#8bafc8;
     <button onclick="setFS(12)" data-v="12">A++</button>
   </div>
 
-  <label>Tamaño de íconos</label>
+  <label>Tamaño de íconos SVG (global)</label>
   <div class="row" id="ic-btns">
     <button onclick="setIC(70)"  data-v="70">Xs</button>
     <button onclick="setIC(82)"  data-v="82">S</button>
@@ -180,7 +396,7 @@ body{font-family:'Segoe UI',Calibri,Arial,sans-serif;background:#8bafc8;
     <button onclick="setIC(134)" data-v="134">XL</button>
   </div>
 
-  <label>Relleno de tarjetas</label>
+  <label>Relleno de tarjetas (global)</label>
   <div class="row" id="pad-btns">
     <button onclick="setPad(4)"  data-v="4">−</button>
     <button onclick="setPad(7)"  data-v="7" class="on">Normal</button>
@@ -191,17 +407,39 @@ body{font-family:'Segoe UI',Calibri,Arial,sans-serif;background:#8bafc8;
   <input type="range" min="0" max="100" value="70" id="pbar-range"
     oninput="setProgress(this.value)">
 
-  <div class="dl-row">
-    <button class="sec" onclick="dlHTML()">⬇ HTML</button>
-    <button onclick="dlPNG()">📷 PNG</button>
-    <button class="sec" onclick="window.print()">🖨 PDF</button>
+  <!-- ── EDIT MODE ── -->
+  <div class="sect">
+    <span class="sect-lbl">✏ Editor tipo PowerPoint</span>
+    <div class="row">
+      <button id="edit-btn" onclick="toggleEditMode()">Activar edición</button>
+      <button onclick="openInsert()">➕ Insertar</button>
+    </div>
+    <div class="edit-hint" id="edit-hint" style="display:none">
+      Clic → seleccionar · Arrastrar → mover<br>
+      Handles → redimensionar · Supr → eliminar<br>
+      Ctrl+D → duplicar · A+/A− → tamaño fuente<br>
+      Clic en área libre → deseleccionar
+    </div>
+  </div>
+
+  <!-- ── EXPORTAR ── -->
+  <div class="sect">
+    <span class="sect-lbl">Exportar</span>
+    <div class="dl-row">
+      <button class="sec" onclick="dlHTML()">⬇ HTML</button>
+      <button onclick="dlPNG()">📷 PNG</button>
+    </div>
+    <div class="dl-row" style="margin-top:4px">
+      <button class="sec" onclick="window.print()">🖨 PDF</button>
+      <button onclick="dlPPTX()">📊 PPTX</button>
+    </div>
   </div>
 </div>
 
-<!-- ═══════════════════  DASHBOARD  ═══════════════════════ -->
+<!-- ═══════════════════  DASHBOARD  ═══════════════════ -->
 <div id="dashboard">
 
-  <!-- ── HEADER ────────────────────────────────────── -->
+  <!-- ── HEADER ── -->
   <div class="hdr">
     <div class="hdr-l">
       <div class="hdr-icon">📊</div>
@@ -226,7 +464,7 @@ body{font-family:'Segoe UI',Calibri,Arial,sans-serif;background:#8bafc8;
     </div>
   </div>
 
-  <!-- ── TIMELINE ──────────────────────────────────── -->
+  <!-- ── TIMELINE ── -->
   <div class="tl-wrap">
     <div class="tl-heading" contenteditable="true">CRONOGRAMA DE HITOS CLAVE</div>
     <div class="tl-track">
@@ -277,7 +515,7 @@ body{font-family:'Segoe UI',Calibri,Arial,sans-serif;background:#8bafc8;
     </div>
   </div>
 
-  <!-- ── CARDS ROW ──────────────────────────────────── -->
+  <!-- ── CARDS ROW ── -->
   <div class="cards-row">
 
     <!-- 0.0 Gestión Inicial -->
@@ -287,32 +525,20 @@ body{font-family:'Segoe UI',Calibri,Arial,sans-serif;background:#8bafc8;
         <div class="card-name" contenteditable="true">GESTIÓN INICIAL</div>
       </div>
       <div class="icon-area">
-        <!-- ROCKET SVG -->
         <svg viewBox="0 0 90 90" xmlns="http://www.w3.org/2000/svg">
-          <!-- stars -->
           <circle cx="78" cy="12" r="2.5" fill="#f9c846"/>
           <circle cx="68" cy="22" r="1.5" fill="#f9c846"/>
           <circle cx="14" cy="18" r="2" fill="#f9c846"/>
           <circle cx="82" cy="30" r="1.5" fill="#f9c846"/>
-          <!-- flame -->
           <ellipse cx="35" cy="74" rx="7" ry="10" fill="#f97316" opacity=".85"/>
           <ellipse cx="35" cy="76" rx="4.5" ry="7" fill="#fbbf24"/>
-          <!-- fins left -->
           <polygon points="22,62 12,75 30,65" fill="#1A3560"/>
-          <!-- fins right -->
           <polygon points="52,56 65,68 46,62" fill="#1A3560"/>
-          <!-- body -->
-          <ellipse cx="40" cy="42" rx="13" ry="26" fill="#e05520"
-            transform="rotate(-35,40,42)"/>
-          <!-- body highlight -->
-          <ellipse cx="37" cy="38" rx="5" ry="14" fill="#f08050" opacity=".5"
-            transform="rotate(-35,40,42)"/>
-          <!-- window -->
+          <ellipse cx="40" cy="42" rx="13" ry="26" fill="#e05520" transform="rotate(-35,40,42)"/>
+          <ellipse cx="37" cy="38" rx="5" ry="14" fill="#f08050" opacity=".5" transform="rotate(-35,40,42)"/>
           <circle cx="44" cy="38" r="7" fill="#93c5fd" stroke="#1A3560" stroke-width="2"/>
           <circle cx="44" cy="38" r="4" fill="#bfdbfe"/>
-          <!-- nose tip -->
-          <ellipse cx="53" cy="20" rx="6" ry="3" fill="#cc3e0e"
-            transform="rotate(-35,53,20)"/>
+          <ellipse cx="53" cy="20" rx="6" ry="3" fill="#cc3e0e" transform="rotate(-35,53,20)"/>
         </svg>
       </div>
       <div class="card-body">
@@ -331,28 +557,20 @@ body{font-family:'Segoe UI',Calibri,Arial,sans-serif;background:#8bafc8;
         <div class="card-name" contenteditable="true">CONTEXTO ORG.</div>
       </div>
       <div class="icon-area">
-        <!-- BUILDING + MAGNIFIER SVG -->
         <svg viewBox="0 0 90 90" xmlns="http://www.w3.org/2000/svg">
-          <!-- building base -->
           <rect x="12" y="28" width="52" height="52" rx="3" fill="#5b8ec4"/>
           <rect x="12" y="28" width="52" height="8" rx="3" fill="#1A3560"/>
-          <!-- windows grid -->
           <rect x="18" y="40" width="9" height="8" rx="1" fill="#bfe0f8"/>
           <rect x="31" y="40" width="9" height="8" rx="1" fill="#bfe0f8"/>
           <rect x="44" y="40" width="9" height="8" rx="1" fill="#bfe0f8"/>
           <rect x="18" y="53" width="9" height="8" rx="1" fill="#bfe0f8"/>
           <rect x="31" y="53" width="9" height="8" rx="1" fill="#93c5fd"/>
           <rect x="44" y="53" width="9" height="8" rx="1" fill="#bfe0f8"/>
-          <!-- door -->
           <rect x="28" y="66" width="12" height="14" rx="2" fill="#1A3560"/>
-          <!-- roof triangle -->
           <polygon points="38,10 12,28 64,28" fill="#1A3560"/>
-          <!-- magnifier circle -->
           <circle cx="68" cy="62" r="16" fill="none" stroke="#e8821a" stroke-width="5"/>
           <circle cx="68" cy="62" r="9" fill="#fde68a" opacity=".5"/>
-          <!-- magnifier handle -->
           <line x1="79" y1="73" x2="88" y2="83" stroke="#e8821a" stroke-width="5" stroke-linecap="round"/>
-          <!-- lens shine -->
           <circle cx="63" cy="57" r="3" fill="#fff" opacity=".6"/>
         </svg>
       </div>
@@ -372,26 +590,19 @@ body{font-family:'Segoe UI',Calibri,Arial,sans-serif;background:#8bafc8;
         <div class="card-name" contenteditable="true">PARTES INTERESADAS</div>
       </div>
       <div class="icon-area">
-        <!-- PEOPLE + CHART SVG -->
         <svg viewBox="0 0 90 90" xmlns="http://www.w3.org/2000/svg">
-          <!-- chart bars bg -->
           <rect x="52" y="20" width="34" height="55" rx="3" fill="#ddeaf8"/>
           <rect x="56" y="52" width="7" height="19" rx="2" fill="#e8821a"/>
           <rect x="66" y="42" width="7" height="29" rx="2" fill="#1A3560"/>
           <rect x="76" y="34" width="7" height="37" rx="2" fill="#e8821a" opacity=".7"/>
-          <!-- trend line -->
           <polyline points="56,65 66,55 76,46" fill="none" stroke="#f9c846" stroke-width="2" stroke-linecap="round"/>
-          <!-- person 1 (orange, leftmost) -->
           <circle cx="10" cy="38" r="8" fill="#e8821a"/>
           <path d="M2,60 Q10,50 18,60 L18,78 Q10,82 2,78 Z" fill="#e8821a"/>
-          <!-- person 2 (blue, center) -->
           <circle cx="26" cy="35" r="9" fill="#1A3560"/>
           <path d="M17,58 Q26,47 35,58 L35,78 Q26,83 17,78 Z" fill="#1A3560"/>
-          <!-- person 3 (lighter blue, right) -->
           <circle cx="43" cy="38" r="7.5" fill="#5b8ec4"/>
           <path d="M35,59 Q43,50 51,59 L51,78 Q43,82 35,78 Z" fill="#5b8ec4"/>
-          <!-- arms/gesture person 2 -->
-          <line x1="17" y1="62" x2="8"  y2="55" stroke="#1A3560" stroke-width="3" stroke-linecap="round"/>
+          <line x1="17" y1="62" x2="8" y2="55" stroke="#1A3560" stroke-width="3" stroke-linecap="round"/>
           <line x1="35" y1="62" x2="48" y2="53" stroke="#1A3560" stroke-width="3" stroke-linecap="round"/>
         </svg>
       </div>
@@ -410,7 +621,6 @@ body{font-family:'Segoe UI',Calibri,Arial,sans-serif;background:#8bafc8;
         <div class="card-name" contenteditable="true">ALCANCE SGC</div>
       </div>
       <div class="icon-area">
-        <!-- TARGET SVG -->
         <svg viewBox="0 0 90 90" xmlns="http://www.w3.org/2000/svg">
           <circle cx="45" cy="45" r="40" fill="#e8f0f8"/>
           <circle cx="45" cy="45" r="40" fill="none" stroke="#1A3560" stroke-width="5"/>
@@ -419,11 +629,8 @@ body{font-family:'Segoe UI',Calibri,Arial,sans-serif;background:#8bafc8;
           <circle cx="45" cy="45" r="20" fill="#ddeaf5"/>
           <circle cx="45" cy="45" r="20" fill="none" stroke="#1A3560" stroke-width="4"/>
           <circle cx="45" cy="45" r="10" fill="#e8821a"/>
-          <!-- arrow shaft -->
           <line x1="5" y1="5" x2="38" y2="38" stroke="#1A3560" stroke-width="4" stroke-linecap="round"/>
-          <!-- arrowhead -->
           <polygon points="38,38 28,32 32,28" fill="#1A3560"/>
-          <!-- second arrow -->
           <line x1="85" y1="12" x2="52" y2="40" stroke="#e8821a" stroke-width="4" stroke-linecap="round"/>
           <polygon points="52,40 58,30 62,35" fill="#e8821a"/>
         </svg>
@@ -445,29 +652,20 @@ body{font-family:'Segoe UI',Calibri,Arial,sans-serif;background:#8bafc8;
         <div class="card-name" contenteditable="true">POLÍTICA CALIDAD</div>
       </div>
       <div class="icon-area">
-        <!-- CERTIFICATE / SCROLL SVG -->
         <svg viewBox="0 0 90 90" xmlns="http://www.w3.org/2000/svg">
-          <!-- scroll body -->
           <rect x="12" y="12" width="66" height="66" rx="4" fill="#fefce8"/>
           <rect x="12" y="12" width="66" height="66" rx="4" fill="none" stroke="#b8962e" stroke-width="3"/>
-          <!-- scroll roll top -->
           <rect x="8" y="10" width="74" height="10" rx="5" fill="#f5e090"/>
           <rect x="8" y="70" width="74" height="10" rx="5" fill="#f5e090"/>
-          <!-- text lines -->
           <line x1="22" y1="28" x2="68" y2="28" stroke="#1A3560" stroke-width="2.5" stroke-linecap="round"/>
           <line x1="22" y1="36" x2="68" y2="36" stroke="#94a3b8" stroke-width="2" stroke-linecap="round"/>
           <line x1="22" y1="43" x2="60" y2="43" stroke="#94a3b8" stroke-width="2" stroke-linecap="round"/>
           <line x1="22" y1="50" x2="55" y2="50" stroke="#94a3b8" stroke-width="2" stroke-linecap="round"/>
-          <!-- gold seal -->
           <circle cx="45" cy="65" r="13" fill="#B8962E"/>
-          <circle cx="45" cy="65" r="9"  fill="#fde68a"/>
-          <!-- seal star -->
-          <polygon points="45,54 47,62 55,62 49,67 51,75 45,70 39,75 41,67 35,62 43,62"
-            fill="#B8962E"/>
-          <!-- ribbon -->
+          <circle cx="45" cy="65" r="9" fill="#fde68a"/>
+          <polygon points="45,54 47,62 55,62 49,67 51,75 45,70 39,75 41,67 35,62 43,62" fill="#B8962E"/>
           <rect x="41" y="73" width="4" height="12" fill="#e8821a" rx="1"/>
           <rect x="38" y="79" width="14" height="5" rx="1" fill="#e8821a" opacity=".7"/>
-          <!-- A-like mark -->
           <text x="45" y="68" text-anchor="middle" font-size="8" fill="#fff" font-weight="800">✓</text>
         </svg>
       </div>
@@ -487,12 +685,9 @@ body{font-family:'Segoe UI',Calibri,Arial,sans-serif;background:#8bafc8;
         <div class="card-name" contenteditable="true">ROLES Y RESP.</div>
       </div>
       <div class="icon-area">
-        <!-- PERSON + CHECKLIST SVG -->
         <svg viewBox="0 0 90 90" xmlns="http://www.w3.org/2000/svg">
-          <!-- checklist board -->
           <rect x="46" y="18" width="38" height="54" rx="4" fill="#ddeaf8" stroke="#5b8ec4" stroke-width="2"/>
           <rect x="46" y="18" width="38" height="10" rx="4" fill="#1A3560"/>
-          <!-- check items -->
           <rect x="53" y="32" width="18" height="3" rx="1.5" fill="#94a3b8"/>
           <text x="52" y="36" font-size="7" fill="#16a34a" font-weight="800">✓</text>
           <rect x="53" y="42" width="22" height="3" rx="1.5" fill="#94a3b8"/>
@@ -501,14 +696,10 @@ body{font-family:'Segoe UI',Calibri,Arial,sans-serif;background:#8bafc8;
           <text x="52" y="56" font-size="7" fill="#e8821a" font-weight="800">○</text>
           <rect x="53" y="62" width="20" height="3" rx="1.5" fill="#94a3b8"/>
           <text x="52" y="66" font-size="7" fill="#94a3b8" font-weight="800">○</text>
-          <!-- person head -->
           <circle cx="25" cy="28" r="12" fill="#1A3560"/>
           <circle cx="25" cy="25" r="7" fill="#5b8ec4"/>
-          <!-- shoulders / body -->
           <path d="M10,55 Q25,42 40,55 L40,82 Q25,88 10,82 Z" fill="#1A3560"/>
-          <!-- tie -->
           <polygon points="25,50 22,60 25,72 28,60" fill="#B8962E"/>
-          <!-- arm pointing to list -->
           <line x1="38" y1="60" x2="52" y2="50" stroke="#1A3560" stroke-width="4" stroke-linecap="round"/>
         </svg>
       </div>
@@ -529,26 +720,15 @@ body{font-family:'Segoe UI',Calibri,Arial,sans-serif;background:#8bafc8;
         <div class="card-name" contenteditable="true">GESTIÓN RIESGOS</div>
       </div>
       <div class="icon-area">
-        <!-- SHIELD + DECLINING CHART SVG -->
         <svg viewBox="0 0 90 90" xmlns="http://www.w3.org/2000/svg">
-          <!-- shield outer -->
-          <path d="M45,5 L80,20 L80,52 Q80,78 45,88 Q10,78 10,52 L10,20 Z"
-            fill="#e8821a"/>
-          <!-- shield inner -->
-          <path d="M45,12 L74,24 L74,52 Q74,73 45,82 Q16,73 16,52 L16,24 Z"
-            fill="#1A3560"/>
-          <!-- chart inside shield -->
-          <!-- baseline -->
+          <path d="M45,5 L80,20 L80,52 Q80,78 45,88 Q10,78 10,52 L10,20 Z" fill="#e8821a"/>
+          <path d="M45,12 L74,24 L74,52 Q74,73 45,82 Q16,73 16,52 L16,24 Z" fill="#1A3560"/>
           <line x1="24" y1="66" x2="66" y2="66" stroke="#5b8ec4" stroke-width="1.5"/>
-          <!-- declining bars -->
           <rect x="26" y="42" width="8" height="24" rx="1" fill="#5b8ec4"/>
           <rect x="38" y="50" width="8" height="16" rx="1" fill="#5b8ec4"/>
           <rect x="50" y="56" width="8" height="10" rx="1" fill="#5b8ec4"/>
-          <!-- trend arrow down -->
-          <polyline points="27,44 38,52 50,58 62,64"
-            fill="none" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round"/>
+          <polyline points="27,44 38,52 50,58 62,64" fill="none" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round"/>
           <polygon points="62,64 57,58 65,59" fill="#ef4444"/>
-          <!-- warning triangle top of shield -->
           <polygon points="45,16 38,30 52,30" fill="#f9c846"/>
           <text x="45" y="27" text-anchor="middle" font-size="9" fill="#1A3560" font-weight="900">!</text>
         </svg>
@@ -564,10 +744,9 @@ body{font-family:'Segoe UI',Calibri,Arial,sans-serif;background:#8bafc8;
 
   </div><!-- /cards-row -->
 
-  <!-- ── BOTTOM ROW ──────────────────────────────────── -->
+  <!-- ── BOTTOM ROW ── -->
   <div class="bot-row">
 
-    <!-- Panel 1: Auditoría Integral & Campo de Golf -->
     <div class="bp" style="flex:1.35">
       <div class="bp-hdr">
         <span contenteditable="true">AUDITORÍA INTEGRAL &amp; CAMPO DE GOLF</span>
@@ -585,7 +764,6 @@ body{font-family:'Segoe UI',Calibri,Arial,sans-serif;background:#8bafc8;
       </div>
     </div>
 
-    <!-- Panel 2: Recorrido en Campo -->
     <div class="bp" style="flex:1.1">
       <div class="bp-hdr" style="background:#254e8a">
         <span contenteditable="true">RECORRIDO EN CAMPO &amp; 7.1/8.4</span>
@@ -602,7 +780,6 @@ body{font-family:'Segoe UI',Calibri,Arial,sans-serif;background:#8bafc8;
       </div>
     </div>
 
-    <!-- Panel 3: Diagnosis Campo de Golf -->
     <div class="bp" style="flex:2.05">
       <div class="bp-hdr" style="background:#1A3560">
         <span contenteditable="true">DIAGNOSIS CAMPO DE GOLF</span>
@@ -634,52 +811,422 @@ body{font-family:'Segoe UI',Calibri,Arial,sans-serif;background:#8bafc8;
 
 <!-- ═══════════════════  SCRIPTS  ═══════════════════════ -->
 <script>
-const dash = document.getElementById('dashboard');
+/* ══════════════════════════════════════════════════════════
+   GLOBALS
+══════════════════════════════════════════════════════════ */
+const dash   = document.getElementById('dashboard');
+const selBox = document.getElementById('sel-box');
+const selTb  = document.getElementById('sel-toolbar');
 
-/* ── tamaño de texto ── */
+let editMode   = false;
+let selectedEl = null;
+
+/* ══════════════════════════════════════════════════════════
+   GLOBAL CONTROLS (unchanged)
+══════════════════════════════════════════════════════════ */
 function setFS(v){
   dash.style.setProperty('--fs', v+'px');
-  document.querySelectorAll('#fs-btns button').forEach(b=>{
-    b.classList.toggle('on', +b.dataset.v===+v);
-  });
+  document.querySelectorAll('#fs-btns button').forEach(b=>b.classList.toggle('on',+b.dataset.v===+v));
 }
-
-/* ── tamaño de íconos ── */
 function setIC(v){
   dash.style.setProperty('--icon-h', v+'px');
-  document.querySelectorAll('#ic-btns button').forEach(b=>{
-    b.classList.toggle('on', +b.dataset.v===+v);
-  });
+  document.querySelectorAll('#ic-btns button').forEach(b=>b.classList.toggle('on',+b.dataset.v===+v));
 }
-
-/* ── relleno tarjetas ── */
 function setPad(v){
   dash.style.setProperty('--card-p', v+'px');
-  document.querySelectorAll('#pad-btns button').forEach(b=>{
-    b.classList.toggle('on', +b.dataset.v===+v);
-  });
+  document.querySelectorAll('#pad-btns button').forEach(b=>b.classList.toggle('on',+b.dataset.v===+v));
 }
-
-/* ── barra de progreso ── */
 function setProgress(v){
   document.getElementById('pfill').style.width = v+'%';
   document.getElementById('pbar-lbl').textContent = v;
 }
-document.getElementById('pbar-click').addEventListener('click', function(e){
-  const r = this.getBoundingClientRect();
-  const v = Math.round((e.clientX-r.left)/r.width*100);
+document.getElementById('pbar-click').addEventListener('click',function(e){
+  if(editMode) return;
+  const r=this.getBoundingClientRect();
+  const v=Math.round((e.clientX-r.left)/r.width*100);
   setProgress(v);
-  document.getElementById('pbar-range').value = v;
+  document.getElementById('pbar-range').value=v;
 });
 
-/* ── descargar HTML ── */
+/* ══════════════════════════════════════════════════════════
+   EDIT MODE TOGGLE
+══════════════════════════════════════════════════════════ */
+function toggleEditMode(){
+  editMode = !editMode;
+  const btn = document.getElementById('edit-btn');
+  const hint = document.getElementById('edit-hint');
+  btn.textContent = editMode ? '✔ Edición ON' : 'Activar edición';
+  btn.classList.toggle('on', editMode);
+  hint.style.display = editMode ? 'block' : 'none';
+  document.body.classList.toggle('edit-mode', editMode);
+  if(!editMode) deselect();
+}
+
+/* ══════════════════════════════════════════════════════════
+   ELEMENT SELECTION
+══════════════════════════════════════════════════════════ */
+
+/* Which elements can be directly selected */
+function isSelectable(el){
+  if(!el || el===dash || el===document.body) return false;
+  const tag = el.tagName;
+  if(tag==='svg' || tag==='SVG') return true;
+  const cls = el.classList;
+  return cls.contains('icon-area') || cls.contains('card') ||
+         cls.contains('card-hdr') || cls.contains('card-body') ||
+         cls.contains('card-foot') || cls.contains('fi') ||
+         cls.contains('gi') || cls.contains('bp-ico') ||
+         cls.contains('hdr-icon') || cls.contains('tl-item') ||
+         cls.contains('tl-dot') || cls.contains('bg-item') ||
+         cls.contains('bp-item') || cls.contains('bp') ||
+         cls.contains('free-el') ||
+         el.hasAttribute('contenteditable');
+}
+
+/* Walk up from clicked el to find the nearest selectable */
+function findSelectable(el){
+  let cur = el;
+  while(cur && cur !== dash){
+    if(isSelectable(cur)) return cur;
+    cur = cur.parentElement;
+  }
+  /* fallback: if inside dashboard, return the direct child */
+  if(dash.contains(el)){
+    let c = el;
+    while(c && c.parentElement !== dash) c = c.parentElement;
+    return c || el;
+  }
+  return null;
+}
+
+function selectEl(el){
+  if(!el || el===dash) return;
+  if(selectedEl) selectedEl.classList.remove('ed-sel');
+  selectedEl = el;
+  el.classList.add('ed-sel');
+  refreshSelBox();
+  refreshToolbar();
+}
+
+function deselect(){
+  if(selectedEl) selectedEl.classList.remove('ed-sel');
+  selectedEl = null;
+  selBox.style.display = 'none';
+  selTb.style.display  = 'none';
+}
+
+/* Reposition sel-box over selectedEl */
+function refreshSelBox(){
+  if(!selectedEl) return;
+  const r = selectedEl.getBoundingClientRect();
+  selBox.style.left   = r.left   + 'px';
+  selBox.style.top    = r.top    + 'px';
+  selBox.style.width  = r.width  + 'px';
+  selBox.style.height = r.height + 'px';
+  selBox.style.display = 'block';
+
+  /* toolbar: prefer above, fall back to below */
+  const tbH = 38;
+  const tbTop = r.top > tbH + 8 ? r.top - tbH - 6 : r.bottom + 6;
+  selTb.style.top  = tbTop + 'px';
+  selTb.style.left = Math.max(4, r.left) + 'px';
+}
+
+function refreshToolbar(){
+  if(!selectedEl) return;
+  const fs = parseFloat(getComputedStyle(selectedEl).fontSize);
+  document.getElementById('fs-val').textContent = Math.round(fs) + 'px';
+  selTb.style.display = 'flex';
+}
+
+/* Sync sel-box when user scrolls / resizes */
+window.addEventListener('scroll', ()=>{ if(selectedEl) refreshSelBox(); });
+window.addEventListener('resize', ()=>{ if(selectedEl) refreshSelBox(); });
+
+/* Dashboard click → select element */
+dash.addEventListener('mousedown', function(e){
+  if(!editMode) return;
+  /* ignore clicks on sel-box chrome */
+  if(e.target.closest('#sel-box')) return;
+
+  const target = findSelectable(e.target);
+  if(target) selectEl(target);
+  else deselect();
+}, true);
+
+/* ══════════════════════════════════════════════════════════
+   DRAG TO MOVE (via #drag-handle inside sel-box)
+══════════════════════════════════════════════════════════ */
+let dragging = false;
+let dragSX, dragSY, origTX, origTY, origLeft, origTop, isFreeEl;
+
+function getTranslate(el){
+  const t = getComputedStyle(el).transform;
+  if(!t || t==='none') return {x:0,y:0};
+  const m = t.match(/matrix\(([^)]+)\)/);
+  if(m){ const v=m[1].split(','); return {x:+v[4]||0, y:+v[5]||0}; }
+  return {x:0,y:0};
+}
+
+document.getElementById('drag-handle').addEventListener('mousedown', function(e){
+  if(!selectedEl || !editMode) return;
+  e.preventDefault(); e.stopPropagation();
+  dragging = true;
+  dragSX = e.clientX; dragSY = e.clientY;
+  isFreeEl = selectedEl.classList.contains('free-el');
+  if(isFreeEl){
+    origLeft = parseFloat(selectedEl.style.left)||0;
+    origTop  = parseFloat(selectedEl.style.top)||0;
+  } else {
+    const tr = getTranslate(selectedEl);
+    origTX = tr.x; origTY = tr.y;
+  }
+});
+
+document.addEventListener('mousemove', function(e){
+  if(!dragging || !selectedEl) return;
+  const dx = e.clientX - dragSX;
+  const dy = e.clientY - dragSY;
+  if(isFreeEl){
+    selectedEl.style.left = (origLeft + dx) + 'px';
+    selectedEl.style.top  = (origTop  + dy) + 'px';
+  } else {
+    selectedEl.style.transform = `translate(${origTX+dx}px,${origTY+dy}px)`;
+  }
+  refreshSelBox();
+});
+
+document.addEventListener('mouseup', function(){
+  if(dragging){ dragging = false; refreshToolbar(); }
+  if(resizing){ resizing = false; refreshToolbar(); }
+});
+
+/* ══════════════════════════════════════════════════════════
+   RESIZE VIA HANDLES
+══════════════════════════════════════════════════════════ */
+let resizing = false;
+let resDir, resSX, resSY, resSW, resSH;
+
+document.querySelectorAll('.sel-handle').forEach(h=>{
+  h.addEventListener('mousedown', function(e){
+    if(!selectedEl) return;
+    e.preventDefault(); e.stopPropagation();
+    resizing = true;
+    resDir = e.target.dataset.dir;
+    resSX = e.clientX; resSY = e.clientY;
+    const r = selectedEl.getBoundingClientRect();
+    resSW = r.width; resSH = r.height;
+  });
+});
+
+document.addEventListener('mousemove', function(e){
+  if(!resizing || !selectedEl) return;
+  const dx = e.clientX - resSX;
+  const dy = e.clientY - resSY;
+
+  let nw = resSW, nh = resSH;
+  if(resDir.includes('e')) nw = Math.max(20, resSW + dx);
+  if(resDir.includes('w')) nw = Math.max(20, resSW - dx);
+  if(resDir.includes('s')) nh = Math.max(10, resSH + dy);
+  if(resDir.includes('n')) nh = Math.max(10, resSH - dy);
+
+  /* apply width */
+  if(resDir.includes('e')||resDir.includes('w')){
+    selectedEl.style.width = nw + 'px';
+    if(selectedEl.classList.contains('card')) selectedEl.style.flex = 'none';
+    if(selectedEl.classList.contains('bp'))   selectedEl.style.flex = 'none';
+  }
+  /* apply height */
+  if(resDir.includes('s')||resDir.includes('n')){
+    selectedEl.style.height = nh + 'px';
+    if(selectedEl.classList.contains('icon-area')){
+      selectedEl.style.height = nh + 'px';
+    }
+    if(selectedEl.tagName==='svg'||selectedEl.tagName==='SVG'){
+      selectedEl.style.height = nh + 'px';
+      selectedEl.style.width  = nw + 'px';
+    }
+  }
+  refreshSelBox();
+});
+
+/* ══════════════════════════════════════════════════════════
+   TOOLBAR ACTIONS
+══════════════════════════════════════════════════════════ */
+function adjFS(delta){
+  if(!selectedEl) return;
+  const fs = parseFloat(getComputedStyle(selectedEl).fontSize);
+  selectedEl.style.fontSize = Math.max(6, fs+delta) + 'px';
+  refreshSelBox(); refreshToolbar();
+}
+
+function adjSize(dw, dh){
+  if(!selectedEl) return;
+  const r = selectedEl.getBoundingClientRect();
+  if(dw){ selectedEl.style.width = Math.max(20, r.width+dw) + 'px'; }
+  if(dh){ selectedEl.style.height = Math.max(10, r.height+dh) + 'px'; }
+  if(selectedEl.classList.contains('card')) selectedEl.style.flex='none';
+  if(selectedEl.classList.contains('bp'))   selectedEl.style.flex='none';
+  refreshSelBox(); refreshToolbar();
+}
+
+function deleteSel(){
+  if(!selectedEl) return;
+  if(!confirm('¿Eliminar este elemento?')) return;
+  const el = selectedEl;
+  deselect();
+  el.remove();
+}
+
+function duplicateSel(){
+  if(!selectedEl) return;
+  const clone = selectedEl.cloneNode(true);
+  clone.classList.remove('ed-sel');
+  if(selectedEl.classList.contains('free-el')){
+    clone.style.left = (parseFloat(selectedEl.style.left)||0) + 20 + 'px';
+    clone.style.top  = (parseFloat(selectedEl.style.top)||0)  + 20 + 'px';
+  } else {
+    const tr = getTranslate(selectedEl);
+    clone.style.transform = `translate(${tr.x+20}px,${tr.y+20}px)`;
+  }
+  selectedEl.parentNode.insertBefore(clone, selectedEl.nextSibling);
+  selectEl(clone);
+}
+
+/* ══════════════════════════════════════════════════════════
+   KEYBOARD SHORTCUTS
+══════════════════════════════════════════════════════════ */
+document.addEventListener('keydown', function(e){
+  if(!editMode || !selectedEl) return;
+
+  /* Prevent accidental delete while typing in contenteditable */
+  if(document.activeElement && document.activeElement.isContentEditable) return;
+
+  if(e.key==='Delete'||e.key==='Backspace'){
+    e.preventDefault(); deleteSel();
+  }
+  if(e.key==='Escape'){ deselect(); }
+  if(e.ctrlKey && e.key.toLowerCase()==='d'){
+    e.preventDefault(); duplicateSel();
+  }
+  /* arrow nudge */
+  if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key)){
+    e.preventDefault();
+    const step = e.shiftKey ? 10 : 1;
+    const dx = e.key==='ArrowLeft'?-step: e.key==='ArrowRight'?step:0;
+    const dy = e.key==='ArrowUp'  ?-step: e.key==='ArrowDown' ?step:0;
+    if(selectedEl.classList.contains('free-el')){
+      selectedEl.style.left = ((parseFloat(selectedEl.style.left)||0)+dx)+'px';
+      selectedEl.style.top  = ((parseFloat(selectedEl.style.top)||0)+dy)+'px';
+    } else {
+      const tr=getTranslate(selectedEl);
+      selectedEl.style.transform=`translate(${tr.x+dx}px,${tr.y+dy}px)`;
+    }
+    refreshSelBox();
+  }
+});
+
+/* ══════════════════════════════════════════════════════════
+   INSERT MODAL
+══════════════════════════════════════════════════════════ */
+const EMOJIS = [
+  /* Negocio / gestión */
+  '📊','📈','📉','📋','📌','📎','📍','🗂️',
+  /* Herramientas */
+  '🔍','🔎','💡','⚙️','🛠️','🔧','🔩','⚠️',
+  /* Logros */
+  '✅','❌','🏆','🎯','🔑','⭐','🌟','🚀',
+  /* Personas */
+  '🤝','👥','👤','💬','📢','📣','🔔','🏅',
+  /* Finanzas / Documentos */
+  '💰','💵','📦','🏗️','🔄','⏱️','📅','🗓️',
+  /* Tecnología */
+  '💾','🖥️','📡','🔒','📱','🖨️','📝','✏️',
+];
+
+(function buildEmojiGrid(){
+  const grid = document.getElementById('emoji-grid');
+  EMOJIS.forEach(em=>{
+    const btn = document.createElement('button');
+    btn.className='emoji-btn';
+    btn.textContent=em;
+    btn.title='Insertar '+em;
+    btn.onclick=()=>insertEmoji(em);
+    grid.appendChild(btn);
+  });
+})();
+
+function openInsert(){ document.getElementById('insert-modal').style.display='flex'; }
+function closeInsert(){ document.getElementById('insert-modal').style.display='none'; }
+
+/* Place a new free-el centered on dashboard */
+function placeFreeEl(el){
+  el.classList.add('free-el');
+  el.style.left = (dash.offsetWidth /2 - 30)+'px';
+  el.style.top  = (dash.offsetHeight/2 - 30)+'px';
+  dash.appendChild(el);
+  closeInsert();
+  if(editMode) selectEl(el);
+}
+
+function insertEmoji(em){
+  const d = document.createElement('div');
+  d.textContent = em;
+  d.style.fontSize = '48px';
+  d.style.lineHeight = '1';
+  placeFreeEl(d);
+}
+
+function insertImageFile(input){
+  const file = input.files[0];
+  if(!file) return;
+  const wRange = document.getElementById('img-w-range');
+  const w = wRange ? +wRange.value : 120;
+  const reader = new FileReader();
+  reader.onload = function(ev){
+    const img = document.createElement('img');
+    img.src = ev.target.result;
+    img.style.width  = w + 'px';
+    img.style.height = 'auto';
+    img.draggable = false;
+    placeFreeEl(img);
+  };
+  reader.readAsDataURL(file);
+  input.value=''; /* reset so same file can be re-chosen */
+}
+
+function insertFreeText(){
+  const txt = document.getElementById('ins-text-val').value.trim();
+  if(!txt) return;
+  const fs  = document.getElementById('ins-fs-range').value;
+  const d   = document.createElement('div');
+  d.className  = 'free-text';
+  d.textContent = txt;
+  d.style.fontSize = fs + 'px';
+  d.contentEditable = 'true';
+  placeFreeEl(d);
+  document.getElementById('ins-text-val').value='';
+}
+
+/* Image size preview */
+document.getElementById('img-w-range') && document.getElementById('img-w-range')
+  .addEventListener('input', function(){ document.getElementById('img-w-val').textContent=this.value+'px'; });
+
+/* ══════════════════════════════════════════════════════════
+   EXPORT HTML
+══════════════════════════════════════════════════════════ */
 function dlHTML(){
   const clone = document.documentElement.cloneNode(true);
-  clone.querySelector('#ctrl').remove();
-  // embed current CSS variable values into style
+  /* remove UI chrome */
+  ['#ctrl','#sel-box','#sel-toolbar','#insert-modal'].forEach(id=>{
+    const el=clone.querySelector(id); if(el) el.remove();
+  });
+  /* remove edit highlights */
+  clone.querySelectorAll('.ed-sel').forEach(el=>el.classList.remove('ed-sel'));
+  /* embed current CSS vars */
   const style = clone.querySelector('style');
   const vars = ['--fs','--icon-h','--card-p'].map(v=>
-    `  ${v}:${getComputedStyle(dash).getPropertyValue(v)||dash.style.getPropertyValue(v)};`
+    `  ${v}:${dash.style.getPropertyValue(v)||getComputedStyle(dash).getPropertyValue(v)};`
   ).join('\n');
   style.textContent = style.textContent.replace(':root{',':root{\n'+vars+'\n');
   const blob = new Blob(['<!DOCTYPE html>\n'+clone.outerHTML],{type:'text/html;charset=utf-8'});
@@ -689,24 +1236,84 @@ function dlHTML(){
   a.click();
 }
 
-/* ── exportar PNG ── */
+/* ══════════════════════════════════════════════════════════
+   EXPORT PNG
+══════════════════════════════════════════════════════════ */
 async function dlPNG(){
-  const btn = document.querySelector('#ctrl');
-  btn.style.display='none';
-  const canvas = await html2canvas(dash,{scale:2,useCORS:true,backgroundColor:'#8bafc8'});
-  btn.style.display='';
-  const a = document.createElement('a');
-  a.href = canvas.toDataURL('image/png');
-  a.download = 'dashboard_progreso_fase1.png';
-  a.click();
+  const hidden = [
+    document.getElementById('ctrl'),
+    selBox, selTb,
+    document.getElementById('insert-modal')
+  ];
+  hidden.forEach(el=>{ if(el) el.style.display='none'; });
+  const prevOvf = dash.style.overflow;
+  dash.style.overflow = 'visible';
+
+  try{
+    const canvas = await html2canvas(dash,{
+      scale:2, useCORS:true, backgroundColor:'#8bafc8', logging:false
+    });
+    const a = document.createElement('a');
+    a.href = canvas.toDataURL('image/png');
+    a.download = 'dashboard_progreso_fase1.png';
+    a.click();
+  } finally {
+    hidden.forEach(el=>{ if(el) el.style.display=''; });
+    dash.style.overflow = prevOvf;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════
+   EXPORT PPTX  (imagen en diapositiva widescreen 16:9)
+══════════════════════════════════════════════════════════ */
+async function dlPPTX(){
+  const hidden = [
+    document.getElementById('ctrl'),
+    selBox, selTb,
+    document.getElementById('insert-modal')
+  ];
+  hidden.forEach(el=>{ if(el) el.style.display='none'; });
+  const prevOvf = dash.style.overflow;
+  dash.style.overflow = 'visible';
+
+  try{
+    const canvas = await html2canvas(dash,{
+      scale:2, useCORS:true, backgroundColor:'#8bafc8', logging:false
+    });
+    const imgData = canvas.toDataURL('image/png');
+
+    /* Calcular dimensiones proporcionales en pulgadas (widescreen 13.33" × 7.5") */
+    const SLIDE_W = 13.33;
+    const ratio   = canvas.height / canvas.width;
+    const SLIDE_H = +(SLIDE_W * ratio).toFixed(2);
+
+    const pptx = new PptxGenJS();
+    pptx.defineLayout({ name:'DASH', width:SLIDE_W, height:SLIDE_H });
+    pptx.layout = 'DASH';
+
+    const slide = pptx.addSlide();
+    slide.background = { color:'8BAFC8' };
+    slide.addImage({ data:imgData, x:0, y:0, w:SLIDE_W, h:SLIDE_H });
+
+    await pptx.writeFile({ fileName:'dashboard_progreso_fase1.pptx' });
+  } finally {
+    hidden.forEach(el=>{ if(el) el.style.display=''; });
+    dash.style.overflow = prevOvf;
+  }
 }
 </script>
 
 <style>
+/* Highlight selected element with a subtle inner glow */
+.ed-sel{
+  outline:2px solid #4a9eff !important;
+  outline-offset:2px;
+}
+
 @media print{
-  #ctrl{display:none!important}
+  #ctrl,#sel-box,#sel-toolbar,#insert-modal{display:none!important}
   body{background:#fff;min-width:unset}
-  #dashboard{margin:0;box-shadow:none;width:100%}
+  #dashboard{margin:0;box-shadow:none;width:100%;overflow:visible}
 }
 </style>
 </body>
