@@ -1,6 +1,5 @@
 <!DOCTYPE html>
-<html lang="es">
-<head>
+<html lang="es"><head>
 <meta charset="UTF-8">
 <title>Dashboard General de Progreso – Fase 1</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -298,6 +297,12 @@ body.edit-mode [contenteditable]:focus{
   cursor:move;
 }
 
+/* Highlight selected element */
+.ed-sel{
+  outline:2px solid #4a9eff !important;
+  outline-offset:2px;
+}
+
 @media print{
   #ctrl,#sel-box,#sel-toolbar,#insert-modal{display:none!important}
   body{background:#fff;min-width:unset}
@@ -350,7 +355,7 @@ body.edit-mode [contenteditable]:focus{
         📁 Elegir imagen…
         <input type="file" accept="image/*" onchange="insertImageFile(this)">
       </label>
-      <div class="ins-size-row" id="img-size-row" style="display:none">
+      <div class="ins-size-row">
         <label>Ancho:</label>
         <input type="range" id="img-w-range" min="20" max="400" value="120"
           oninput="document.getElementById('img-w-val').textContent=this.value+'px'">
@@ -361,7 +366,8 @@ body.edit-mode [contenteditable]:focus{
     <div class="ins-section">
       <h4>Bloque de texto libre</h4>
       <div class="ins-row">
-        <input type="text" id="ins-text-val" placeholder="Escribir texto…" onkeydown="if(event.key==='Enter')insertFreeText()">
+        <input type="text" id="ins-text-val" placeholder="Escribir texto…"
+          onkeydown="if(event.key==='Enter')insertFreeText()">
         <button onclick="insertFreeText()">Insertar</button>
       </div>
       <div class="ins-size-row">
@@ -418,7 +424,7 @@ body.edit-mode [contenteditable]:focus{
       Clic → seleccionar · Arrastrar → mover<br>
       Handles → redimensionar · Supr → eliminar<br>
       Ctrl+D → duplicar · A+/A− → tamaño fuente<br>
-      Clic en área libre → deseleccionar
+      Flechas → nudge (+ Shift = ×10)
     </div>
   </div>
 
@@ -440,77 +446,77 @@ body.edit-mode [contenteditable]:focus{
 <div id="dashboard">
 
   <!-- ── HEADER ── -->
-  <div class="hdr">
+  <div class="hdr" style="transform: translate(3px, 0px);">
     <div class="hdr-l">
       <div class="hdr-icon">📊</div>
-      <div class="hdr-title" contenteditable="true">DASHBOARD GENERAL DE PROGRESO</div>
-      <div class="fase-badge" contenteditable="true">FASE 1</div>
+      <div class="hdr-title" contenteditable="true" style="font-size: 22px;">DASHBOARD GENERAL DE PROGRESO</div>
+      <div class="fase-badge" contenteditable="true" style="font-size: 15px;">FASE 1</div>
     </div>
     <div class="hdr-r">
-      <div class="estado-lbl" contenteditable="true">ESTADO DEL PROYECTO</div>
+      <div class="estado-lbl" contenteditable="true" style="font-size: 15.5px;">ESTADO DEL PROYECTO</div>
       <div class="pct-row">
         <div class="pct-num" contenteditable="true">51.4%</div>
         <div class="pct-text" contenteditable="true">COMPLETO</div>
       </div>
-      <div class="prog-lbl" contenteditable="true">Progreso Ejecutivo</div>
+      <div class="prog-lbl" contenteditable="true" style="font-size: 13px;">Progreso Ejecutivo</div>
       <div class="prog-wrap">
         <div class="prog-bar" id="pbar-click" title="Clic para ajustar">
           <div class="prog-fill" id="pfill" style="width:70%"></div>
         </div>
-        <div class="prog-pct" contenteditable="true">70% AVANCE</div>
+        <div class="prog-pct" contenteditable="true" style="font-size: 14px;">70% AVANCE</div>
       </div>
-      <div class="subtareas" contenteditable="true">Subtareas: 19 ejecutadas / 77 programados.</div>
-      <div class="nota" contenteditable="true">Nota: Las actividades "Tn Process" corresponden mayoritariamente a jornadas de socialización supeditadas a los avances del ejercicio de planeación estratégica institucional.</div>
+      <div class="subtareas" contenteditable="true" style="font-size: 13px;">Subtareas: 19 ejecutadas / 37 programados.</div>
+      <div class="nota" contenteditable="true" style="font-size: 14px; width: 778.875px; height: 33.5px;">Nota: Las actividades en proceso corresponden mayoritariamente a jornadas de socialización supeditadas a los avances del ejercicio de planeación estratégica institucional.</div>
     </div>
   </div>
 
   <!-- ── TIMELINE ── -->
-  <div class="tl-wrap">
-    <div class="tl-heading" contenteditable="true">CRONOGRAMA DE HITOS CLAVE</div>
+  <div class="tl-wrap" style="transform: translate(2px, 0px);">
+    <div class="tl-heading" contenteditable="true" style="font-size: 16px;">CRONOGRAMA DE HITOS CLAVE</div>
     <div class="tl-track">
       <div class="tl-line"></div>
 
       <div class="tl-item">
         <div class="tl-dot">✓</div>
-        <div class="tl-date" contenteditable="true">16/DIC/2025</div>
-        <div class="tl-event" contenteditable="true">Sustentación Comité de Auditoría.</div>
-        <div class="tl-desc" contenteditable="true">Informe Diagrático y Plan Anual.</div>
+        <div class="tl-date" contenteditable="true" style="font-size: 11.5px;">16/DIC/2025</div>
+        <div class="tl-event" contenteditable="true" style="font-size: 11px;">Sustentación Comité de Auditoría.</div>
+        <div class="tl-desc" contenteditable="true" style="font-size: 12.5px;">Informe Diagrático y Plan Anual.</div>
       </div>
       <div class="tl-item">
         <div class="tl-dot">✓</div>
-        <div class="tl-date" contenteditable="true">26/DIC/2025</div>
-        <div class="tl-event" contenteditable="true">Revisión Técnica Ana Segrera.</div>
-        <div class="tl-desc" contenteditable="true">Análisis London Consulting y Plan Estratégico.</div>
+        <div class="tl-date" contenteditable="true" style="font-size: 11.5px;">26/DIC/2025</div>
+        <div class="tl-event" contenteditable="true" style="font-size: 11px;">Revisión Técnica Ana Segrera.</div>
+        <div class="tl-desc" contenteditable="true" style="font-size: 12.5px;">Análisis London Consulting y Plan Estratégico.</div>
       </div>
       <div class="tl-item">
         <div class="tl-dot open">○</div>
-        <div class="tl-date" contenteditable="true">14/ENE/2026</div>
-        <div class="tl-event" contenteditable="true">Reunión Gerencia.</div>
-        <div class="tl-desc" contenteditable="true">Revisión Satisfacción Cliente y PQRS.</div>
+        <div class="tl-date" contenteditable="true" style="font-size: 11.5px;">14/ENE/2026</div>
+        <div class="tl-event" contenteditable="true" style="font-size: 11px;">Reunión Gerencia.</div>
+        <div class="tl-desc" contenteditable="true" style="width: 146.953px; height: 30px; font-size: 12.5px;">Revisión Satisfacción Cliente y PQRS.</div>
       </div>
       <div class="tl-item">
         <div class="tl-dot open">○</div>
-        <div class="tl-date" contenteditable="true">18 y 19/ENE/2026</div>
-        <div class="tl-event" contenteditable="true">Jornadas Riesgos.</div>
-        <div class="tl-desc" contenteditable="true">Auditoría Baker Tilly (Car Jad/Servicor).</div>
+        <div class="tl-date" contenteditable="true" style="font-size: 11.5px;">18 y 19/ENE/2026</div>
+        <div class="tl-event" contenteditable="true" style="font-size: 11px;">Jornadas Riesgos.</div>
+        <div class="tl-desc" contenteditable="true" style="font-size: 10.5px;">Auditoría Baker Tilly (Car Jad/Servicor).</div>
       </div>
       <div class="tl-item">
         <div class="tl-dot open">○</div>
-        <div class="tl-date" contenteditable="true">02/FEB/2026</div>
-        <div class="tl-event" contenteditable="true">Validación Sociosambiental.</div>
-        <div class="tl-desc" contenteditable="true">Gestión alcances ambientales Fundación.</div>
+        <div class="tl-date" contenteditable="true" style="font-size: 11.5px;">02/FEB/2026</div>
+        <div class="tl-event" contenteditable="true" style="font-size: 11px;">Validación Sociosambiental.</div>
+        <div class="tl-desc" contenteditable="true" style="font-size: 12.5px;">Gestión alcances ambientales Fundación.</div>
       </div>
       <div class="tl-item">
         <div class="tl-dot open">○</div>
-        <div class="tl-date" contenteditable="true">03/FEB/2026</div>
-        <div class="tl-event" contenteditable="true">Reunión Gestión Humana.</div>
-        <div class="tl-desc" contenteditable="true">Requisitos SOC en perfiles de cargo.</div>
+        <div class="tl-date" contenteditable="true" style="font-size: 11.5px;">03/FEB/2026</div>
+        <div class="tl-event" contenteditable="true" style="font-size: 11px;">Reunión Gestión Humana.</div>
+        <div class="tl-desc" contenteditable="true" style="font-size: 12.5px;">Requisitos SOC en perfiles de cargo.</div>
       </div>
-      <div class="tl-item">
+      <div class="tl-item" style="transform: translate(1px, 1px);">
         <div class="tl-dot open">○</div>
-        <div class="tl-date" contenteditable="true">24 y 25/FEB/2026</div>
-        <div class="tl-event" contenteditable="true">Sesiones Operativas Fase 2.</div>
-        <div class="tl-desc" contenteditable="true">Recolección Información y Recorrido de Verificación.</div>
+        <div class="tl-date" contenteditable="true" style="font-size: 11.5px;">24 y 25/FEB/2026</div>
+        <div class="tl-event" contenteditable="true" style="font-size: 11px;">Sesiones Operativas Fase 2.</div>
+        <div class="tl-desc" contenteditable="true" style="font-size: 12.5px;">Recolección Información y Recorrido de Verificación.</div>
       </div>
     </div>
   </div>
@@ -521,40 +527,26 @@ body.edit-mode [contenteditable]:focus{
     <!-- 0.0 Gestión Inicial -->
     <div class="card">
       <div class="card-hdr" style="background:#2b6090">
-        <div class="card-num" contenteditable="true">0.0</div>
-        <div class="card-name" contenteditable="true">GESTIÓN INICIAL</div>
+        <div class="card-num" contenteditable="true" style="font-size: 19px;">0.0</div>
+        <div class="card-name" contenteditable="true" style="font-size: 11px;">GESTIÓN INICIAL</div>
       </div>
-      <div class="icon-area">
-        <svg viewBox="0 0 90 90" xmlns="http://www.w3.org/2000/svg">
-          <circle cx="78" cy="12" r="2.5" fill="#f9c846"/>
-          <circle cx="68" cy="22" r="1.5" fill="#f9c846"/>
-          <circle cx="14" cy="18" r="2" fill="#f9c846"/>
-          <circle cx="82" cy="30" r="1.5" fill="#f9c846"/>
-          <ellipse cx="35" cy="74" rx="7" ry="10" fill="#f97316" opacity=".85"/>
-          <ellipse cx="35" cy="76" rx="4.5" ry="7" fill="#fbbf24"/>
-          <polygon points="22,62 12,75 30,65" fill="#1A3560"/>
-          <polygon points="52,56 65,68 46,62" fill="#1A3560"/>
-          <ellipse cx="40" cy="42" rx="13" ry="26" fill="#e05520" transform="rotate(-35,40,42)"/>
-          <ellipse cx="37" cy="38" rx="5" ry="14" fill="#f08050" opacity=".5" transform="rotate(-35,40,42)"/>
-          <circle cx="44" cy="38" r="7" fill="#93c5fd" stroke="#1A3560" stroke-width="2"/>
-          <circle cx="44" cy="38" r="4" fill="#bfdbfe"/>
-          <ellipse cx="53" cy="20" rx="6" ry="3" fill="#cc3e0e" transform="rotate(-35,53,20)"/>
-        </svg>
+      <div class="icon-area" style="transform: translate(-1px, 2px); width: 187.703px; height: 96px; font-size: 8px;">
+        <!-- SVG icon area (vacío — el usuario puede insertar un emoji/imagen con ➕ Insertar) -->
       </div>
       <div class="card-body">
-        <p contenteditable="true">Alineación Estratégica Mesa de Yeguas: <span class="b">DOFA y PESTEL.</span> Coherencia London Consulting.</p>
+        <p contenteditable="true" style="font-size: 11.5px;">Alineación Estratégica Mesa de Yeguas: <span class="b">DOFA y PESTEL.</span> Coherencia London Consulting.</p>
       </div>
       <div class="card-foot">
-        <span class="fi" title="Comunicación">📢</span>
-        <span class="fi" title="En proceso">🏗️</span>
+        <span class="fi" title="Comunicación" style="font-size: 21px;">📢</span>
+        <span class="fi" title="En proceso" style="font-size: 21px;">🏗️</span>
       </div>
     </div>
 
     <!-- 4.1 Contexto Org. -->
     <div class="card">
       <div class="card-hdr" style="background:#2b6090">
-        <div class="card-num" contenteditable="true">4.1</div>
-        <div class="card-name" contenteditable="true">CONTEXTO ORG.</div>
+        <div class="card-num" contenteditable="true" style="font-size: 19px;">4.1</div>
+        <div class="card-name" contenteditable="true" style="font-size: 11px;">CONTEXTO ORG.</div>
       </div>
       <div class="icon-area">
         <svg viewBox="0 0 90 90" xmlns="http://www.w3.org/2000/svg">
@@ -575,19 +567,19 @@ body.edit-mode [contenteditable]:focus{
         </svg>
       </div>
       <div class="card-body">
-        <p contenteditable="true">Alineación Estratégica Mesa de Yeguas: <span class="b">DOFA y PESTEL.</span> Coherencia London Consulting.</p>
+        <p contenteditable="true" style="font-size: 11.5px;">Alineación Estratégica Mesa de Yeguas: <span class="b">DOFA y PESTEL.</span> Coherencia London Consulting.</p>
       </div>
       <div class="card-foot">
-        <span class="fi" title="Actualizar">🔄</span>
-        <span class="fi" title="Documento">📋</span>
+        <span class="fi" title="Actualizar" style="font-size: 21px;">🔄</span>
+        <span class="fi" title="Documento" style="font-size: 21px;">📋</span>
       </div>
     </div>
 
     <!-- 4.2 Partes Interesadas -->
     <div class="card">
       <div class="card-hdr" style="background:#2b6090">
-        <div class="card-num" contenteditable="true">4.2</div>
-        <div class="card-name" contenteditable="true">PARTES INTERESADAS</div>
+        <div class="card-num" contenteditable="true" style="font-size: 19px;">4.2</div>
+        <div class="card-name" contenteditable="true" style="font-size: 11px;">PARTES INTERESADAS</div>
       </div>
       <div class="icon-area">
         <svg viewBox="0 0 90 90" xmlns="http://www.w3.org/2000/svg">
@@ -607,18 +599,18 @@ body.edit-mode [contenteditable]:focus{
         </svg>
       </div>
       <div class="card-body">
-        <p contenteditable="true">Matriz Stakeholders: Requisitos por tipo de cliente y servicio. <span class="b">Publicación Intranet en proceso.</span></p>
+        <p contenteditable="true" style="font-size: 11.5px;">Matriz Stakeholders: Requisitos por tipo de cliente y servicio. <span class="b">Publicación Intranet en proceso.</span></p>
       </div>
       <div class="card-foot">
-        <span class="fi">🤝</span><span class="fi">📢</span><span class="fi">🏗️</span>
+        <span class="fi" style="font-size: 21px;">🤝</span><span class="fi" style="font-size: 21px;">📢</span><span class="fi" style="font-size: 21px;">🏗️</span>
       </div>
     </div>
 
     <!-- 4.3 Alcance SGC -->
     <div class="card">
       <div class="card-hdr" style="background:#2b6090">
-        <div class="card-num" contenteditable="true">4.3</div>
-        <div class="card-name" contenteditable="true">ALCANCE SGC</div>
+        <div class="card-num" contenteditable="true" style="font-size: 19px;">4.3</div>
+        <div class="card-name" contenteditable="true" style="font-size: 11px;">ALCANCE SGC</div>
       </div>
       <div class="icon-area">
         <svg viewBox="0 0 90 90" xmlns="http://www.w3.org/2000/svg">
@@ -636,20 +628,20 @@ body.edit-mode [contenteditable]:focus{
         </svg>
       </div>
       <div class="card-body">
-        <p contenteditable="true">Fronteras físicas y operativas.</p>
-        <p class="b" style="margin-top:.4em" contenteditable="true">EJE RECTOR</p>
-        <p contenteditable="true">Supeditado a Planeación Estratégica Institucional <span class="it">(sin cronograma definido).</span></p>
+        <p contenteditable="true" style="font-size: 11.5px;">Fronteras físicas y operativas.</p>
+        <p class="b" style="margin-top: 0.4em; font-size: 11.5px;" contenteditable="true">EJE RECTOR</p>
+        <p contenteditable="true" style="font-size: 11.5px;">Supeditado a Planeación Estratégica Institucional <span class="it">(sin cronograma definido).</span></p>
       </div>
       <div class="card-foot">
-        <span class="fi">⚠️</span><span class="fi">✏️</span>
+        <span class="fi" style="font-size: 21px;">⚠️</span><span class="fi" style="font-size: 21px;">✏️</span>
       </div>
     </div>
 
     <!-- 5.2 Política Calidad -->
     <div class="card">
       <div class="card-hdr" style="background:#1e5490">
-        <div class="card-num" contenteditable="true">5.2</div>
-        <div class="card-name" contenteditable="true">POLÍTICA CALIDAD</div>
+        <div class="card-num" contenteditable="true" style="font-size: 19px;">5.2</div>
+        <div class="card-name" contenteditable="true" style="font-size: 11px;">POLÍTICA CALIDAD</div>
       </div>
       <div class="icon-area">
         <svg viewBox="0 0 90 90" xmlns="http://www.w3.org/2000/svg">
@@ -670,19 +662,19 @@ body.edit-mode [contenteditable]:focus{
         </svg>
       </div>
       <div class="card-body">
-        <p contenteditable="true">Borrador remitido <span class="b">13 ene 2026.</span></p>
-        <p style="margin-top:.4em" contenteditable="true">Implementación física en proceso (Comunicaciones).</p>
+        <p contenteditable="true" style="font-size: 11.5px;">Borrador remitido <span class="b">13 ene 2026.</span></p>
+        <p style="margin-top: 0.4em; font-size: 11.5px;" contenteditable="true">Implementación física en proceso (Comunicaciones).</p>
       </div>
-      <div class="card-foot">
-        <span class="fi">📢</span><span class="fi">📋</span><span class="fi">💬</span>
+      <div class="card-foot" style="transform: translate(-2px, 0px);">
+        <span class="fi" style="font-size: 21px;">📢</span><span class="fi" style="font-size: 21px;">📋</span><span class="fi" style="font-size: 21px;">💬</span>
       </div>
     </div>
 
     <!-- 5.3 Roles y Resp. -->
     <div class="card">
       <div class="card-hdr" style="background:#1e5490">
-        <div class="card-num" contenteditable="true">5.3</div>
-        <div class="card-name" contenteditable="true">ROLES Y RESP.</div>
+        <div class="card-num" contenteditable="true" style="font-size: 19px;">5.3</div>
+        <div class="card-name" contenteditable="true" style="font-size: 11px;">ROLES Y RESP.</div>
       </div>
       <div class="icon-area">
         <svg viewBox="0 0 90 90" xmlns="http://www.w3.org/2000/svg">
@@ -704,20 +696,20 @@ body.edit-mode [contenteditable]:focus{
         </svg>
       </div>
       <div class="card-body">
-        <p contenteditable="true">Borradores remitidos a RRHH (todos los niveles).</p>
-        <p style="margin-top:.4em" contenteditable="true">Formalización en RRHH en proceso.</p>
-        <p class="b" style="margin-top:.4em" contenteditable="true">*Comité de Calidad formal propuesto.</p>
+        <p contenteditable="true" style="font-size: 11.5px;">Borradores remitidos a RRHH (todos los niveles).</p>
+        <p style="margin-top: 0.4em; font-size: 11.5px;" contenteditable="true">Formalización en RRHH en proceso.</p>
+        <p class="b" style="margin-top: 0.4em; font-size: 11.5px;" contenteditable="true">*Comité de Calidad formal propuesto.</p>
       </div>
       <div class="card-foot">
-        <span class="fi">📋</span><span class="fi">🏗️</span>
+        <span class="fi" style="font-size: 21px;">📋</span><span class="fi" style="font-size: 21px;">🏗️</span>
       </div>
     </div>
 
     <!-- 6.1 Gestión Riesgos -->
     <div class="card">
       <div class="card-hdr" style="background:#1A3560">
-        <div class="card-num" contenteditable="true">6.1</div>
-        <div class="card-name" contenteditable="true">GESTIÓN RIESGOS</div>
+        <div class="card-num" contenteditable="true" style="font-size: 19px;">6.1</div>
+        <div class="card-name" contenteditable="true" style="font-size: 11px;">GESTIÓN RIESGOS</div>
       </div>
       <div class="icon-area">
         <svg viewBox="0 0 90 90" xmlns="http://www.w3.org/2000/svg">
@@ -734,11 +726,11 @@ body.edit-mode [contenteditable]:focus{
         </svg>
       </div>
       <div class="card-body">
-        <p contenteditable="true">Integración con Baker Tilly <span class="b">(ISO 31000).</span></p>
-        <p style="margin-top:.4em" contenteditable="true">Riesgos Críticos Calidad: Continuidad del Negocio, Inocuidad Alimentaria, Sostenibilidad, Control Operacional (PQRS).</p>
+        <p contenteditable="true" style="font-size: 11.5px;">Integración con Baker Tilly <span class="b">(ISO 31000).</span></p>
+        <p style="margin-top: 0.4em; font-size: 11.5px;" contenteditable="true">Riesgos Críticos Calidad: Continuidad del Negocio, Inocuidad Alimentaria, Sostenibilidad, Control Operacional (PQRS).</p>
       </div>
       <div class="card-foot">
-        <span class="fi">⚠️</span><span class="fi">🏗️</span>
+        <span class="fi" style="font-size: 21px;">⚠️</span><span class="fi" style="font-size: 21px;">🏗️</span>
       </div>
     </div>
 
@@ -747,34 +739,34 @@ body.edit-mode [contenteditable]:focus{
   <!-- ── BOTTOM ROW ── -->
   <div class="bot-row">
 
-    <div class="bp" style="flex:1.35">
+    <div class="bp" style="flex: 1.35 1 0%; transform: translate(0px, 1px); font-size: 12px;">
       <div class="bp-hdr">
         <span contenteditable="true">AUDITORÍA INTEGRAL &amp; CAMPO DE GOLF</span>
         <span class="req" contenteditable="true"> (Req. 9 / 7.1 / 8.4)</span>
       </div>
       <div class="bp-body">
         <div class="bp-item">
-          <div class="bp-ico">📊</div>
+          <div class="bp-ico" style="font-size: 40px;">📊</div>
           <div class="bp-t">
-            <div class="bpt" contenteditable="true">ESCUCHA DEL CLIENTE (PQRSF 2025)</div>
-            <div class="bpd" contenteditable="true">Informe estadístico y Plantilla unificada de respuesta.</div>
-            <div class="bps" contenteditable="true">(Re Jan 14)</div>
+            <div class="bpt" contenteditable="true" style="font-size: 15.5px;">ESCUCHA DEL CLIENTE (PQRSF 2025)</div>
+            <div class="bpd" contenteditable="true" style="font-size: 15px;">Informe estadístico y Plantilla unificada de respuesta.</div>
+            <div class="bps" contenteditable="true" style="font-size: 10.2px;">(Re Jan 14)</div>
           </div>
         </div>
       </div>
     </div>
 
-    <div class="bp" style="flex:1.1">
+    <div class="bp" style="flex: 1.1 1 0%; transform: translate(2px, 0px); font-size: 12px;">
       <div class="bp-hdr" style="background:#254e8a">
         <span contenteditable="true">RECORRIDO EN CAMPO &amp; 7.1/8.4</span>
       </div>
       <div class="bp-body">
         <div class="bp-item">
-          <div class="bp-ico">🔄</div>
+          <div class="bp-ico" style="font-size: 40.8px;">🔄</div>
           <div class="bp-t">
-            <div class="bpt" contenteditable="true">CONTROL TERCEROS</div>
-            <div class="bpd" contenteditable="true">(Re Feb 24-25 visits)</div>
-            <div class="bpd" contenteditable="true">Audit recursos. Puntos críticos.</div>
+            <div class="bpt" contenteditable="true" style="font-size: 15.4px;">CONTROL TERCEROS</div>
+            <div class="bpd" contenteditable="true" style="font-size: 14.8px;">(Re Feb 24-25 visits)</div>
+            <div class="bpd" contenteditable="true" style="font-size: 14.8px;">Audit recursos. Puntos críticos.</div>
           </div>
         </div>
       </div>
@@ -787,25 +779,28 @@ body.edit-mode [contenteditable]:focus{
       </div>
       <div class="bp-grid" style="grid-template-columns:repeat(4,1fr)">
         <div class="bg-item">
-          <div class="gi">💾</div>
-          <div class="gl" contenteditable="true">centralización Software GW</div>
+          <div class="gi" style="font-size: 39px;">💾</div>
+          <div class="gl" contenteditable="true" style="font-size: 14.2px;">centralización Software GW</div>
         </div>
         <div class="bg-item">
-          <div class="gi">📋</div>
-          <div class="gl" contenteditable="true">comité de proposal</div>
+          <div class="gi" style="width: 72.0938px; height: 63.5938px; transform: translate(-8px, 0px); font-size: 51px;">📋</div>
+          <div class="gl" contenteditable="true" style="font-size: 14.2px;">comité de proposal</div>
         </div>
         <div class="bg-item">
-          <div class="gi">📚</div>
-          <div class="gl" contenteditable="true">manuales USGA</div>
+          <div class="gi" style="font-size: 35px;">📚</div>
+          <div class="gl" contenteditable="true" style="font-size: 16.2px;">manuales USGA</div>
         </div>
-        <div class="bg-item">
-          <div class="gi">🏌️</div>
-          <div class="gl" contenteditable="true">perfiles superintendente infraestructura caracterización technical</div>
+        <div class="bg-item" style="transform: translate(2px, 0px);">
+          <div class="gi" style="font-size: 33px;">🏌️</div>
+          <div class="gl" contenteditable="true" style="font-size: 14.2px; width: 185.297px;">perfiles superintendente infraestructura caracterización technical</div>
         </div>
       </div>
     </div>
 
   </div><!-- /bot-row -->
+
+  <!-- Elementos libres insertados por el usuario -->
+  <div class="free-el" style="font-size: 72px; line-height: 1; left: 58px; top: 406.5px; width: 72.9062px; height: 51px;">🚀</div>
 
 </div><!-- /dashboard -->
 
@@ -822,7 +817,7 @@ let editMode   = false;
 let selectedEl = null;
 
 /* ══════════════════════════════════════════════════════════
-   GLOBAL CONTROLS (unchanged)
+   GLOBAL CONTROLS
 ══════════════════════════════════════════════════════════ */
 function setFS(v){
   dash.style.setProperty('--fs', v+'px');
@@ -853,7 +848,7 @@ document.getElementById('pbar-click').addEventListener('click',function(e){
 ══════════════════════════════════════════════════════════ */
 function toggleEditMode(){
   editMode = !editMode;
-  const btn = document.getElementById('edit-btn');
+  const btn  = document.getElementById('edit-btn');
   const hint = document.getElementById('edit-hint');
   btn.textContent = editMode ? '✔ Edición ON' : 'Activar edición';
   btn.classList.toggle('on', editMode);
@@ -865,8 +860,6 @@ function toggleEditMode(){
 /* ══════════════════════════════════════════════════════════
    ELEMENT SELECTION
 ══════════════════════════════════════════════════════════ */
-
-/* Which elements can be directly selected */
 function isSelectable(el){
   if(!el || el===dash || el===document.body) return false;
   const tag = el.tagName;
@@ -883,14 +876,12 @@ function isSelectable(el){
          el.hasAttribute('contenteditable');
 }
 
-/* Walk up from clicked el to find the nearest selectable */
 function findSelectable(el){
   let cur = el;
   while(cur && cur !== dash){
     if(isSelectable(cur)) return cur;
     cur = cur.parentElement;
   }
-  /* fallback: if inside dashboard, return the direct child */
   if(dash.contains(el)){
     let c = el;
     while(c && c.parentElement !== dash) c = c.parentElement;
@@ -915,18 +906,15 @@ function deselect(){
   selTb.style.display  = 'none';
 }
 
-/* Reposition sel-box over selectedEl */
 function refreshSelBox(){
   if(!selectedEl) return;
   const r = selectedEl.getBoundingClientRect();
-  selBox.style.left   = r.left   + 'px';
-  selBox.style.top    = r.top    + 'px';
-  selBox.style.width  = r.width  + 'px';
-  selBox.style.height = r.height + 'px';
+  selBox.style.left    = r.left   + 'px';
+  selBox.style.top     = r.top    + 'px';
+  selBox.style.width   = r.width  + 'px';
+  selBox.style.height  = r.height + 'px';
   selBox.style.display = 'block';
-
-  /* toolbar: prefer above, fall back to below */
-  const tbH = 38;
+  const tbH   = 38;
   const tbTop = r.top > tbH + 8 ? r.top - tbH - 6 : r.bottom + 6;
   selTb.style.top  = tbTop + 'px';
   selTb.style.left = Math.max(4, r.left) + 'px';
@@ -939,23 +927,19 @@ function refreshToolbar(){
   selTb.style.display = 'flex';
 }
 
-/* Sync sel-box when user scrolls / resizes */
 window.addEventListener('scroll', ()=>{ if(selectedEl) refreshSelBox(); });
 window.addEventListener('resize', ()=>{ if(selectedEl) refreshSelBox(); });
 
-/* Dashboard click → select element */
 dash.addEventListener('mousedown', function(e){
   if(!editMode) return;
-  /* ignore clicks on sel-box chrome */
   if(e.target.closest('#sel-box')) return;
-
   const target = findSelectable(e.target);
   if(target) selectEl(target);
   else deselect();
 }, true);
 
 /* ══════════════════════════════════════════════════════════
-   DRAG TO MOVE (via #drag-handle inside sel-box)
+   DRAG TO MOVE
 ══════════════════════════════════════════════════════════ */
 let dragging = false;
 let dragSX, dragSY, origTX, origTY, origLeft, origTop, isFreeEl;
@@ -1023,29 +1007,19 @@ document.addEventListener('mousemove', function(e){
   if(!resizing || !selectedEl) return;
   const dx = e.clientX - resSX;
   const dy = e.clientY - resSY;
-
   let nw = resSW, nh = resSH;
   if(resDir.includes('e')) nw = Math.max(20, resSW + dx);
   if(resDir.includes('w')) nw = Math.max(20, resSW - dx);
   if(resDir.includes('s')) nh = Math.max(10, resSH + dy);
   if(resDir.includes('n')) nh = Math.max(10, resSH - dy);
-
-  /* apply width */
   if(resDir.includes('e')||resDir.includes('w')){
     selectedEl.style.width = nw + 'px';
     if(selectedEl.classList.contains('card')) selectedEl.style.flex = 'none';
     if(selectedEl.classList.contains('bp'))   selectedEl.style.flex = 'none';
   }
-  /* apply height */
   if(resDir.includes('s')||resDir.includes('n')){
     selectedEl.style.height = nh + 'px';
-    if(selectedEl.classList.contains('icon-area')){
-      selectedEl.style.height = nh + 'px';
-    }
-    if(selectedEl.tagName==='svg'||selectedEl.tagName==='SVG'){
-      selectedEl.style.height = nh + 'px';
-      selectedEl.style.width  = nw + 'px';
-    }
+    if(selectedEl.tagName==='svg'||selectedEl.tagName==='SVG') selectedEl.style.width = nw+'px';
   }
   refreshSelBox();
 });
@@ -1063,7 +1037,7 @@ function adjFS(delta){
 function adjSize(dw, dh){
   if(!selectedEl) return;
   const r = selectedEl.getBoundingClientRect();
-  if(dw){ selectedEl.style.width = Math.max(20, r.width+dw) + 'px'; }
+  if(dw){ selectedEl.style.width  = Math.max(20, r.width +dw) + 'px'; }
   if(dh){ selectedEl.style.height = Math.max(10, r.height+dh) + 'px'; }
   if(selectedEl.classList.contains('card')) selectedEl.style.flex='none';
   if(selectedEl.classList.contains('bp'))   selectedEl.style.flex='none';
@@ -1098,18 +1072,10 @@ function duplicateSel(){
 ══════════════════════════════════════════════════════════ */
 document.addEventListener('keydown', function(e){
   if(!editMode || !selectedEl) return;
-
-  /* Prevent accidental delete while typing in contenteditable */
   if(document.activeElement && document.activeElement.isContentEditable) return;
-
-  if(e.key==='Delete'||e.key==='Backspace'){
-    e.preventDefault(); deleteSel();
-  }
+  if(e.key==='Delete'||e.key==='Backspace'){ e.preventDefault(); deleteSel(); }
   if(e.key==='Escape'){ deselect(); }
-  if(e.ctrlKey && e.key.toLowerCase()==='d'){
-    e.preventDefault(); duplicateSel();
-  }
-  /* arrow nudge */
+  if(e.ctrlKey && e.key.toLowerCase()==='d'){ e.preventDefault(); duplicateSel(); }
   if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key)){
     e.preventDefault();
     const step = e.shiftKey ? 10 : 1;
@@ -1130,17 +1096,11 @@ document.addEventListener('keydown', function(e){
    INSERT MODAL
 ══════════════════════════════════════════════════════════ */
 const EMOJIS = [
-  /* Negocio / gestión */
   '📊','📈','📉','📋','📌','📎','📍','🗂️',
-  /* Herramientas */
   '🔍','🔎','💡','⚙️','🛠️','🔧','🔩','⚠️',
-  /* Logros */
   '✅','❌','🏆','🎯','🔑','⭐','🌟','🚀',
-  /* Personas */
   '🤝','👥','👤','💬','📢','📣','🔔','🏅',
-  /* Finanzas / Documentos */
   '💰','💵','📦','🏗️','🔄','⏱️','📅','🗓️',
-  /* Tecnología */
   '💾','🖥️','📡','🔒','📱','🖨️','📝','✏️',
 ];
 
@@ -1159,7 +1119,6 @@ const EMOJIS = [
 function openInsert(){ document.getElementById('insert-modal').style.display='flex'; }
 function closeInsert(){ document.getElementById('insert-modal').style.display='none'; }
 
-/* Place a new free-el centered on dashboard */
 function placeFreeEl(el){
   el.classList.add('free-el');
   el.style.left = (dash.offsetWidth /2 - 30)+'px';
@@ -1180,8 +1139,7 @@ function insertEmoji(em){
 function insertImageFile(input){
   const file = input.files[0];
   if(!file) return;
-  const wRange = document.getElementById('img-w-range');
-  const w = wRange ? +wRange.value : 120;
+  const w = +(document.getElementById('img-w-range').value)||120;
   const reader = new FileReader();
   reader.onload = function(ev){
     const img = document.createElement('img');
@@ -1192,15 +1150,15 @@ function insertImageFile(input){
     placeFreeEl(img);
   };
   reader.readAsDataURL(file);
-  input.value=''; /* reset so same file can be re-chosen */
+  input.value='';
 }
 
 function insertFreeText(){
   const txt = document.getElementById('ins-text-val').value.trim();
   if(!txt) return;
-  const fs  = document.getElementById('ins-fs-range').value;
-  const d   = document.createElement('div');
-  d.className  = 'free-text';
+  const fs = document.getElementById('ins-fs-range').value;
+  const d  = document.createElement('div');
+  d.className = 'free-text';
   d.textContent = txt;
   d.style.fontSize = fs + 'px';
   d.contentEditable = 'true';
@@ -1208,27 +1166,38 @@ function insertFreeText(){
   document.getElementById('ins-text-val').value='';
 }
 
-/* Image size preview */
-document.getElementById('img-w-range') && document.getElementById('img-w-range')
-  .addEventListener('input', function(){ document.getElementById('img-w-val').textContent=this.value+'px'; });
-
 /* ══════════════════════════════════════════════════════════
-   EXPORT HTML
+   EXPORT HTML  ← clave: preserva toda la UI del editor
 ══════════════════════════════════════════════════════════ */
 function dlHTML(){
+  /* Deseleccionar para que no queden bordes azules en el archivo */
+  deselect();
+
   const clone = document.documentElement.cloneNode(true);
-  /* remove UI chrome */
-  ['#ctrl','#sel-box','#sel-toolbar','#insert-modal'].forEach(id=>{
-    const el=clone.querySelector(id); if(el) el.remove();
-  });
-  /* remove edit highlights */
+
+  /* Restablecer estado del editor en el clon (abre en modo vista) */
+  clone.querySelector('body').classList.remove('edit-mode');
+  const editBtnC = clone.querySelector('#edit-btn');
+  if(editBtnC){ editBtnC.textContent='Activar edición'; editBtnC.classList.remove('on'); }
+  const hintC = clone.querySelector('#edit-hint');
+  if(hintC) hintC.style.display='none';
+
+  /* Ocultar sel-box y toolbar en el archivo guardado */
+  const sbC = clone.querySelector('#sel-box');
+  if(sbC) sbC.style.display='none';
+  const stC = clone.querySelector('#sel-toolbar');
+  if(stC) stC.style.display='none';
+
+  /* Limpiar clases de selección residuales */
   clone.querySelectorAll('.ed-sel').forEach(el=>el.classList.remove('ed-sel'));
-  /* embed current CSS vars */
+
+  /* Incrustar valores actuales de variables CSS */
   const style = clone.querySelector('style');
   const vars = ['--fs','--icon-h','--card-p'].map(v=>
     `  ${v}:${dash.style.getPropertyValue(v)||getComputedStyle(dash).getPropertyValue(v)};`
   ).join('\n');
   style.textContent = style.textContent.replace(':root{',':root{\n'+vars+'\n');
+
   const blob = new Blob(['<!DOCTYPE html>\n'+clone.outerHTML],{type:'text/html;charset=utf-8'});
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
@@ -1240,19 +1209,12 @@ function dlHTML(){
    EXPORT PNG
 ══════════════════════════════════════════════════════════ */
 async function dlPNG(){
-  const hidden = [
-    document.getElementById('ctrl'),
-    selBox, selTb,
-    document.getElementById('insert-modal')
-  ];
+  const hidden = [document.getElementById('ctrl'), selBox, selTb, document.getElementById('insert-modal')];
   hidden.forEach(el=>{ if(el) el.style.display='none'; });
   const prevOvf = dash.style.overflow;
   dash.style.overflow = 'visible';
-
   try{
-    const canvas = await html2canvas(dash,{
-      scale:2, useCORS:true, backgroundColor:'#8bafc8', logging:false
-    });
+    const canvas = await html2canvas(dash,{scale:2,useCORS:true,backgroundColor:'#8bafc8',logging:false});
     const a = document.createElement('a');
     a.href = canvas.toDataURL('image/png');
     a.download = 'dashboard_progreso_fase1.png';
@@ -1264,37 +1226,25 @@ async function dlPNG(){
 }
 
 /* ══════════════════════════════════════════════════════════
-   EXPORT PPTX  (imagen en diapositiva widescreen 16:9)
+   EXPORT PPTX
 ══════════════════════════════════════════════════════════ */
 async function dlPPTX(){
-  const hidden = [
-    document.getElementById('ctrl'),
-    selBox, selTb,
-    document.getElementById('insert-modal')
-  ];
+  const hidden = [document.getElementById('ctrl'), selBox, selTb, document.getElementById('insert-modal')];
   hidden.forEach(el=>{ if(el) el.style.display='none'; });
   const prevOvf = dash.style.overflow;
   dash.style.overflow = 'visible';
-
   try{
-    const canvas = await html2canvas(dash,{
-      scale:2, useCORS:true, backgroundColor:'#8bafc8', logging:false
-    });
+    const canvas = await html2canvas(dash,{scale:2,useCORS:true,backgroundColor:'#8bafc8',logging:false});
     const imgData = canvas.toDataURL('image/png');
-
-    /* Calcular dimensiones proporcionales en pulgadas (widescreen 13.33" × 7.5") */
     const SLIDE_W = 13.33;
     const ratio   = canvas.height / canvas.width;
     const SLIDE_H = +(SLIDE_W * ratio).toFixed(2);
-
     const pptx = new PptxGenJS();
     pptx.defineLayout({ name:'DASH', width:SLIDE_W, height:SLIDE_H });
     pptx.layout = 'DASH';
-
     const slide = pptx.addSlide();
     slide.background = { color:'8BAFC8' };
     slide.addImage({ data:imgData, x:0, y:0, w:SLIDE_W, h:SLIDE_H });
-
     await pptx.writeFile({ fileName:'dashboard_progreso_fase1.pptx' });
   } finally {
     hidden.forEach(el=>{ if(el) el.style.display=''; });
@@ -1302,19 +1252,4 @@ async function dlPPTX(){
   }
 }
 </script>
-
-<style>
-/* Highlight selected element with a subtle inner glow */
-.ed-sel{
-  outline:2px solid #4a9eff !important;
-  outline-offset:2px;
-}
-
-@media print{
-  #ctrl,#sel-box,#sel-toolbar,#insert-modal{display:none!important}
-  body{background:#fff;min-width:unset}
-  #dashboard{margin:0;box-shadow:none;width:100%;overflow:visible}
-}
-</style>
-</body>
-</html>
+</body></html>
