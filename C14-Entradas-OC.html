@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>3-Way Match (C14 ↔ Entradas ↔ OC) | Club + Conjunto</title>
+  <title>3-Way Match + Análisis Avanzado (C14 ↔ Entradas ↔ OC) | Club + Conjunto</title>
   <style>
     :root{
       --bg:#0b1020; --card:#111a33; --muted:#93a4c7; --text:#e8efff;
@@ -51,7 +51,7 @@
 </head>
 <body>
 <header>
-  <h1>3-Way Match Inventarios | C14 ↔ Entradas ↔ OC (Club + Conjunto)</h1>
+  <h1>3-Way Match + Análisis Avanzado (C14 ↔ Entradas ↔ OC) | Club + Conjunto</h1>
   <div class="sub">
     Procesa localmente en tu navegador (SheetJS). Señales ≠ prueba: las alertas son banderas rojas, no veredictos.
     <span class="pill">UMBRAL_ANTIGUEDAD_DIAS = <span id="pillUmbral" class="mono">30</span></span>
@@ -110,6 +110,25 @@
         </div>
       </div>
 
+      <div class="row" style="margin-top:10px">
+        <div>
+          <label>Umbral comité (COP)</label>
+          <input id="umbralComite" type="number" step="100000" min="0" value="2000000" />
+        </div>
+        <div>
+          <label>Ventana fraccionam. (días)</label>
+          <input id="ventanaFracc" type="number" step="1" min="1" value="30" />
+        </div>
+        <div>
+          <label>Lead time máx (días)</label>
+          <input id="leadTimeMax" type="number" step="1" min="0" value="45" />
+        </div>
+        <div>
+          <label>Lead time mín (días)</label>
+          <input id="leadTimeMin" type="number" step="1" min="0" value="0" />
+        </div>
+      </div>
+
       <div class="hr"></div>
       <div id="status" class="status">Carga un archivo para comenzar.</div>
     </div>
@@ -123,6 +142,11 @@
         <li>Join C14 ↔ ENTRADAS: <span class="mono">entry_no == Entrada</span>. Validaciones temporales: ENTRADAS.FechaDocumento (fallback FECHATRA de C14).</li>
         <li>Join ENTRADAS ↔ OC: ENTRADAS.Ordenes split “,”, extrae dígitos, cruza con OC.Consecutivo.</li>
         <li>3-way match correcto: control fuerte C14 vs Entradas por Entrada; control informativo ratio Entrada/OC; seguimiento OC sin entrada.</li>
+        <li><b>A10:</b> Fraccionamiento OC (ventana configurable vs umbral comité)</li>
+        <li><b>A11:</b> Lead time OC→Entrada excesivo o cero</li>
+        <li><b>A12:</b> Registros en fin de semana (Entrada y OC)</li>
+        <li><b>A13:</b> Entrada sin número de factura de proveedor</li>
+        <li><b>A14:</b> Proveedor de una sola transacción de alto valor</li>
       </ul>
     </div>
   </div>
@@ -138,6 +162,7 @@
 </main>
 
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
 
 <script>
 (() => {
@@ -454,7 +479,7 @@
     return { entityName, c14, entradasLines, ocLines };
   }
 
-  function processEntity(entityObj, periodStart, periodEnd, tolPct, tolMin, burstN) {
+  function processEntity(entityObj, periodStart, periodEnd, tolPct, tolMin, burstN, umbralComite, ventanaFracc, leadTimeMax, leadTimeMin) {
     const entity = entityObj.entityName;
 
     let c14InvalidDate = 0;
@@ -555,6 +580,51 @@
     const alerts = [];
     const usedOCs = new Set();
 
+    // A10: Fraccionamiento de OC por proveedor en ventana deslizante
+    const umbralComiteNum = Number(umbralComite || 2000000);
+    const ventanaFraccNum = Number(ventanaFracc || 30);
+    {
+      const ocsByTercero = new Map();
+      for (const [, oc] of ocByConsec.entries()) {
+        if (!oc.FECHA_OC) continue;
+        const key = digitsOnly(oc.TERCERO) || normalizeText(oc.NOMBRETERCERO);
+        if (!key) continue;
+        if (!ocsByTercero.has(key)) ocsByTercero.set(key, []);
+        ocsByTercero.get(key).push(oc);
+      }
+      for (const [provKey, ocs] of ocsByTercero.entries()) {
+        ocs.sort((a, b) => a.FECHA_OC - b.FECHA_OC);
+        for (let i = 0; i < ocs.length; i++) {
+          if (ocs[i].TOTAL_OC >= umbralComiteNum) continue;
+          const ventanaOCs = [ocs[i]];
+          for (let j = i + 1; j < ocs.length; j++) {
+            if (ocs[j].TOTAL_OC >= umbralComiteNum) continue;
+            if (diffDays(ocs[i].FECHA_OC, ocs[j].FECHA_OC) > ventanaFraccNum) break;
+            ventanaOCs.push(ocs[j]);
+          }
+          if (ventanaOCs.length < 2) continue;
+          const suma = ventanaOCs.reduce((s, o) => s + o.TOTAL_OC, 0);
+          if (suma > umbralComiteNum) {
+            alerts.push({
+              entity,
+              code: "A10",
+              severity: "ALTA",
+              title: "Fraccionamiento de OC (posible evasión de comité)",
+              details: `Proveedor=${provKey}. Suma=${suma.toFixed(2)}. N_OC=${ventanaOCs.length}. Ventana=${ventanaFraccNum}d. Umbral=${umbralComiteNum}.`,
+              PROVEEDOR_KEY: provKey,
+              NOMBRETERCERO: ocs[i].NOMBRETERCERO,
+              SUMA_ACUMULADA: suma,
+              N_OC_EN_VENTANA: ventanaOCs.length,
+              FECHA_PRIMERA: dateKey(ventanaOCs[0].FECHA_OC),
+              FECHA_ULTIMA: dateKey(ventanaOCs[ventanaOCs.length - 1].FECHA_OC),
+              UMBRAL_COMITE: umbralComiteNum
+            });
+            i += ventanaOCs.length - 1;
+          }
+        }
+      }
+    }
+
     const tolPctNum = Number(tolPct || 0);
     const tolMinNum = Number(tolMin || 0);
 
@@ -651,6 +721,25 @@
             { ENTRADA: entrada, OC: ocId, ANTIGUEDAD_DIAS: antigDays }
           );
         }
+
+        // A11a / A11b: Lead time OC → Entrada
+        if (fechaOC && fechaEntrada) {
+          const diasLead = diffDays(fechaOC, fechaEntrada);
+          const leadMaxNum = Number(leadTimeMax != null ? leadTimeMax : 45);
+          const leadMinNum = Number(leadTimeMin != null ? leadTimeMin : 0);
+          if (diasLead > leadMaxNum) {
+            addAlert("A11a","MEDIA/ALTA","Lead time OC→Entrada excesivo",
+              `Entrada=${entrada} | OC=${ocId}. DiasLead=${diasLead} > Máx=${leadMaxNum}.`,
+              { ENTRADA: entrada, OC: ocId, DIAS_LEAD_TIME: diasLead, FECHA_OC: dateKey(fechaOC), FECHA_ENTRADA: dateKey(fechaEntrada) }
+            );
+          } else if (diasLead <= leadMinNum) {
+            addAlert("A11b","MEDIA","Lead time OC→Entrada cero o negativo",
+              `Entrada=${entrada} | OC=${ocId}. DiasLead=${diasLead} <= Mín=${leadMinNum}.`,
+              { ENTRADA: entrada, OC: ocId, DIAS_LEAD_TIME: diasLead, FECHA_OC: dateKey(fechaOC), FECHA_ENTRADA: dateKey(fechaEntrada) }
+            );
+          }
+        }
+
         if (oc.RECHAZADO) {
           ocRechazadaCount++;
           addAlert("A9","ALTA","OC rechazada vinculada a Entrada",
@@ -724,6 +813,89 @@
       }
     }
 
+    // A12a: Entrada registrada en fin de semana
+    for (const e of entradasConsol) {
+      const fd = entByEntrada.get(e.ENTRADA);
+      const fechaEnt = fd ? fd.FECHA_ENTRADA : null;
+      if (fechaEnt) {
+        const dow = fechaEnt.getDay();
+        if (dow === 0 || dow === 6) {
+          alerts.push({
+            entity, code: "A12a", severity: "MEDIA",
+            title: "Entrada registrada en fin de semana",
+            details: `Entrada=${e.ENTRADA} | Proveedor=${e.PROVEEDOR}. Fecha=${e.FECHA_ENTRADA}.`,
+            ENTRADA: e.ENTRADA, PROVEEDOR: e.PROVEEDOR,
+            FECHA_ENTRADA: e.FECHA_ENTRADA,
+            DIA_SEMANA: dow === 6 ? "Sábado" : "Domingo"
+          });
+        }
+      }
+    }
+
+    // A13: Entrada sin número de factura de proveedor
+    for (const e of entradasConsol) {
+      const fd = entByEntrada.get(e.ENTRADA);
+      if (!fd) continue;
+      const facturas = fd.FACTURAS;
+      const sinFactura = facturas.size === 0 || Array.from(facturas).every(f => !f || !f.trim());
+      if (sinFactura) {
+        alerts.push({
+          entity, code: "A13", severity: "MEDIA/ALTA",
+          title: "Entrada sin factura de proveedor registrada",
+          details: `Entrada=${e.ENTRADA} | Proveedor=${e.PROVEEDOR}.`,
+          ENTRADA: e.ENTRADA, PROVEEDOR: e.PROVEEDOR,
+          NOMBREPROVEEDOR: e.NOMBREPROVEEDOR,
+          FECHA_ENTRADA: e.FECHA_ENTRADA,
+          TOTAL_ENTRADAS: e.TOTAL_ENTRADAS
+        });
+      }
+    }
+
+    // A14: Proveedor con única transacción de alto valor
+    {
+      const provFreq = new Map();
+      for (const e of entradasConsol) {
+        const k = digitsOnly(e.PROVEEDOR) || normalizeText(e.NOMBREPROVEEDOR);
+        if (!k) continue;
+        if (!provFreq.has(k)) provFreq.set(k, { count: 0, entry: null });
+        const p = provFreq.get(k);
+        p.count++;
+        p.entry = e;
+      }
+      const allTotals = entradasConsol.map(e => e.TOTAL_ENTRADAS || 0).sort((a, b) => a - b);
+      const p75idx = Math.floor(allTotals.length * 0.75);
+      const p75 = allTotals.length > 0 ? allTotals[p75idx] : 0;
+      for (const [k, p] of provFreq.entries()) {
+        if (p.count === 1 && (p.entry.TOTAL_ENTRADAS || 0) > p75) {
+          alerts.push({
+            entity, code: "A14", severity: "MEDIA",
+            title: "Proveedor con única transacción de alto valor en el período",
+            details: `Proveedor=${k}. Total=${(p.entry.TOTAL_ENTRADAS||0).toFixed(2)}. P75=${p75.toFixed(2)}.`,
+            PROVEEDOR: p.entry.PROVEEDOR,
+            NOMBREPROVEEDOR: p.entry.NOMBREPROVEEDOR,
+            TOTAL_ENTRADAS: p.entry.TOTAL_ENTRADAS,
+            P75_UNIVERSO: p75
+          });
+        }
+      }
+    }
+
+    // A12b: OC creada en fin de semana
+    for (const [ocId, oc] of ocByConsec.entries()) {
+      if (oc.FECHA_OC) {
+        const dow = oc.FECHA_OC.getDay();
+        if (dow === 0 || dow === 6) {
+          alerts.push({
+            entity, code: "A12b", severity: "MEDIA",
+            title: "OC creada en fin de semana",
+            details: `OC=${ocId} | Tercero=${oc.TERCERO}. FechaOC=${dateKey(oc.FECHA_OC)}.`,
+            OC: ocId, TERCERO: oc.TERCERO, FECHA_OC: dateKey(oc.FECHA_OC),
+            DIA_SEMANA: dow === 6 ? "Sábado" : "Domingo"
+          });
+        }
+      }
+    }
+
     const ordenesConsol = [];
     for (const [ocId, oc] of ocByConsec.entries()) {
       const sinEntrada = !usedOCs.has(ocId);
@@ -760,6 +932,13 @@
       dif_valor_mayor_tolerancia: alerts.filter(a => a.code === "A5").length,
       oc_rechazada_vinculada: alerts.filter(a => a.code === "A9").length,
       oc_sin_entrada: ordenesConsol.filter(o => o.ORDEN_SIN_ENTRADA === "SI").length,
+      fraccionamiento_oc: alerts.filter(a => a.code === "A10").length,
+      lead_time_excesivo: alerts.filter(a => a.code === "A11a").length,
+      lead_time_cero: alerts.filter(a => a.code === "A11b").length,
+      entradas_fin_semana: alerts.filter(a => a.code === "A12a").length,
+      oc_fin_semana: alerts.filter(a => a.code === "A12b").length,
+      entradas_sin_factura: alerts.filter(a => a.code === "A13").length,
+      proveedor_unico_alto_valor: alerts.filter(a => a.code === "A14").length,
       total_c14_neto_universo: Array.from(c14ByEntry.values()).reduce((s,x) => s + x.TOTAL_C14_NETO, 0),
       total_entradas_universo: entradasConsol.reduce((s,x) => s + (x.TOTAL_ENTRADAS||0), 0)
     };
@@ -768,7 +947,9 @@
     const alertsNorm = alerts.map(a => {
       const sev = String(a.severity || "").toUpperCase();
       let sevNorm = "MEDIA";
-      if (sev.includes("ALTA")) sevNorm = "ALTA";
+      if (sev === "ALTA") sevNorm = "ALTA";
+      else if (sev === "MEDIA/ALTA") sevNorm = "MEDIA/ALTA";
+      else if (sev.includes("ALTA")) sevNorm = "ALTA";
       else if (sev.includes("BAJA")) sevNorm = "BAJA";
       return { ...a, severity_norm: sevNorm };
     });
@@ -887,40 +1068,282 @@
     };
   }
 
-  function buildExecutiveWorkbook(result) {
-    const wb = XLSX.utils.book_new();
-    function addSheetFromJson(name, rows) {
-      const ws = XLSX.utils.json_to_sheet(rows || []);
-      const keys = rows && rows.length ? Object.keys(rows[0]) : [];
-      ws["!cols"] = keys.map(k => {
-        const maxLen = Math.min(60, Math.max(k.length, ...(rows||[]).slice(0,200).map(r => String(r[k] ?? "").length)));
-        return { wch: Math.max(10, maxLen + 2) };
+  async function buildExecutiveWorkbookXLSJ(result) {
+    const C = {
+      AZUL_MARINO: "FF1A3560", DORADO: "FFB8962E", GRIS_CLARO: "FFF2F4F8",
+      BLANCO: "FFFFFFFF", ROJO_ALTA: "FFC0392B", NARANJA: "FFE67E22",
+      AMARILLO: "FFF1C40F", VERDE_BAJA: "FF27AE60", TEXTO_DARK: "FF1A1A1A"
+    };
+
+    const SEV_ORDER = { "ALTA": 0, "MEDIA/ALTA": 1, "MEDIA": 2, "BAJA": 3 };
+
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = "MDY Auditoría";
+
+    function colWidth(header, rows) {
+      let max = header.length;
+      for (let i = 0; i < Math.min(rows.length, 100); i++) {
+        const v = rows[i][header];
+        if (v != null) max = Math.max(max, String(v).length);
+      }
+      return Math.min(50, Math.max(8, max + 2));
+    }
+
+    function applyHeaderRow(row, fillArgb) {
+      row.height = 22;
+      row.eachCell(cell => {
+        cell.fill = { type: "pattern", patternType: "solid", fgColor: { argb: fillArgb || C.AZUL_MARINO } };
+        cell.font = { name: "Calibri", size: 10, bold: true, color: { argb: C.BLANCO } };
+        cell.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
+        cell.border = { top: { style: "thin", color: { argb: "FFD0D3DA" } }, left: { style: "thin", color: { argb: "FFD0D3DA" } }, bottom: { style: "thin", color: { argb: "FFD0D3DA" } }, right: { style: "thin", color: { argb: "FFD0D3DA" } } };
       });
-      XLSX.utils.book_append_sheet(wb, ws, name);
     }
 
-    const portada = [];
-    portada.push({ SECCION: "PORTADA", VALOR: "3-Way Match Inventarios (C14 ↔ Entradas ↔ OC)" });
-    portada.push({ SECCION: "PERIODO", VALOR: `${result.metadata.periodo.start || "(sin inicio)"} a ${result.metadata.periodo.end || "(sin fin)"}` });
-    portada.push({ SECCION: "PARAMETROS", VALOR: `UMBRAL_ANTIGUEDAD_DIAS=${result.metadata.umbral_antiguedad_dias}; TOL=${result.metadata.tolerancias.pct}% y min=${result.metadata.tolerancias.min_cop}; BurstN=${result.metadata.burst_threshold}` });
-    portada.push({ SECCION: "NOTA", VALOR: "Alertas determinísticas = banderas rojas. Requieren corroboración documental." });
-
-    addSheetFromJson("Portada", portada);
-    addSheetFromJson("Global_Resumen", result.global.resumen_por_entidad);
-    addSheetFromJson("Global_CrossAlerts", result.global.alerts_cross_entidad);
-
-    for (const entName of ["Club","Conjunto"]) {
-      const ent = result.entities[entName];
-      if (!ent) continue;
-      addSheetFromJson(`${entName}_KPIs`, [ent.kpis]);
-      addSheetFromJson(`${entName}_Entradas`, ent.entradas_resumen);
-      addSheetFromJson(`${entName}_Alertas`, ent.alerts.map(a => ({
-        entity: a.entity, code: a.code, severity: a.severity_norm, title: a.title, details: a.details,
-        ENTRADA: a.ENTRADA || a.ENTRY_NO || "", OC: a.OC || "", FACTURA: a.FACTURA || "", FECHA: a.FECHA || ""
-      })));
-      addSheetFromJson(`${entName}_Ordenes`, ent.ordenes_resumen);
+    function applyDataRow(row, rowIdx, overrideCells) {
+      row.height = 16;
+      const bg = (rowIdx % 2 === 0) ? C.BLANCO : C.GRIS_CLARO;
+      row.eachCell({ includeEmpty: true }, (cell, colNum) => {
+        if (!overrideCells || !overrideCells[colNum]) {
+          cell.fill = { type: "pattern", patternType: "solid", fgColor: { argb: bg } };
+          cell.font = { name: "Calibri", size: 10, color: { argb: C.TEXTO_DARK } };
+        }
+        cell.border = { top: { style: "thin", color: { argb: "FFD0D3DA" } }, left: { style: "thin", color: { argb: "FFD0D3DA" } }, bottom: { style: "thin", color: { argb: "FFD0D3DA" } }, right: { style: "thin", color: { argb: "FFD0D3DA" } } };
+      });
     }
-    return wb;
+
+    function numFmtForHeader(h) {
+      const u = h.toUpperCase();
+      if (/TOTAL|NETO|DIF|COSTO|SUMA|VALOR|MONTO/.test(u)) return "#,##0";
+      if (/RATIO/.test(u)) return "0.00%";
+      if (/FECHA/.test(u)) return "DD/MM/YYYY";
+      return null;
+    }
+
+    function addDataSheet(ws, headers, rows, titleRow) {
+      let dataStartRow = 1;
+      if (titleRow) {
+        const tr = ws.addRow([titleRow]);
+        ws.mergeCells(1, 1, 1, headers.length);
+        const cell = tr.getCell(1);
+        cell.fill = { type: "pattern", patternType: "solid", fgColor: { argb: C.DORADO } };
+        cell.font = { name: "Calibri", size: 12, bold: true, color: { argb: C.BLANCO } };
+        cell.alignment = { horizontal: "center", vertical: "middle" };
+        tr.height = 24;
+        dataStartRow = 2;
+      }
+
+      const hdrRow = ws.addRow(headers);
+      applyHeaderRow(hdrRow);
+
+      ws.views = [{ state: "frozen", ySplit: dataStartRow }];
+      ws.autoFilter = { from: { row: dataStartRow, column: 1 }, to: { row: dataStartRow, column: headers.length } };
+
+      for (let i = 0; i < rows.length; i++) {
+        const vals = headers.map(h => {
+          const v = rows[i][h];
+          return (v == null) ? "" : v;
+        });
+        const dr = ws.addRow(vals);
+        applyDataRow(dr, i + 1);
+        headers.forEach((h, ci) => {
+          const fmt = numFmtForHeader(h);
+          if (fmt) dr.getCell(ci + 1).numFmt = fmt;
+        });
+      }
+
+      headers.forEach((h, i) => {
+        ws.getColumn(i + 1).width = colWidth(h, rows);
+      });
+    }
+
+    function addAlertsSheet(ws, headers, rows) {
+      const sorted = [...rows].sort((a, b) => {
+        const sa = SEV_ORDER[String(a.severity_norm || a.severity || "").toUpperCase()] ?? 99;
+        const sb = SEV_ORDER[String(b.severity_norm || b.severity || "").toUpperCase()] ?? 99;
+        return sa - sb;
+      });
+
+      const hdrRow = ws.addRow(headers);
+      applyHeaderRow(hdrRow);
+      ws.views = [{ state: "frozen", ySplit: 1 }];
+      ws.autoFilter = { from: { row: 1, column: 1 }, to: { row: 1, column: headers.length } };
+
+      const sevCol = headers.findIndex(h => h === "severity_norm" || h === "severity") + 1;
+      const codeCol = headers.findIndex(h => h === "code") + 1;
+
+      for (let i = 0; i < sorted.length; i++) {
+        const vals = headers.map(h => sorted[i][h] ?? "");
+        const dr = ws.addRow(vals);
+        applyDataRow(dr, i + 1, {});
+        headers.forEach((h, ci) => {
+          const fmt = numFmtForHeader(h);
+          if (fmt) dr.getCell(ci + 1).numFmt = fmt;
+        });
+
+        if (sevCol > 0) {
+          const sev = String(sorted[i].severity_norm || sorted[i].severity || "").toUpperCase();
+          const sc = dr.getCell(sevCol);
+          let fillArgb, fontColor, bold = true;
+          if (sev === "ALTA") { fillArgb = C.ROJO_ALTA; fontColor = C.BLANCO; }
+          else if (sev === "MEDIA/ALTA") { fillArgb = C.NARANJA; fontColor = C.BLANCO; }
+          else if (sev === "MEDIA") { fillArgb = C.AMARILLO; fontColor = C.TEXTO_DARK; }
+          else { fillArgb = C.VERDE_BAJA; fontColor = C.BLANCO; }
+          sc.fill = { type: "pattern", patternType: "solid", fgColor: { argb: fillArgb } };
+          sc.font = { name: "Calibri", size: 10, bold, color: { argb: fontColor } };
+        }
+        if (codeCol > 0) {
+          const cc = dr.getCell(codeCol);
+          cc.fill = { type: "pattern", patternType: "solid", fgColor: { argb: C.AZUL_MARINO } };
+          cc.font = { name: "Calibri", size: 10, bold: false, color: { argb: C.BLANCO } };
+        }
+      }
+
+      headers.forEach((h, i) => {
+        const w = h === "code" ? 9 : colWidth(h, sorted);
+        ws.getColumn(i + 1).width = w;
+      });
+    }
+
+    // ── PORTADA ──
+    const wsPortada = workbook.addWorksheet("Portada");
+    const r1 = wsPortada.addRow(["AUDITORÍA INTERNA – 3-WAY MATCH INVENTARIOS (C14 ↔ ENTRADAS ↔ OC)"]);
+    wsPortada.mergeCells("A1:E1");
+    r1.height = 32;
+    const c1 = r1.getCell(1);
+    c1.fill = { type: "pattern", patternType: "solid", fgColor: { argb: C.AZUL_MARINO } };
+    c1.font = { name: "Calibri", size: 14, bold: true, color: { argb: C.BLANCO } };
+    c1.alignment = { horizontal: "center", vertical: "middle" };
+
+    const r2 = wsPortada.addRow(["Corporación Mesa de Yeguas Country Club + Conjunto Recreacional Campestre"]);
+    wsPortada.mergeCells("A2:E2");
+    r2.height = 26;
+    const c2 = r2.getCell(1);
+    c2.fill = { type: "pattern", patternType: "solid", fgColor: { argb: C.DORADO } };
+    c2.font = { name: "Calibri", size: 12, bold: true, color: { argb: C.BLANCO } };
+    c2.alignment = { horizontal: "center", vertical: "middle" };
+
+    const r3 = wsPortada.addRow([]);
+    r3.height = 10;
+
+    const r4 = wsPortada.addRow(["PARÁMETRO", "VALOR"]);
+    r4.height = 22;
+    ["A4","B4"].forEach(ref => {
+      const cell = wsPortada.getCell(ref);
+      cell.fill = { type: "pattern", patternType: "solid", fgColor: { argb: C.AZUL_MARINO } };
+      cell.font = { name: "Calibri", size: 10, bold: true, color: { argb: C.BLANCO } };
+    });
+
+    const meta = result.metadata;
+    const paramRows = [
+      ["Período", `${meta.periodo.start || "(sin inicio)"} a ${meta.periodo.end || "(sin fin)"}`],
+      ["Umbral antigüedad (días)", meta.umbral_antiguedad_dias],
+      ["Tolerancia (%)", meta.tolerancias.pct],
+      ["Tolerancia mín (COP)", meta.tolerancias.min_cop],
+      ["BurstN", meta.burst_threshold],
+      ["Umbral comité (COP)", meta.umbral_comite],
+      ["Ventana fraccionamiento (días)", meta.ventana_fracc_dias],
+      ["Lead time máx (días)", meta.lead_time_max_dias],
+      ["Lead time mín (días)", meta.lead_time_min_dias],
+      ["Fecha generación", meta.generado_en]
+    ];
+    for (let i = 0; i < paramRows.length; i++) {
+      const pr = wsPortada.addRow(paramRows[i]);
+      pr.height = 16;
+      const bg = (i % 2 === 0) ? C.BLANCO : C.GRIS_CLARO;
+      [1, 2].forEach(ci => {
+        const pc = pr.getCell(ci);
+        pc.fill = { type: "pattern", patternType: "solid", fgColor: { argb: bg } };
+        pc.font = { name: "Calibri", size: 10, color: { argb: C.TEXTO_DARK } };
+        pc.border = { top: { style: "thin", color: { argb: "FFD0D3DA" } }, left: { style: "thin", color: { argb: "FFD0D3DA" } }, bottom: { style: "thin", color: { argb: "FFD0D3DA" } }, right: { style: "thin", color: { argb: "FFD0D3DA" } } };
+      });
+    }
+
+    wsPortada.addRow([]).height = 10;
+    const legHeader = wsPortada.addRow(["LEYENDA DE SEVERIDADES", ""]);
+    legHeader.height = 20;
+    const lhc = legHeader.getCell(1);
+    lhc.fill = { type: "pattern", patternType: "solid", fgColor: { argb: C.AZUL_MARINO } };
+    lhc.font = { name: "Calibri", size: 10, bold: true, color: { argb: C.BLANCO } };
+
+    const sevLegend = [
+      [C.ROJO_ALTA, C.BLANCO, "ALTA", "Requiere atención inmediata y corroboración documental"],
+      [C.NARANJA, C.BLANCO, "MEDIA/ALTA", "Analizar en el período siguiente a la extracción"],
+      [C.AMARILLO, C.TEXTO_DARK, "MEDIA", "Seguimiento en proceso de auditoría"],
+      [C.VERDE_BAJA, C.BLANCO, "BAJA", "Informativo, bajo impacto esperado"]
+    ];
+    for (const [fillA, fontA, sev, desc] of sevLegend) {
+      const lr = wsPortada.addRow([sev, desc]);
+      lr.height = 18;
+      [1, 2].forEach(ci => {
+        const lc = lr.getCell(ci);
+        lc.fill = { type: "pattern", patternType: "solid", fgColor: { argb: fillA } };
+        lc.font = { name: "Calibri", size: 10, bold: true, color: { argb: fontA } };
+        lc.border = { top: { style: "thin", color: { argb: "FFD0D3DA" } }, left: { style: "thin", color: { argb: "FFD0D3DA" } }, bottom: { style: "thin", color: { argb: "FFD0D3DA" } }, right: { style: "thin", color: { argb: "FFD0D3DA" } } };
+      });
+    }
+    wsPortada.getColumn(1).width = 30;
+    wsPortada.getColumn(2).width = 55;
+
+    // ── GLOBAL RESUMEN ──
+    const wsGR = workbook.addWorksheet("Global_Resumen");
+    const grRows = result.global.resumen_por_entidad || [];
+    const grHeaders = grRows.length ? Object.keys(grRows[0]) : [];
+    addDataSheet(wsGR, grHeaders, grRows, "RESUMEN CONSOLIDADO POR ENTIDAD");
+
+    // ── CROSS ALERTAS ──
+    const wsCross = workbook.addWorksheet("Cross_Alertas");
+    const crossRows = (result.global.alerts_cross_entidad || []).map(a => ({
+      code: a.code, severity_norm: a.severity || a.severity_norm, title: a.title, details: a.details,
+      FACTURA: a.FACTURA || "", PROVEEDOR_KEY: a.PROVEEDOR_KEY || "", OC: a.OC || ""
+    }));
+    const crossHeaders = crossRows.length ? Object.keys(crossRows[0]) : ["code","severity_norm","title","details","FACTURA","PROVEEDOR_KEY","OC"];
+    addAlertsSheet(wsCross, crossHeaders, crossRows);
+
+    // ── PER-ENTITY SHEETS ──
+    const sheetOrder = [
+      { ent: "Club", suffix: "Alertas", type: "alerts" },
+      { ent: "Club", suffix: "Entradas", type: "data" },
+      { ent: "Club", suffix: "Ordenes", type: "data" },
+      { ent: "Conjunto", suffix: "Alertas", type: "alerts" },
+      { ent: "Conjunto", suffix: "Entradas", type: "data" },
+      { ent: "Conjunto", suffix: "Ordenes", type: "data" }
+    ];
+
+    for (const { ent, suffix, type } of sheetOrder) {
+      const entData = result.entities[ent];
+      if (!entData) continue;
+
+      const wsName = `${ent}_${suffix}`;
+      const ws = workbook.addWorksheet(wsName);
+
+      if (type === "alerts") {
+        const alertRows = (entData.alerts || []).map(a => ({
+          entity: a.entity, code: a.code, severity_norm: a.severity_norm || a.severity,
+          title: a.title, details: a.details,
+          ENTRADA: a.ENTRADA || a.ENTRY_NO || "", OC: a.OC || "",
+          FACTURA: a.FACTURA || "", FECHA: a.FECHA || "",
+          PROVEEDOR_KEY: a.PROVEEDOR_KEY || "", DIAS_LEAD_TIME: a.DIAS_LEAD_TIME ?? "",
+          FECHA_OC: a.FECHA_OC || "", FECHA_ENTRADA: a.FECHA_ENTRADA || "",
+          DIA_SEMANA: a.DIA_SEMANA || "", SUMA_ACUMULADA: a.SUMA_ACUMULADA ?? "",
+          N_OC_EN_VENTANA: a.N_OC_EN_VENTANA ?? "", TOTAL_ENTRADAS: a.TOTAL_ENTRADAS ?? "",
+          P75_UNIVERSO: a.P75_UNIVERSO ?? ""
+        }));
+        const alertHdrs = alertRows.length ? Object.keys(alertRows[0]) : ["entity","code","severity_norm","title","details"];
+        addAlertsSheet(ws, alertHdrs, alertRows);
+      } else if (suffix === "Entradas") {
+        const rows = entData.entradas_resumen || [];
+        const hdrs = rows.length ? Object.keys(rows[0]) : [];
+        addDataSheet(ws, hdrs, rows);
+      } else {
+        const rows = entData.ordenes_resumen || [];
+        const hdrs = rows.length ? Object.keys(rows[0]) : [];
+        addDataSheet(ws, hdrs, rows);
+      }
+    }
+
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+    downloadBlob(blob, fileNameBase + "__Auditoria_Ejecutivo.xlsx");
   }
 
   function downloadBlob(blob, filename) {
@@ -1034,6 +1457,10 @@
     const tolPct = Number(el("tolPct").value || CONFIG.DEFAULT_TOL_PCT);
     const tolMin = Number(el("tolMin").value || CONFIG.DEFAULT_TOL_MIN);
     const burstN = Number(el("burstN").value || CONFIG.DEFAULT_BURST_N);
+    const umbralComite = Number(el("umbralComite").value || 2000000);
+    const ventanaFracc = Number(el("ventanaFracc").value || 30);
+    const leadTimeMax  = Number(el("leadTimeMax").value  || 45);
+    const leadTimeMin  = Number(el("leadTimeMin").value  || 0);
 
     if (start && end && start > end) {
       setStatus("Rango de fechas inválido: inicio > fin.", "bad");
@@ -1093,13 +1520,13 @@
       if (canProcessClub) {
         const sheets = getSheetsForEntity("CLUB");
         const entityObj = buildEntity("Club", sheets);
-        resClub = processEntity(entityObj, start, end, tolPct, tolMin, burstN);
+        resClub = processEntity(entityObj, start, end, tolPct, tolMin, burstN, umbralComite, ventanaFracc, leadTimeMax, leadTimeMin);
       }
 
       if (canProcessConj) {
         const sheets = getSheetsForEntity("CONJUNTO");
         const entityObj = buildEntity("Conjunto", sheets);
-        resConj = processEntity(entityObj, start, end, tolPct, tolMin, burstN);
+        resConj = processEntity(entityObj, start, end, tolPct, tolMin, burstN, umbralComite, ventanaFracc, leadTimeMax, leadTimeMin);
       }
 
       const crossAlerts = buildCrossEntityAlerts(resClub, resConj, burstN);
@@ -1117,21 +1544,25 @@
           seguimiento: "OC sin entrada"
         },
         burst_threshold: burstN,
+        umbral_comite: umbralComite,
+        ventana_fracc_dias: ventanaFracc,
+        lead_time_max_dias: leadTimeMax,
+        lead_time_min_dias: leadTimeMin,
         generado_en: new Date().toISOString()
       };
 
       const jsonExport = buildJsonExport(metadata, resClub, resConj, crossAlerts);
 
-      const excelWb = buildExecutiveWorkbook({
+      const xlsxPayload = {
         metadata,
         entities: {
           Club: resClub ? { kpis: resClub.kpis, entradas_resumen: resClub.entradasConsol, ordenes_resumen: resClub.ordenesConsol, alerts: resClub.alerts } : null,
           Conjunto: resConj ? { kpis: resConj.kpis, entradas_resumen: resConj.entradasConsol, ordenes_resumen: resConj.ordenesConsol, alerts: resConj.alerts } : null
         },
         global: { resumen_por_entidad: jsonExport.global.resumen_por_entidad, alerts_cross_entidad: crossAlerts }
-      });
+      };
 
-      lastResult = { json: jsonExport, wb: excelWb };
+      lastResult = { json: jsonExport, xlsxPayload };
 
       el("btnXls").disabled = false;
       el("btnJson").disabled = false;
@@ -1161,22 +1592,20 @@
     downloadBlob(new Blob([payload], { type: "application/json;charset=utf-8" }), `${fileNameBase}__JSON_para_IA.json`);
   });
 
-  el("btnXls").addEventListener("click", () => {
+  el("btnXls").addEventListener("click", async () => {
     if (!lastResult) return;
+    const btn = el("btnXls");
+    const origText = btn.textContent;
+    btn.textContent = "Generando…";
+    btn.disabled = true;
     try {
-      let bookType = "xls";
-      let out;
-      try {
-        out = XLSX.write(lastResult.wb, { bookType, type: "array" });
-      } catch (e) {
-        bookType = "xlsx";
-        out = XLSX.write(lastResult.wb, { bookType, type: "array" });
-      }
-      const ext = (bookType === "xls") ? "xls" : "xlsx";
-      downloadBlob(new Blob([out], { type: "application/octet-stream" }), `${fileNameBase}__Excel_ejecutivo.${ext}`);
+      await buildExecutiveWorkbookXLSJ(lastResult.xlsxPayload);
     } catch (e) {
       console.error(e);
       setStatus("No se pudo generar el Excel. Exporta JSON o reintenta.", "bad");
+    } finally {
+      btn.textContent = origText;
+      btn.disabled = false;
     }
   });
 
