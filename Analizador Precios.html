@@ -1,0 +1,900 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Analizador de Comportamiento de Precios — Auditoría de Compras</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Sora:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root {
+  --navy: #1A3560; --gold: #B8962E; --gold-light: #F5E6B8; --gold-mid: #D4B44A;
+  --navy-light: #2A4A7F; --navy-pale: #EAF0F8;
+  --danger: #B91C1C; --danger-bg: #FEF2F2;
+  --warn: #B45309; --warn-bg: #FFFBEB;
+  --ok: #166534; --ok-bg: #F0FDF4;
+  --purple: #6D28D9; --purple-bg: #F5F3FF;
+  --border: #D1D9E6; --text: #1A3560; --text-soft: #4B5E7A; --text-muted: #8898AA;
+  --bg: #F7F9FC; --white: #FFFFFF;
+  --mono: 'IBM Plex Mono', monospace; --sans: 'Sora', sans-serif;
+  --radius: 8px; --radius-lg: 12px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--sans); background: var(--bg); color: var(--text); font-size: 14px; min-height: 100vh; }
+.header { background: var(--navy); padding: 20px 32px; display: flex; align-items: center; gap: 16px; border-bottom: 3px solid var(--gold); }
+.header-logo { width: 44px; height: 44px; background: var(--gold); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 600; color: var(--navy); flex-shrink: 0; }
+.header-title { color: #fff; }
+.header-title h1 { font-size: 17px; font-weight: 600; letter-spacing: -0.2px; }
+.header-title p { font-size: 11px; color: #8BA4C8; margin-top: 2px; text-transform: uppercase; letter-spacing: 0.8px; }
+.header-badge { margin-left: auto; background: rgba(184,150,46,0.2); border: 1px solid var(--gold); border-radius: 20px; padding: 4px 12px; color: var(--gold-mid); font-size: 11px; font-weight: 500; }
+.main { max-width: 1260px; margin: 0 auto; padding: 28px 24px; }
+.upload-zone { background: var(--white); border: 2px dashed var(--border); border-radius: var(--radius-lg); padding: 48px 32px; text-align: center; cursor: pointer; transition: border-color .2s, background .2s; position: relative; }
+.upload-zone:hover, .upload-zone.drag-over { border-color: var(--gold); background: var(--gold-light); }
+.upload-zone input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+.upload-icon { font-size: 40px; margin-bottom: 12px; }
+.upload-title { font-size: 16px; font-weight: 600; color: var(--navy); margin-bottom: 6px; }
+.upload-sub { font-size: 13px; color: var(--text-muted); }
+.upload-formats { margin-top: 12px; display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+.fmt-tag { background: var(--navy-pale); color: var(--navy); border-radius: 20px; padding: 3px 10px; font-size: 11px; font-weight: 500; }
+.mapping-panel { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 24px; display: none; }
+.mapping-panel.show { display: block; }
+.panel-title { font-size: 15px; font-weight: 600; color: var(--navy); margin-bottom: 4px; }
+.panel-sub { font-size: 12px; color: var(--text-muted); margin-bottom: 20px; }
+.mapping-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+.map-field label { font-size: 11px; font-weight: 500; color: var(--text-soft); text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 4px; }
+.map-field select { width: 100%; padding: 7px 10px; border: 1px solid var(--border); border-radius: var(--radius); font-family: var(--sans); font-size: 13px; color: var(--text); background: var(--bg); cursor: pointer; }
+.required-star { color: var(--danger); }
+.btn-primary { background: var(--navy); color: #fff; border: none; padding: 10px 24px; border-radius: var(--radius); font-family: var(--sans); font-size: 13px; font-weight: 500; cursor: pointer; transition: background .2s; display: inline-flex; align-items: center; gap: 6px; }
+.btn-primary:hover { background: var(--navy-light); }
+.btn-secondary { background: var(--white); color: var(--navy); border: 1px solid var(--navy); padding: 10px 24px; border-radius: var(--radius); font-family: var(--sans); font-size: 13px; font-weight: 500; cursor: pointer; transition: all .2s; }
+.btn-secondary:hover { background: var(--navy-pale); }
+#dashboard { display: none; }
+#dashboard.show { display: block; }
+.metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 24px; }
+.metric-card { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 16px 18px; border-left: 4px solid var(--navy); }
+.metric-card.warn { border-left-color: var(--warn); }
+.metric-card.danger { border-left-color: var(--danger); }
+.metric-card.ok { border-left-color: var(--ok); }
+.metric-card.purple { border-left-color: var(--purple); }
+.metric-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+.metric-value { font-size: 22px; font-weight: 600; color: var(--navy); line-height: 1; font-family: var(--mono); }
+.metric-sub { font-size: 11px; color: var(--text-soft); margin-top: 4px; }
+.section-header { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; margin-top: 28px; }
+.section-icon { width: 28px; height: 28px; background: var(--navy-pale); border-radius: 6px; display: flex; align-items: center; justify-content: center; color: var(--navy); font-size: 14px; }
+.section-title { font-size: 15px; font-weight: 600; color: var(--navy); }
+.section-sub { font-size: 12px; color: var(--text-muted); margin-left: auto; }
+.tab-bar { display: flex; gap: 4px; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 4px; margin-bottom: 20px; flex-wrap: wrap; }
+.tab-btn { padding: 7px 14px; border-radius: 6px; border: none; background: transparent; font-family: var(--sans); font-size: 12px; font-weight: 500; color: var(--text-soft); cursor: pointer; transition: all .15s; white-space: nowrap; }
+.tab-btn.active { background: var(--navy); color: #fff; }
+.tab-btn.active.tab-inter { background: var(--purple); }
+.tab-btn:hover:not(.active) { background: var(--border); }
+.tab-pane { display: none; }
+.tab-pane.active { display: block; }
+.alerts-table-wrap { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: auto; }
+.alerts-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.alerts-table th { background: var(--navy); color: #fff; padding: 10px 12px; text-align: left; font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.4px; white-space: nowrap; }
+.alerts-table td { padding: 9px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+.alerts-table tr:last-child td { border-bottom: none; }
+.alerts-table tr:hover td { background: var(--navy-pale); }
+.inter-table th { background: var(--purple); }
+.badge { padding: 2px 8px; border-radius: 20px; font-size: 10px; font-weight: 500; display: inline-flex; align-items: center; gap: 3px; white-space: nowrap; }
+.badge-red { background: var(--danger-bg); color: var(--danger); }
+.badge-amber { background: var(--warn-bg); color: var(--warn); }
+.badge-green { background: var(--ok-bg); color: var(--ok); }
+.badge-navy { background: var(--navy-pale); color: var(--navy); }
+.badge-gray { background: #F1F5F9; color: #475569; }
+.badge-purple { background: var(--purple-bg); color: var(--purple); }
+.badge-club { background: #E0F2FE; color: #0369A1; }
+.badge-conjunto { background: #FEF3C7; color: #92400E; }
+.mono { font-family: var(--mono); }
+.chart-card { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px; margin-bottom: 16px; }
+.chart-card-title { font-size: 13px; font-weight: 600; color: var(--navy); margin-bottom: 16px; }
+.article-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
+.article-card { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 14px; transition: border-color .2s; }
+.article-card.alerted { border-left: 3px solid var(--danger); }
+.article-card.warned { border-left: 3px solid var(--warn); }
+.ac-name { font-size: 12px; font-weight: 600; color: var(--navy); margin-bottom: 6px; line-height: 1.3; }
+.ac-code { font-size: 10px; color: var(--text-muted); font-family: var(--mono); margin-bottom: 8px; }
+.ac-meta { display: flex; gap: 8px; flex-wrap: wrap; }
+.ac-stat { font-size: 11px; }
+.ac-stat span { color: var(--text-muted); }
+.ac-stat strong { color: var(--text); font-family: var(--mono); }
+/* INTER-ENTITY */
+.inter-pair { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 16px; margin-bottom: 12px; }
+.inter-pair.critical { border-left: 4px solid var(--danger); }
+.inter-pair.alto { border-left: 4px solid var(--warn); }
+.inter-pair.medio { border-left: 4px solid var(--purple); }
+.inter-header { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
+.inter-names { flex: 1; }
+.inter-name-main { font-size: 13px; font-weight: 600; color: var(--navy); }
+.inter-name-pair { font-size: 11px; color: var(--text-soft); margin-top: 2px; }
+.inter-sim { font-size: 11px; font-family: var(--mono); color: var(--text-muted); }
+.entity-row { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: var(--radius); background: var(--bg); margin-bottom: 6px; }
+.entity-row:last-child { margin-bottom: 0; }
+.entity-label { font-size: 11px; font-weight: 600; min-width: 130px; }
+.entity-bar-wrap { flex: 1; height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; }
+.entity-bar { height: 100%; border-radius: 4px; }
+.entity-price { font-size: 12px; font-family: var(--mono); font-weight: 500; min-width: 80px; text-align: right; }
+.entity-diff { font-size: 11px; font-weight: 600; min-width: 60px; text-align: right; }
+/* SIMILARITY SLIDER */
+.sim-slider-wrap { display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: var(--purple-bg); border: 1px solid #DDD6FE; border-radius: var(--radius); margin-bottom: 16px; }
+.sim-slider-wrap label { font-size: 12px; font-weight: 500; color: var(--purple); white-space: nowrap; }
+.sim-slider-wrap input[type=range] { flex: 1; accent-color: var(--purple); }
+.sim-val { font-size: 13px; font-weight: 600; color: var(--purple); min-width: 36px; font-family: var(--mono); }
+/* AI */
+.ai-panel { background: linear-gradient(135deg, #EAF0F8 0%, #FDF8E8 100%); border: 1px solid var(--gold); border-radius: var(--radius-lg); padding: 20px; margin-bottom: 24px; }
+.ai-panel-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.ai-badge { background: var(--gold); color: var(--navy); padding: 3px 10px; border-radius: 20px; font-size: 10px; font-weight: 600; }
+.ai-panel-title { font-size: 14px; font-weight: 600; color: var(--navy); }
+.ai-intro { font-size: 12px; color: var(--text-soft); margin-bottom: 14px; line-height: 1.6; }
+.ai-controls { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.ai-controls select, .ai-controls input { padding: 7px 10px; border: 1px solid var(--border); border-radius: var(--radius); font-family: var(--sans); font-size: 12px; color: var(--text); background: var(--white); }
+.ai-controls select { flex: 1; min-width: 200px; }
+.ai-result { margin-top: 14px; padding: 14px; background: var(--white); border-radius: var(--radius); border: 1px solid var(--border); font-size: 12px; color: var(--text-soft); line-height: 1.7; min-height: 60px; }
+.ai-result.loading { color: var(--text-muted); font-style: italic; }
+.controls-bar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 16px; }
+.controls-bar input, .controls-bar select { padding: 7px 10px; border: 1px solid var(--border); border-radius: var(--radius); font-family: var(--sans); font-size: 12px; color: var(--text); background: var(--white); }
+.controls-bar input { flex: 1; min-width: 200px; }
+.export-bar { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; }
+.footer { text-align: center; padding: 20px; font-size: 11px; color: var(--text-muted); border-top: 1px solid var(--border); margin-top: 40px; }
+.footer span { color: var(--navy); font-weight: 500; }
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="header-logo">MDY</div>
+  <div class="header-title">
+    <h1>Analizador de Comportamiento de Precios en Compras</h1>
+    <p>Dirección de Auditoría Interna · Corporación Mesa de Yeguas — Club &amp; Conjunto</p>
+  </div>
+  <div class="header-badge">v3.0 · IA + Interentidad</div>
+</div>
+<div class="main">
+
+  <!-- UPLOAD -->
+  <div id="uploadSection">
+    <div class="section-header" style="margin-top:0;">
+      <div class="section-icon">📂</div>
+      <div class="section-title">Cargar archivo de compras</div>
+    </div>
+    <div class="upload-zone" id="uploadZone">
+      <input type="file" id="fileInput" accept=".xlsx,.xls,.csv,.txt" onchange="handleFile(event)"/>
+      <div class="upload-icon">📊</div>
+      <div class="upload-title">Arrastra o haz clic para cargar el archivo</div>
+      <div class="upload-sub">El sistema detecta automáticamente la estructura. Incluye el campo <strong>Entidad</strong> para activar el análisis interentidad Club / Conjunto.</div>
+      <div class="upload-formats">
+        <span class="fmt-tag">Excel .xlsx</span><span class="fmt-tag">Excel .xls</span>
+        <span class="fmt-tag">CSV .csv</span><span class="fmt-tag">Texto TXT</span>
+      </div>
+    </div>
+    <div class="mapping-panel" id="mappingPanel" style="margin-top:16px;">
+      <div class="panel-title">⚙️ Mapeo de columnas detectadas</div>
+      <div class="panel-sub" id="mappingDetectionMsg"></div>
+      <div class="mapping-grid" id="mappingGrid"></div>
+      <div style="margin-top:16px; display:flex; gap:10px; flex-wrap:wrap;">
+        <button class="btn-primary" onclick="processData()">▶ Procesar y Analizar</button>
+        <button class="btn-secondary" onclick="resetTool()">↺ Cargar otro archivo</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div id="dashboard">
+    <div class="metrics-grid" id="metricsGrid"></div>
+    <div class="export-bar">
+      <button class="btn-primary" onclick="exportAlerts()">⬇ Exportar Alertas CSV</button>
+      <button class="btn-primary" style="background:var(--purple);" onclick="exportInterEntity()">⬇ Exportar Análisis Interentidad CSV</button>
+      <button class="btn-secondary" onclick="exportFull()">⬇ Exportar Reporte Completo</button>
+      <button class="btn-secondary" onclick="resetTool()">↺ Nuevo análisis</button>
+    </div>
+
+    <!-- AI PANEL -->
+    <div class="ai-panel">
+      <div class="ai-panel-header">
+        <div class="ai-badge">✦ IA</div>
+        <div class="ai-panel-title">Consulta de referencia de precio de mercado</div>
+      </div>
+      <div class="ai-intro">Selecciona un artículo y consulta a la IA si el precio promedio es razonable para el mercado colombiano actual. Estimación orientativa — no reemplaza cotización formal.</div>
+      <div class="ai-controls">
+        <select id="aiArticleSelect"><option value="">— Selecciona un artículo —</option></select>
+        <button class="btn-primary" onclick="consultAI()">✦ Consultar IA</button>
+      </div>
+      <div class="ai-result" id="aiResult">El resultado de la consulta aparecerá aquí.</div>
+    </div>
+
+    <!-- TABS -->
+    <div class="tab-bar">
+      <button class="tab-btn active" onclick="showTab('alerts',this)">🚨 Alertas de Precios</button>
+      <button class="tab-btn tab-inter" onclick="showTab('interentidad',this)" id="tabInterBtn">🏢 Análisis Interentidad</button>
+      <button class="tab-btn" onclick="showTab('trends',this)">📈 Tendencias</button>
+      <button class="tab-btn" onclick="showTab('controls',this)">🛡️ Controles Adicionales</button>
+      <button class="tab-btn" onclick="showTab('articles',this)">📦 Por Artículo</button>
+      <button class="tab-btn" onclick="showTab('chart',this)">📊 Gráficos</button>
+    </div>
+
+    <!-- TAB: ALERTS -->
+    <div class="tab-pane active" id="tab-alerts">
+      <div class="section-header">
+        <div class="section-icon">🚨</div>
+        <div class="section-title">Listado de alertas — fluctuación de precios</div>
+        <div class="section-sub" id="alertCountLabel"></div>
+      </div>
+      <div class="controls-bar">
+        <input type="text" id="alertSearch" placeholder="🔍 Buscar artículo..." oninput="filterAlerts()"/>
+        <select id="alertEntityFilter" onchange="filterAlerts()"><option value="">Todas las entidades</option></select>
+        <select id="alertSeverity" onchange="filterAlerts()">
+          <option value="">Todas las severidades</option>
+          <option value="CRÍTICO">Crítico (&gt;40%)</option>
+          <option value="ALTO">Alto (20-40%)</option>
+          <option value="MEDIO">Medio (10-20%)</option>
+          <option value="BAJO">Bajo (&lt;10%)</option>
+        </select>
+        <select id="alertType" onchange="filterAlerts()">
+          <option value="">Todos los tipos</option>
+          <option value="CV">Variación alta (CV)</option>
+          <option value="TENDENCIA">Tendencia alcista</option>
+          <option value="PICO">Pico puntual</option>
+        </select>
+      </div>
+      <div class="alerts-table-wrap">
+        <table class="alerts-table">
+          <thead><tr>
+            <th>#</th><th>Entidad</th><th>Código</th><th>Artículo</th><th>Presentación</th>
+            <th>Precio Mín.</th><th>Precio Máx.</th><th>Precio Prom.</th>
+            <th>Var. Máx. %</th><th>CV %</th><th>Tendencia</th><th>Tipo Alerta</th><th>Severidad</th>
+          </tr></thead>
+          <tbody id="alertsTbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- TAB: INTERENTIDAD -->
+    <div class="tab-pane" id="tab-interentidad">
+      <div class="section-header">
+        <div class="section-icon">🏢</div>
+        <div class="section-title">Control C-07 — Paridad de precios Club vs. Conjunto</div>
+        <div class="section-sub" id="interCountLabel"></div>
+      </div>
+      <div id="noInterMsg" style="display:none; padding:24px; background:var(--warn-bg); border:1px solid #FDE68A; border-radius:var(--radius-lg); color:var(--warn); font-size:13px; margin-bottom:16px;">
+        ⚠ El archivo no contiene el campo <strong>Entidad</strong> mapeado, o solo hay una entidad en los datos. Para activar este análisis, incluye la columna Entidad en tu archivo con los valores correspondientes al Club y al Conjunto.
+      </div>
+      <div id="interContent" style="display:none;">
+        <div style="background:var(--purple-bg); border:1px solid #DDD6FE; border-radius:var(--radius-lg); padding:14px 18px; margin-bottom:16px; font-size:12px; color:#4C1D95; line-height:1.6;">
+          <strong>Metodología de comparación:</strong> Los artículos se emparejan por similitud de nombre usando distancia de Levenshtein normalizada. Un umbral de similitud del 70% es el valor recomendado — ajústalo según qué tan homogénea sea la nomenclatura de tus archivos. La diferencia de precio se calcula sobre el precio promedio del periodo por entidad.
+        </div>
+        <div class="sim-slider-wrap">
+          <label>Umbral de similitud mínima:</label>
+          <input type="range" id="simThreshold" min="40" max="95" value="70" step="5" oninput="updateSimLabel();renderInterEntity()"/>
+          <span class="sim-val" id="simLabel">70%</span>
+          <select id="interDiffFilter" onchange="renderInterEntity()" style="padding:6px 10px; border:1px solid #DDD6FE; border-radius:6px; font-family:var(--sans); font-size:12px; background:var(--white);">
+            <option value="0">Todas las diferencias</option>
+            <option value="5">Dif. &gt; 5%</option>
+            <option value="10">Dif. &gt; 10%</option>
+            <option value="20">Dif. &gt; 20%</option>
+            <option value="30">Dif. &gt; 30%</option>
+          </select>
+          <input type="text" id="interSearch" placeholder="🔍 Buscar artículo..." oninput="renderInterEntity()" style="padding:6px 10px; border:1px solid #DDD6FE; border-radius:6px; font-family:var(--sans); font-size:12px; min-width:180px;"/>
+        </div>
+        <div id="interPairsList"></div>
+      </div>
+    </div>
+
+    <!-- TAB: TRENDS -->
+    <div class="tab-pane" id="tab-trends">
+      <div class="section-header">
+        <div class="section-icon">📈</div>
+        <div class="section-title">Evolución mensual de precios</div>
+        <div class="section-sub">Top 20 artículos con mayor variación</div>
+      </div>
+      <div class="controls-bar">
+        <input type="text" id="trendSearch" placeholder="🔍 Filtrar artículo..." oninput="renderTrendTable()"/>
+        <select id="trendEntityFilter" onchange="renderTrendTable()"><option value="">Todas las entidades</option></select>
+      </div>
+      <div class="alerts-table-wrap">
+        <table class="alerts-table" id="trendTable">
+          <thead id="trendTableHead"></thead>
+          <tbody id="trendTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- TAB: CONTROLS -->
+    <div class="tab-pane" id="tab-controls">
+      <div class="section-header">
+        <div class="section-icon">🛡️</div>
+        <div class="section-title">Controles adicionales de auditoría</div>
+      </div>
+      <div id="controlsContent"></div>
+    </div>
+
+    <!-- TAB: ARTICLES -->
+    <div class="tab-pane" id="tab-articles">
+      <div class="section-header">
+        <div class="section-icon">📦</div>
+        <div class="section-title">Vista por artículo</div>
+      </div>
+      <div class="controls-bar">
+        <input type="text" id="artSearch" placeholder="🔍 Buscar artículo o código..." oninput="renderArticles()"/>
+        <select id="artEntityFilter" onchange="renderArticles()"><option value="">Todas las entidades</option></select>
+        <select id="artSortBy" onchange="renderArticles()">
+          <option value="cv">Mayor variación (CV)</option>
+          <option value="name">Nombre</option>
+          <option value="spend">Gasto total</option>
+        </select>
+      </div>
+      <div class="article-grid" id="articleGrid"></div>
+    </div>
+
+    <!-- TAB: CHART -->
+    <div class="tab-pane" id="tab-chart">
+      <div class="section-header">
+        <div class="section-icon">📊</div>
+        <div class="section-title">Análisis gráfico</div>
+      </div>
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px;">
+        <div class="chart-card">
+          <div class="chart-card-title">Top 10 artículos por coeficiente de variación (%)</div>
+          <canvas id="chartCV" height="250"></canvas>
+        </div>
+        <div class="chart-card">
+          <div class="chart-card-title">Gasto total por mes ($)</div>
+          <canvas id="chartMonthSpend" height="250"></canvas>
+        </div>
+        <div class="chart-card" style="grid-column: span 2;">
+          <div class="chart-card-title">Evolución de precio — artículo seleccionado (por entidad)</div>
+          <div style="margin-bottom:12px;">
+            <select id="chartArtSelect" onchange="renderPriceEvolutionChart()" style="padding:6px 10px; border:1px solid var(--border); border-radius:6px; font-family:var(--sans); font-size:12px; max-width:500px;"></select>
+          </div>
+          <canvas id="chartPriceEvo" height="180"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  <span>Corporación Mesa de Yeguas Country Club</span> · Dirección de Auditoría Interna, Riesgos, Calidad, Inocuidad y Ética · Uso interno
+</div>
+
+<script>
+let rawData=[], parsedData=[], articleStats={}, months=[], detectedColumns={}, alertsData=[];
+let interEntityPairs=[], knownEntities=[];
+let chartCV_i, chartMS_i, chartPE_i;
+
+const FIELD_MAP = {
+  mes:        { label:'Mes (número)',        required:true,  candidates:['idmes','mes','month','nromes','numeromes'] },
+  nombreMes:  { label:'Nombre del mes',      required:false, candidates:['nombremes','nombremeses','namemonth','namemes','monthname'] },
+  ano:        { label:'Año',                 required:true,  candidates:['ano','año','year','anio'] },
+  codigo:     { label:'Código Artículo',     required:true,  candidates:['codigo','code','cod','codart','codigoarticulo'] },
+  nombre:     { label:'Nombre Artículo',     required:true,  candidates:['nombrearticulo','nombre','articulo','description','item','namearticulo','nombreart'] },
+  presentacion:{ label:'Presentación/Unidad',required:false, candidates:['presentacion','presentation','unidad','unit'] },
+  valor:      { label:'Precio/Valor Unitario',required:true, candidates:['valor','price','precio','unitprice','valorunitario','costo','cost','vunitario'] },
+  cantidad:   { label:'Cantidad',            required:false, candidates:['cantidad','quantity','qty','cant'] },
+  entidad:    { label:'Entidad (Club/Conjunto)', required:false, candidates:['entidad','entity','organizacion','org','empresa','compania','sede'] }
+};
+
+const uploadZone = document.getElementById('uploadZone');
+uploadZone.addEventListener('dragover', e=>{ e.preventDefault(); uploadZone.classList.add('drag-over'); });
+uploadZone.addEventListener('dragleave', ()=>uploadZone.classList.remove('drag-over'));
+uploadZone.addEventListener('drop', e=>{ e.preventDefault(); uploadZone.classList.remove('drag-over'); const f=e.dataTransfer.files[0]; if(f) processFile(f); });
+
+function handleFile(e){ const f=e.target.files[0]; if(f) processFile(f); }
+
+function processFile(file){
+  const ext=file.name.split('.').pop().toLowerCase();
+  const reader=new FileReader();
+  if(['xlsx','xls'].includes(ext)){
+    reader.onload=e=>{ const wb=XLSX.read(new Uint8Array(e.target.result),{type:'array'}); const ws=wb.Sheets[wb.SheetNames[0]]; rawData=XLSX.utils.sheet_to_json(ws,{header:1,defval:''}); showMappingPanel(); };
+    reader.readAsArrayBuffer(file);
+  } else {
+    reader.onload=e=>{ const t=e.target.result; const sep=t.includes('\t')?'\t':','; rawData=t.split('\n').map(r=>r.split(sep).map(c=>c.replace(/"/g,'').trim())); showMappingPanel(); };
+    reader.readAsText(file,'UTF-8');
+  }
+}
+
+function norm(str){ return (str+'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,''); }
+
+function showMappingPanel(){
+  const headers=rawData[0].map(h=>h.toString().trim());
+  const grid=document.getElementById('mappingGrid'); grid.innerHTML=''; detectedColumns={};
+  for(const [fk,fi] of Object.entries(FIELD_MAP)){
+    const nh=headers.map(norm); let auto='';
+    for(const c of fi.candidates){ const i=nh.indexOf(c); if(i>=0){auto=headers[i];break;} }
+    detectedColumns[fk]=auto;
+    const d=document.createElement('div'); d.className='map-field';
+    d.innerHTML=`<label>${fi.label} ${fi.required?'<span class="required-star">*</span>':''}</label>
+      <select id="map_${fk}"><option value="">— No mapear —</option>
+      ${headers.map(h=>`<option value="${h}" ${h===auto?'selected':''}>${h}</option>`).join('')}</select>`;
+    grid.appendChild(d);
+  }
+  const matched=Object.values(detectedColumns).filter(v=>v).length;
+  document.getElementById('mappingDetectionMsg').innerHTML=`<strong>${matched} de ${Object.keys(FIELD_MAP).length} columnas</strong> detectadas. Revisa y ajusta si es necesario. (<span class="required-star">*</span>) = obligatorio. El campo <strong>Entidad</strong> activa el análisis interentidad Club/Conjunto.`;
+  document.getElementById('mappingPanel').classList.add('show');
+}
+
+function processData(){
+  const mapping={};
+  for(const k of Object.keys(FIELD_MAP)){ const s=document.getElementById('map_'+k); mapping[k]=s?s.value:''; }
+  for(const r of ['mes','ano','codigo','nombre','valor']){
+    if(!mapping[r]){ alert(`Campo obligatorio "${FIELD_MAP[r].label}" no mapeado.`); return; }
+  }
+  const headers=rawData[0].map(h=>h.toString().trim());
+  const gi=f=>mapping[f]?headers.indexOf(mapping[f]):-1;
+  const im=gi('mes'),ia=gi('ano'),ic=gi('codigo'),in_=gi('nombre'),iv=gi('valor'),ip=gi('presentacion'),iq=gi('cantidad'),inm=gi('nombreMes'),ie=gi('entidad');
+  parsedData=[];
+  for(let i=1;i<rawData.length;i++){
+    const row=rawData[i];
+    if(!row||row.every(c=>c===''||c===null||c===undefined)) continue;
+    const val=parseFloat((row[iv]+'').replace(/[^0-9.-]/g,''));
+    if(isNaN(val)||val<=0) continue;
+    parsedData.push({
+      mes:parseInt(row[im])||0, nombreMes:inm>=0?row[inm]:mesNom(parseInt(row[im])),
+      ano:parseInt(row[ia])||0, codigo:(row[ic]+'').trim(), nombre:(row[in_]+'').trim(),
+      presentacion:ip>=0?(row[ip]+'').trim():'', valor:val,
+      cantidad:iq>=0?(parseFloat(row[iq])||1):1,
+      entidad:ie>=0?(row[ie]+'').trim():''
+    });
+  }
+  if(!parsedData.length){ alert('No se encontraron datos válidos.'); return; }
+  knownEntities=[...new Set(parsedData.map(r=>r.entidad).filter(e=>e))].sort();
+  computeStats();
+  computeInterEntity();
+  renderDashboard();
+  document.getElementById('uploadSection').style.display='none';
+  document.getElementById('dashboard').classList.add('show');
+}
+
+function mesNom(n){ return ['','Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'][n]||('Mes '+n); }
+
+function computeStats(){
+  articleStats={};
+  const ps=new Set();
+  parsedData.forEach(r=>ps.add(r.ano+'-'+String(r.mes).padStart(2,'0')));
+  months=Array.from(ps).sort().map(k=>{
+    const [a,m]=k.split('-'); const nm=parsedData.find(r=>r.ano==a&&r.mes==parseInt(m));
+    return {key:k,label:(nm?nm.nombreMes:mesNom(parseInt(m)))+' '+a,ano:parseInt(a),mes:parseInt(m)};
+  });
+  parsedData.forEach(r=>{
+    const key=r.entidad+'||'+r.codigo+'||'+r.nombre;
+    if(!articleStats[key]) articleStats[key]={codigo:r.codigo,nombre:r.nombre,presentacion:r.presentacion,entidad:r.entidad,prices:{},quantities:{},totalSpend:0};
+    const mk=r.ano+'-'+String(r.mes).padStart(2,'0');
+    if(!articleStats[key].prices[mk]){ articleStats[key].prices[mk]=[]; articleStats[key].quantities[mk]=0; }
+    articleStats[key].prices[mk].push(r.valor);
+    articleStats[key].quantities[mk]+=r.cantidad;
+    articleStats[key].totalSpend+=r.valor*r.cantidad;
+  });
+  Object.values(articleStats).forEach(a=>{
+    const ap=Object.values(a.prices).flat();
+    a.minPrice=Math.min(...ap); a.maxPrice=Math.max(...ap);
+    a.avgPrice=ap.reduce((s,v)=>s+v,0)/ap.length;
+    const std=Math.sqrt(ap.reduce((s,v)=>s+Math.pow(v-a.avgPrice,2),0)/ap.length);
+    a.cv=a.avgPrice>0?(std/a.avgPrice)*100:0;
+    a.varMaxPct=a.minPrice>0?((a.maxPrice-a.minPrice)/a.minPrice)*100:0;
+    a.monthCount=Object.keys(a.prices).length;
+    a.monthlyAvg={};
+    Object.entries(a.prices).forEach(([mk,vs])=>{ a.monthlyAvg[mk]=vs.reduce((s,v)=>s+v,0)/vs.length; });
+    const mks=months.filter(m=>a.monthlyAvg[m.key]!==undefined).map(m=>m.key);
+    if(mks.length>=2){
+      const ys=mks.map(k=>a.monthlyAvg[k]); let sx=0,sy=0,sxy=0,sxx=0,n=ys.length;
+      ys.forEach((y,i)=>{sx+=i;sy+=y;sxy+=i*y;sxx+=i*i;});
+      const sl=(n*sxy-sx*sy)/(n*sxx-sx*sx);
+      a.trend=sl>0.5?'ALCISTA':sl<-0.5?'BAJISTA':'ESTABLE'; a.trendSlope=sl;
+    } else { a.trend='INSUF.'; a.trendSlope=0; }
+    const mvs=mks.map(k=>a.monthlyAvg[k]); let mj=0;
+    for(let i=1;i<mvs.length;i++){ const j=mvs[i-1]>0?((mvs[i]-mvs[i-1])/mvs[i-1])*100:0; if(Math.abs(j)>Math.abs(mj)) mj=j; }
+    a.maxMonthlyJump=mj;
+  });
+  buildAlerts();
+}
+
+function buildAlerts(){
+  alertsData=Object.values(articleStats).map(a=>{
+    let type='CV';
+    if(a.trend==='ALCISTA'&&a.trendSlope>2) type='TENDENCIA';
+    else if(Math.abs(a.maxMonthlyJump)>30) type='PICO';
+    const sev=a.cv>40||a.varMaxPct>100?'CRÍTICO':a.cv>20||a.varMaxPct>50?'ALTO':a.cv>10||a.varMaxPct>20?'MEDIO':'BAJO';
+    return {...a,alertType:type,severity:sev};
+  }).sort((a,b)=>b.cv-a.cv);
+}
+
+// ── FUZZY MATCH (Levenshtein normalizado + token overlap)
+function levenshtein(a,b){
+  const m=a.length,n=b.length; if(!m) return n; if(!n) return m;
+  const dp=Array.from({length:m+1},(_,i)=>[i,...Array(n).fill(0)]);
+  for(let j=1;j<=n;j++) dp[0][j]=j;
+  for(let i=1;i<=m;i++) for(let j=1;j<=n;j++)
+    dp[i][j]=a[i-1]===b[j-1]?dp[i-1][j-1]:1+Math.min(dp[i-1][j],dp[i][j-1],dp[i-1][j-1]);
+  return dp[m][n];
+}
+function similarity(a,b){
+  const na=norm(a), nb=norm(b);
+  if(na===nb) return 100;
+  // Token overlap bonus
+  const ta=new Set(na.split(/\s+/).filter(t=>t.length>2));
+  const tb=new Set(nb.split(/\s+/).filter(t=>t.length>2));
+  const inter=[...ta].filter(t=>tb.has(t)).length;
+  const union=new Set([...ta,...tb]).size;
+  const jaccard=union>0?(inter/union):0;
+  // Levenshtein on first 30 chars
+  const sa=na.substring(0,30), sb=nb.substring(0,30);
+  const lev=levenshtein(sa,sb);
+  const levSim=1-lev/Math.max(sa.length,sb.length,1);
+  // Weighted combination
+  return Math.round((levSim*0.5+jaccard*0.5)*100);
+}
+
+function computeInterEntity(){
+  interEntityPairs=[];
+  if(knownEntities.length<2){ return; }
+  // group by entity
+  const byEntity={};
+  knownEntities.forEach(e=>{ byEntity[e]=Object.values(articleStats).filter(a=>a.entidad===e); });
+  const ents=knownEntities;
+  // compare entity pairs
+  for(let ei=0;ei<ents.length-1;ei++){
+    for(let ej=ei+1;ej<ents.length;ej++){
+      const ea=ents[ei], eb=ents[ej];
+      const artsA=byEntity[ea], artsB=byEntity[eb];
+      // for each art in A, find best match in B
+      const used=new Set();
+      for(const artA of artsA){
+        let bestSim=0, bestB=null;
+        for(const artB of artsB){
+          if(used.has(artB.codigo+'||'+artB.nombre)) continue;
+          const s=similarity(artA.nombre, artB.nombre);
+          if(s>bestSim){ bestSim=s; bestB=artB; }
+        }
+        if(bestB && bestSim>=40){
+          used.add(bestB.codigo+'||'+bestB.nombre);
+          const priceDiff=bestB.avgPrice>0?((artA.avgPrice-bestB.avgPrice)/bestB.avgPrice)*100:0;
+          const absDiff=Math.abs(priceDiff);
+          const sev=absDiff>30?'CRÍTICO':absDiff>15?'ALTO':absDiff>5?'MEDIO':'BAJO';
+          interEntityPairs.push({
+            entA:ea, entB:eb,
+            nameA:artA.nombre, codeA:artA.codigo, presA:artA.presentacion, avgA:artA.avgPrice,
+            nameB:bestB.nombre, codeB:bestB.codigo, presB:bestB.presentacion, avgB:bestB.avgPrice,
+            sim:bestSim, priceDiff, absDiff, sev,
+            higherEnt: priceDiff>=0?ea:eb
+          });
+        }
+      }
+    }
+  }
+  interEntityPairs.sort((a,b)=>b.absDiff-a.absDiff);
+}
+
+function renderDashboard(){
+  populateEntityFilters();
+  renderMetrics();
+  renderAlerts();
+  renderInterEntity();
+  renderTrendTable();
+  renderControls();
+  renderArticles();
+  renderCharts();
+  populateAISelect();
+  populateChartArticleSelect();
+  updateInterTab();
+}
+
+function populateEntityFilters(){
+  const opts=['<option value="">Todas las entidades</option>', ...knownEntities.map(e=>`<option value="${e}">${e}</option>`)].join('');
+  ['alertEntityFilter','trendEntityFilter','artEntityFilter'].forEach(id=>{ const el=document.getElementById(id); if(el) el.innerHTML=opts; });
+}
+
+function updateInterTab(){
+  const btn=document.getElementById('tabInterBtn');
+  if(knownEntities.length<2){
+    btn.style.opacity='0.5';
+    btn.title='Activa este control incluyendo el campo Entidad en tu archivo';
+  } else {
+    btn.style.opacity='1';
+    const critical=interEntityPairs.filter(p=>p.sev==='CRÍTICO').length;
+    if(critical>0) btn.textContent=`🏢 Análisis Interentidad 🔴${critical}`;
+  }
+}
+
+function renderMetrics(){
+  const arts=Object.values(articleStats);
+  const critical=alertsData.filter(a=>a.severity==='CRÍTICO').length;
+  const alto=alertsData.filter(a=>a.severity==='ALTO').length;
+  const totalSpend=arts.reduce((s,a)=>s+a.totalSpend,0);
+  const alcistas=arts.filter(a=>a.trend==='ALCISTA').length;
+  const interCrit=interEntityPairs.filter(p=>p.sev==='CRÍTICO').length;
+  document.getElementById('metricsGrid').innerHTML=`
+    <div class="metric-card"><div class="metric-label">Artículos analizados</div><div class="metric-value">${arts.length.toLocaleString('es-CO')}</div><div class="metric-sub">${months.length} meses · ${knownEntities.length||1} entidad(es)</div></div>
+    <div class="metric-card danger"><div class="metric-label">⚠ Alertas críticas</div><div class="metric-value">${critical}</div><div class="metric-sub">CV &gt; 40% o var. &gt; 100%</div></div>
+    <div class="metric-card warn"><div class="metric-label">⚡ Alertas altas</div><div class="metric-value">${alto}</div><div class="metric-sub">CV 20–40%</div></div>
+    <div class="metric-card warn"><div class="metric-label">📈 Tendencia alcista</div><div class="metric-value">${alcistas}</div><div class="metric-sub">Precio crece mes a mes</div></div>
+    <div class="metric-card purple"><div class="metric-label">🏢 Paridad interentidad</div><div class="metric-value">${interEntityPairs.length}</div><div class="metric-sub">${interCrit} pares con dif. crítica (&gt;30%)</div></div>
+    <div class="metric-card"><div class="metric-label">Gasto total periodo</div><div class="metric-value">${fCOP(totalSpend)}</div><div class="metric-sub">Precio × Cantidad</div></div>
+  `;
+}
+
+function fCOP(n){ if(n>=1e9) return '$'+(n/1e9).toFixed(1)+'B'; if(n>=1e6) return '$'+(n/1e6).toFixed(1)+'M'; if(n>=1e3) return '$'+(n/1e3).toFixed(0)+'K'; return '$'+n.toFixed(0); }
+function sevBadge(s){ const m={'CRÍTICO':'badge-red','ALTO':'badge-amber','MEDIO':'badge-navy','BAJO':'badge-green'}; return `<span class="badge ${m[s]||'badge-gray'}">${s}</span>`; }
+function trendBadge(t){ const m={'ALCISTA':'badge-red','BAJISTA':'badge-green','ESTABLE':'badge-gray','INSUF.':'badge-gray'}; const ic={'ALCISTA':'↑','BAJISTA':'↓','ESTABLE':'→','INSUF.':'?'}; return `<span class="badge ${m[t]||'badge-gray'}">${ic[t]||''} ${t}</span>`; }
+function entBadge(e){ if(!e) return ''; const i=knownEntities.indexOf(e); const cls=i===0?'badge-club':'badge-conjunto'; return `<span class="badge ${cls}">${e}</span>`; }
+
+let filteredAlerts=[];
+function renderAlerts(){
+  const search=(document.getElementById('alertSearch')||{value:''}).value.toLowerCase();
+  const sev=(document.getElementById('alertSeverity')||{value:''}).value;
+  const typ=(document.getElementById('alertType')||{value:''}).value;
+  const ent=(document.getElementById('alertEntityFilter')||{value:''}).value;
+  filteredAlerts=alertsData.filter(a=>{
+    const txt=(a.nombre+a.codigo).toLowerCase();
+    return (!search||txt.includes(search))&&(!sev||a.severity===sev)&&(!typ||a.alertType===typ)&&(!ent||a.entidad===ent);
+  });
+  document.getElementById('alertCountLabel').textContent=`${filteredAlerts.length} alertas`;
+  document.getElementById('alertsTbody').innerHTML=filteredAlerts.map((a,i)=>`
+    <tr>
+      <td class="mono">${i+1}</td>
+      <td>${entBadge(a.entidad)||'<span style="color:var(--text-muted)">—</span>'}</td>
+      <td class="mono">${a.codigo}</td>
+      <td style="font-weight:500;max-width:180px;">${a.nombre}</td>
+      <td>${a.presentacion||'—'}</td>
+      <td class="mono">${fCOP(a.minPrice)}</td><td class="mono">${fCOP(a.maxPrice)}</td><td class="mono">${fCOP(a.avgPrice)}</td>
+      <td class="mono" style="color:${a.varMaxPct>50?'var(--danger)':a.varMaxPct>20?'var(--warn)':'inherit'};font-weight:500;">${a.varMaxPct.toFixed(1)}%</td>
+      <td class="mono" style="color:${a.cv>40?'var(--danger)':a.cv>20?'var(--warn)':'inherit'};font-weight:500;">${a.cv.toFixed(1)}%</td>
+      <td>${trendBadge(a.trend)}</td>
+      <td><span class="badge badge-navy">${a.alertType}</span></td>
+      <td>${sevBadge(a.severity)}</td>
+    </tr>`).join('');
+}
+function filterAlerts(){ renderAlerts(); }
+
+function updateSimLabel(){ document.getElementById('simLabel').textContent=document.getElementById('simThreshold').value+'%'; }
+
+function renderInterEntity(){
+  const hasMult=knownEntities.length>=2;
+  document.getElementById('noInterMsg').style.display=hasMult?'none':'block';
+  document.getElementById('interContent').style.display=hasMult?'block':'none';
+  if(!hasMult) return;
+  const threshold=parseInt(document.getElementById('simThreshold').value)||70;
+  const minDiff=parseFloat(document.getElementById('interDiffFilter').value)||0;
+  const search=(document.getElementById('interSearch')||{value:''}).value.toLowerCase();
+  let pairs=interEntityPairs.filter(p=>p.sim>=threshold&&p.absDiff>=minDiff);
+  if(search) pairs=pairs.filter(p=>(p.nameA+p.nameB).toLowerCase().includes(search));
+  document.getElementById('interCountLabel').textContent=`${pairs.length} pares comparados`;
+  if(!pairs.length){ document.getElementById('interPairsList').innerHTML=`<div style="padding:20px;text-align:center;color:var(--text-muted);font-size:13px;">Sin resultados para los filtros seleccionados. Prueba reduciendo el umbral de similitud.</div>`; return; }
+  document.getElementById('interPairsList').innerHTML=pairs.map(p=>{
+    const maxP=Math.max(p.avgA,p.avgB);
+    const barA=maxP>0?Math.round((p.avgA/maxP)*100):0;
+    const barB=maxP>0?Math.round((p.avgB/maxP)*100):0;
+    const diffColor=p.absDiff>30?'var(--danger)':p.absDiff>15?'var(--warn)':p.absDiff>5?'var(--purple)':'var(--ok)';
+    const diffSign=p.priceDiff>=0?'+':'';
+    return `<div class="inter-pair ${p.sev.toLowerCase()}">
+      <div class="inter-header">
+        <div class="inter-names">
+          <div class="inter-name-main">${p.nameA}</div>
+          <div class="inter-name-pair">vs. <em>${p.nameB}</em></div>
+        </div>
+        <span class="inter-sim">Similitud: ${p.sim}%</span>
+        ${sevBadge(p.sev)}
+        <span class="badge badge-purple">Dif. ${diffSign}${p.priceDiff.toFixed(1)}%</span>
+      </div>
+      <div class="entity-row">
+        ${entBadge(p.entA)}<span class="entity-label" style="color:var(--text-soft);font-size:11px;">${p.codeA}</span>
+        <div class="entity-bar-wrap"><div class="entity-bar" style="width:${barA}%;background:#0369A1;"></div></div>
+        <span class="entity-price">${fCOP(p.avgA)}</span>
+        <span class="entity-diff" style="color:${p.higherEnt===p.entA?diffColor:'var(--ok)'};">${p.higherEnt===p.entA?'▲ MÁS CARO':''}</span>
+      </div>
+      <div class="entity-row">
+        ${entBadge(p.entB)}<span class="entity-label" style="color:var(--text-soft);font-size:11px;">${p.codeB}</span>
+        <div class="entity-bar-wrap"><div class="entity-bar" style="width:${barB}%;background:#92400E;"></div></div>
+        <span class="entity-price">${fCOP(p.avgB)}</span>
+        <span class="entity-diff" style="color:${p.higherEnt===p.entB?diffColor:'var(--ok)'};">${p.higherEnt===p.entB?'▲ MÁS CARO':''}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderTrendTable(){
+  const search=(document.getElementById('trendSearch')||{value:''}).value.toLowerCase();
+  const ent=(document.getElementById('trendEntityFilter')||{value:''}).value;
+  const arts=alertsData.filter(a=>(!search||(a.nombre+a.codigo).toLowerCase().includes(search))&&(!ent||a.entidad===ent)).slice(0,20);
+  document.getElementById('trendTableHead').innerHTML=`<tr><th>Entidad</th><th>Código</th><th>Artículo</th>${months.map(m=>`<th>${m.label}</th>`).join('')}<th>Var.%</th><th>CV%</th></tr>`;
+  document.getElementById('trendTableBody').innerHTML=arts.map(a=>{
+    const cells=months.map(m=>{ const v=a.monthlyAvg[m.key]; return v?`<td class="mono">${fCOP(v)}</td>`:`<td style="color:var(--text-muted)">—</td>`; }).join('');
+    return `<tr><td>${entBadge(a.entidad)||'—'}</td><td class="mono">${a.codigo}</td><td style="font-weight:500;max-width:140px;">${a.nombre}</td>${cells}<td class="mono">${a.varMaxPct.toFixed(1)}%</td><td class="mono">${a.cv.toFixed(1)}%</td></tr>`;
+  }).join('');
+}
+
+function renderControls(){
+  const arts=Object.values(articleStats);
+  const totalSpend=arts.reduce((s,a)=>s+a.totalSpend,0);
+  const singleMonth=arts.filter(a=>a.monthCount===1);
+  const highConc=arts.filter(a=>totalSpend>0&&(a.totalSpend/totalSpend)*100>10).sort((a,b)=>b.totalSpend-a.totalSpend).slice(0,5);
+  const systematic=alertsData.filter(a=>a.trend==='ALCISTA'&&a.monthCount>=3);
+  const spikes=alertsData.filter(a=>Math.abs(a.maxMonthlyJump)>25).sort((a,b)=>Math.abs(b.maxMonthlyJump)-Math.abs(a.maxMonthlyJump));
+  const outliers=arts.filter(a=>{ const vs=Object.values(a.prices).flat(); if(vs.length<3) return false; const mean=vs.reduce((s,v)=>s+v,0)/vs.length; const std=Math.sqrt(vs.reduce((s,v)=>s+Math.pow(v-mean,2),0)/vs.length); return vs.some(v=>Math.abs(v-mean)>2*std); });
+  const interCrit=interEntityPairs.filter(p=>p.sev==='CRÍTICO'||p.sev==='ALTO');
+
+  document.getElementById('controlsContent').innerHTML=`
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px;">
+      ${cc('🔴','C-01: Artículos con registro en un solo mes','CRÍTICO',`${singleMonth.length} artículos aparecen en un único mes del periodo. Riesgo: compra puntual sin comparación histórica o posible fraccionamiento.`,singleMonth.slice(0,8).map(a=>`<span class="badge badge-red" style="margin:2px;">${a.codigo} — ${a.nombre.substring(0,28)}</span>`).join(''))}
+      ${cc('📊','C-02: Concentración de gasto','ALTO',`Top artículos que concentran mayor gasto del periodo. Verificar si cuentan con proceso competitivo de selección.`,highConc.map(a=>`<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border);font-size:12px;"><span>${a.nombre.substring(0,32)}</span><span class="mono" style="font-weight:500;">${fCOP(a.totalSpend)}</span></div>`).join(''))}
+      ${cc('📈','C-03: Tendencia alcista sistemática','ALTO',`${systematic.length} artículos muestran incremento progresivo en 3+ meses consecutivos. Revisar negociación contractual.`,systematic.slice(0,6).map(a=>`<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:12px;"><span>${a.nombre.substring(0,32)}</span><span class="badge badge-red">+${a.trendSlope.toFixed(0)}/mes</span></div>`).join(''))}
+      ${cc('⚡','C-04: Picos puntuales de precio','ALTO',`${spikes.length} artículos con salto entre meses mayor al 25%. Posible error de registro, cambio de proveedor o escasez.`,spikes.slice(0,6).map(a=>`<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:12px;"><span>${a.nombre.substring(0,32)}</span><span class="badge ${a.maxMonthlyJump>0?'badge-red':'badge-green'}">${a.maxMonthlyJump>0?'↑':'↓'}${Math.abs(a.maxMonthlyJump).toFixed(1)}%</span></div>`).join(''))}
+      ${cc('🔬','C-05: Valores atípicos (outliers estadísticos)','MEDIO',`${outliers.length} artículos con al menos un precio desviado más de 2σ de su media. Posible error de digitación o factura atípica.`,outliers.slice(0,8).map(a=>`<span class="badge badge-amber" style="margin:2px;">${a.codigo}</span>`).join(''))}
+      ${cc('🗓️','C-06: Artículos con meses sin compra','INFORMACIÓN',`Artículos sin registro en todos los meses del periodo. Puede indicar desabastecimiento o cambio de proveedor.`,`<div style="font-size:12px;color:var(--text-soft);">${arts.filter(a=>a.monthCount<months.length).length} artículos presentan ausencias en al menos un mes del periodo de ${months.length} meses.</div>`)}
+      ${cc('🏢','C-07: Paridad de precios Club vs. Conjunto','CRÍTICO',`${interCrit.length} artículos similares entre entidades con diferencia de precio significativa (>5%). Ambas organizaciones deben comprar en condiciones equivalentes.`,
+        knownEntities.length<2?'<span style="color:var(--text-muted);font-size:12px;">No se detectó el campo Entidad en los datos.</span>':
+        interCrit.slice(0,6).map(p=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid var(--border);font-size:12px;flex-wrap:wrap;gap:4px;"><span>${p.nameA.substring(0,28)}</span><span style="display:flex;gap:4px;">${entBadge(p.higherEnt)}<span class="badge badge-purple">+${p.absDiff.toFixed(1)}%</span>${sevBadge(p.sev)}</span></div>`).join('')
+      )}
+      <div class="chart-card" style="grid-column:span 2;">
+        <div class="chart-card-title">📋 Recomendaciones de auditoría</div>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; font-size:12px; line-height:1.6; color:var(--text-soft);">
+          <div><strong style="color:var(--navy);">Hallazgos a documentar:</strong><br>
+          · Artículos con CV &gt; 20%: solicitar justificación al área de Compras.<br>
+          · Picos &gt; 25%: validar con factura de proveedor y orden de compra.<br>
+          · Tendencias alcistas: comparar con inflación y precio de mercado.<br>
+          · C-07 crítico: solicitar explicación de diferencial entre entidades y evaluar unificación de proveedor.</div>
+          <div><strong style="color:var(--navy);">Controles preventivos sugeridos:</strong><br>
+          · Política de precios de referencia por artículo (precios techo).<br>
+          · Cotización mínima 3 proveedores para artículos de alto gasto.<br>
+          · Alerta automática si precio supera media histórica en &gt;15%.<br>
+          · Compras conjuntas Club–Conjunto para artículos comunes &gt;$500K.</div>
+        </div>
+      </div>
+    </div>`;
+}
+
+function cc(icon,title,sev,desc,content){
+  const sc=sev==='CRÍTICO'?'badge-red':sev==='ALTO'?'badge-amber':sev==='MEDIO'?'badge-navy':'badge-gray';
+  return `<div class="chart-card"><div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;"><span style="font-size:16px;">${icon}</span><span style="font-size:13px;font-weight:600;color:var(--navy);flex:1;">${title}</span><span class="badge ${sc}">${sev}</span></div><div style="font-size:12px;color:var(--text-soft);margin-bottom:10px;line-height:1.5;">${desc}</div><div>${content||''}</div></div>`;
+}
+
+function renderArticles(){
+  const search=(document.getElementById('artSearch')||{value:''}).value.toLowerCase();
+  const ent=(document.getElementById('artEntityFilter')||{value:''}).value;
+  const sortBy=(document.getElementById('artSortBy')||{value:'cv'}).value;
+  let arts=alertsData.filter(a=>(!search||(a.nombre+a.codigo).toLowerCase().includes(search))&&(!ent||a.entidad===ent));
+  if(sortBy==='name') arts.sort((a,b)=>a.nombre.localeCompare(b.nombre));
+  else if(sortBy==='spend') arts.sort((a,b)=>b.totalSpend-a.totalSpend);
+  else arts.sort((a,b)=>b.cv-a.cv);
+  document.getElementById('articleGrid').innerHTML=arts.slice(0,60).map(a=>`
+    <div class="article-card ${a.severity==='CRÍTICO'?'alerted':a.severity==='ALTO'?'warned':''}">
+      <div class="ac-name">${a.nombre}</div>
+      <div class="ac-code">${a.codigo}${a.presentacion?' · '+a.presentacion:''}</div>
+      ${a.entidad?`<div style="margin-bottom:6px;">${entBadge(a.entidad)}</div>`:''}
+      <div class="ac-meta">
+        <div class="ac-stat"><span>Prom: </span><strong>${fCOP(a.avgPrice)}</strong></div>
+        <div class="ac-stat"><span>Var: </span><strong style="color:${a.varMaxPct>50?'var(--danger)':'inherit'}">${a.varMaxPct.toFixed(1)}%</strong></div>
+        <div class="ac-stat"><span>CV: </span><strong style="color:${a.cv>20?'var(--warn)':'inherit'}">${a.cv.toFixed(1)}%</strong></div>
+        <div class="ac-stat"><span>Meses: </span><strong>${a.monthCount}</strong></div>
+      </div>
+      <div style="margin-top:6px;">${sevBadge(a.severity)} ${trendBadge(a.trend)}</div>
+    </div>`).join('');
+}
+
+function renderCharts(){
+  const top10=alertsData.slice(0,10);
+  if(chartCV_i) chartCV_i.destroy();
+  chartCV_i=new Chart(document.getElementById('chartCV'),{
+    type:'bar', data:{ labels:top10.map(a=>a.nombre.substring(0,18)+'…'),
+      datasets:[{label:'CV %',data:top10.map(a=>parseFloat(a.cv.toFixed(1))),backgroundColor:top10.map(a=>a.cv>40?'#B91C1C':a.cv>20?'#B45309':'#1A3560'),borderRadius:4}]},
+    options:{responsive:true,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,grid:{color:'#E2E8F0'}},x:{grid:{display:false},ticks:{font:{size:9}}}}}
+  });
+  // Group spend by month (all entities)
+  const spendByMonth=months.map(m=>parsedData.filter(r=>r.ano==m.ano&&r.mes==m.mes).reduce((s,r)=>s+r.valor*r.cantidad,0));
+  if(chartMS_i) chartMS_i.destroy();
+  chartMS_i=new Chart(document.getElementById('chartMonthSpend'),{
+    type:'bar', data:{labels:months.map(m=>m.label),datasets:[{label:'Gasto ($)',data:spendByMonth.map(v=>Math.round(v)),backgroundColor:'#1A3560',borderRadius:4}]},
+    options:{responsive:true,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,grid:{color:'#E2E8F0'},ticks:{callback:v=>fCOP(v)}},x:{grid:{display:false},ticks:{font:{size:9}}}}}
+  });
+}
+
+function populateChartArticleSelect(){
+  // Group by nombre (unique article names across entities)
+  const names=[...new Set(alertsData.map(a=>a.nombre))];
+  document.getElementById('chartArtSelect').innerHTML=names.map((n,i)=>`<option value="${n}">${n}</option>`).join('');
+  renderPriceEvolutionChart();
+}
+
+function renderPriceEvolutionChart(){
+  const name=document.getElementById('chartArtSelect').value;
+  if(!name) return;
+  // find all entries for this article name (possibly multiple entities)
+  const matching=alertsData.filter(a=>a.nombre===name);
+  const colors=['#1A3560','#B45309','#166534','#6D28D9'];
+  const datasets=matching.map((a,i)=>({
+    label: a.entidad||a.codigo,
+    data: months.map(m=>a.monthlyAvg[m.key]?parseFloat(a.monthlyAvg[m.key].toFixed(0)):null),
+    borderColor:colors[i%colors.length], backgroundColor:'transparent',
+    borderWidth:2, pointRadius:5, pointBackgroundColor:colors[i%colors.length],
+    tension:0.3, spanGaps:false
+  }));
+  if(chartPE_i) chartPE_i.destroy();
+  chartPE_i=new Chart(document.getElementById('chartPriceEvo'),{
+    type:'line', data:{labels:months.map(m=>m.label),datasets},
+    options:{responsive:true,
+      plugins:{legend:{display:matching.length>1},tooltip:{callbacks:{label:ctx=>(ctx.dataset.label||'')+': $'+(ctx.raw||0).toLocaleString('es-CO')}}},
+      scales:{y:{grid:{color:'#E2E8F0'},ticks:{callback:v=>fCOP(v)}},x:{grid:{display:false},ticks:{font:{size:9}}}}}
+  });
+}
+
+function populateAISelect(){
+  document.getElementById('aiArticleSelect').innerHTML='<option value="">— Selecciona un artículo —</option>'+
+    alertsData.map((a,i)=>`<option value="${i}">${a.entidad?'['+a.entidad+'] ':''}${a.codigo} — ${a.nombre} (Prom: ${fCOP(a.avgPrice)})</option>`).join('');
+}
+
+async function consultAI(){
+  const idx=document.getElementById('aiArticleSelect').value;
+  if(idx===''){alert('Selecciona un artículo primero.');return;}
+  const art=alertsData[parseInt(idx)];
+  const rd=document.getElementById('aiResult');
+  rd.className='ai-result loading'; rd.textContent='✦ Consultando inteligencia artificial...';
+  // find interentity match if exists
+  let interCtx='';
+  if(knownEntities.length>=2){
+    const pair=interEntityPairs.find(p=>p.nameA===art.nombre||p.nameB===art.nombre);
+    if(pair) interCtx=`\nAdemás, existe un artículo similar en la otra entidad (${pair.nameA===art.nombre?pair.entB:pair.entA}) a un precio promedio de ${(pair.nameA===art.nombre?pair.avgB:pair.avgA).toLocaleString('es-CO',{style:'currency',currency:'COP',maximumFractionDigits:0})}, con una diferencia del ${pair.priceDiff.toFixed(1)}%. Comenta si esta diferencia es preocupante.`;
+  }
+  const prompt=`Eres un analista experto en precios de insumos para el mercado colombiano. Analiza este artículo adquirido por un club campestre:
+- Nombre: ${art.nombre}
+- Entidad: ${art.entidad||'no especificada'}
+- Presentación: ${art.presentacion||'no especificada'}
+- Precio promedio registrado: ${art.avgPrice.toLocaleString('es-CO',{style:'currency',currency:'COP',maximumFractionDigits:0})}
+- Precio mín/máx: ${art.minPrice.toLocaleString('es-CO',{style:'currency',currency:'COP',maximumFractionDigits:0})} / ${art.maxPrice.toLocaleString('es-CO',{style:'currency',currency:'COP',maximumFractionDigits:0})}
+- CV: ${art.cv.toFixed(1)}% — Tendencia: ${art.trend}${interCtx}
+
+Responde brevemente:
+1. ¿El precio promedio es razonable para Colombia? Rango orientativo.
+2. ¿Qué factores explican la variación observada?
+3. ¿Qué debe verificar el auditor interno?
+4. ¿Hay riesgo de abuso de precio o fraccionamiento?
+Usa pesos colombianos (COP). Sé directo y útil para un auditor.`;
+  try{
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:prompt}]})});
+    const data=await resp.json();
+    const text=data.content?.filter(b=>b.type==='text').map(b=>b.text).join('\n')||'Sin respuesta.';
+    rd.className='ai-result'; rd.innerHTML=text.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>');
+  } catch(err){ rd.className='ai-result'; rd.innerHTML=`<strong style="color:var(--danger);">Error al consultar la IA.</strong> ${err.message}`; }
+}
+
+function showTab(id,btn){
+  document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  if(btn) btn.classList.add('active');
+  if(id==='chart') renderPriceEvolutionChart();
+  if(id==='interentidad') renderInterEntity();
+}
+
+function exportAlerts(){
+  const h=['Entidad','Codigo','Articulo','Presentacion','PrecioMin','PrecioMax','PrecioPromedio','VariacionMaxPct','CV_Pct','Tendencia','TipoAlerta','Severidad'];
+  const r=filteredAlerts.map(a=>[a.entidad,a.codigo,`"${a.nombre}"`,a.presentacion,a.minPrice.toFixed(0),a.maxPrice.toFixed(0),a.avgPrice.toFixed(0),a.varMaxPct.toFixed(1),a.cv.toFixed(1),a.trend,a.alertType,a.severity]);
+  dlCSV([h,...r],'Alertas_Precios_MDY.csv');
+}
+function exportInterEntity(){
+  const h=['EntidadA','ArticuloA','CodigoA','EntidadB','ArticuloB','CodigoB','Similitud_Pct','PrecioPromA','PrecioPromB','DifPct','EntidadMasCara','Severidad'];
+  const r=interEntityPairs.map(p=>[p.entA,`"${p.nameA}"`,p.codeA,p.entB,`"${p.nameB}"`,p.codeB,p.sim,p.avgA.toFixed(0),p.avgB.toFixed(0),p.priceDiff.toFixed(1),p.higherEnt,p.sev]);
+  dlCSV([h,...r],'Analisis_Interentidad_MDY.csv');
+}
+function exportFull(){
+  const h=['Entidad','Codigo','Articulo','Presentacion','PrecioMin','PrecioMax','PrecioPromedio','VariacionMaxPct','CV_Pct','Tendencia','SaltoMaxMensualPct','MesesPresentes','GastoTotal','TipoAlerta','Severidad'];
+  const r=alertsData.map(a=>[a.entidad,a.codigo,`"${a.nombre}"`,a.presentacion,a.minPrice.toFixed(0),a.maxPrice.toFixed(0),a.avgPrice.toFixed(0),a.varMaxPct.toFixed(1),a.cv.toFixed(1),a.trend,a.maxMonthlyJump.toFixed(1),a.monthCount,a.totalSpend.toFixed(0),a.alertType,a.severity]);
+  dlCSV([h,...r],'Reporte_Completo_Precios_MDY.csv');
+}
+function dlCSV(rows,filename){
+  const blob=new Blob(['\uFEFF'+rows.map(r=>r.join(';')).join('\n')],{type:'text/csv;charset=utf-8;'});
+  const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+}
+function resetTool(){
+  parsedData=[];rawData=[];articleStats={};alertsData=[];months=[];interEntityPairs=[];knownEntities=[];
+  document.getElementById('fileInput').value='';
+  document.getElementById('uploadSection').style.display='block';
+  document.getElementById('mappingPanel').classList.remove('show');
+  document.getElementById('dashboard').classList.remove('show');
+  document.getElementById('mappingGrid').innerHTML='';
+}
+</script>
+</body>
+</html>
