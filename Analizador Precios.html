@@ -459,7 +459,7 @@ function computeStats(){
     return {key:k,label:(nm?nm.nombreMes:mesNom(parseInt(m)))+' '+a,ano:parseInt(a),mes:parseInt(m)};
   });
   parsedData.forEach(r=>{
-    const key=r.entidad+'||'+r.codigo+'||'+r.nombre;
+    const key=r.entidad+'||'+r.codigo+'||'+r.nombre+'||'+r.presentacion;
     if(!articleStats[key]) articleStats[key]={codigo:r.codigo,nombre:r.nombre,presentacion:r.presentacion,entidad:r.entidad,prices:{},quantities:{},totalSpend:0};
     const mk=r.ano+'-'+String(r.mes).padStart(2,'0');
     if(!articleStats[key].prices[mk]){ articleStats[key].prices[mk]=[]; articleStats[key].quantities[mk]=0; }
@@ -544,12 +544,18 @@ function computeInterEntity(){
       for(const artA of artsA){
         let bestSim=0, bestB=null;
         for(const artB of artsB){
-          if(used.has(artB.codigo+'||'+artB.nombre)) continue;
-          const s=similarity(artA.nombre, artB.nombre);
+          if(used.has(artB.codigo+'||'+artB.nombre+'||'+artB.presentacion)) continue;
+          let s=similarity(artA.nombre, artB.nombre);
+          // Si ambos tienen presentación, exigir que también sean similares; penalizar si no coinciden
+          if(artA.presentacion && artB.presentacion){
+            const pSim=similarity(artA.presentacion, artB.presentacion);
+            if(pSim<50) s=Math.round(s*0.4); // penalizar fuertemente si presentaciones no coinciden
+            else s=Math.round(s*0.7+pSim*0.3); // combinar similitud nombre + presentación
+          }
           if(s>bestSim){ bestSim=s; bestB=artB; }
         }
         if(bestB && bestSim>=40){
-          used.add(bestB.codigo+'||'+bestB.nombre);
+          used.add(bestB.codigo+'||'+bestB.nombre+'||'+bestB.presentacion);
           const priceDiff=bestB.avgPrice>0?((artA.avgPrice-bestB.avgPrice)/bestB.avgPrice)*100:0;
           const absDiff=Math.abs(priceDiff);
           const sev=absDiff>30?'CRÍTICO':absDiff>15?'ALTO':absDiff>5?'MEDIO':'BAJO';
@@ -791,17 +797,19 @@ function renderCharts(){
 }
 
 function populateChartArticleSelect(){
-  // Group by nombre (unique article names across entities)
-  const names=[...new Set(alertsData.map(a=>a.nombre))];
-  document.getElementById('chartArtSelect').innerHTML=names.map((n,i)=>`<option value="${n}">${n}</option>`).join('');
+  // Build unique key nombre||presentacion to distinguish different presentations
+  const seen=new Set();
+  const entries=alertsData.filter(a=>{ const k=a.nombre+'||'+a.presentacion; if(seen.has(k)) return false; seen.add(k); return true; });
+  document.getElementById('chartArtSelect').innerHTML=entries.map(a=>`<option value="${a.nombre+'||'+a.presentacion}">${a.nombre}${a.presentacion?' · '+a.presentacion:''}</option>`).join('');
   renderPriceEvolutionChart();
 }
 
 function renderPriceEvolutionChart(){
-  const name=document.getElementById('chartArtSelect').value;
-  if(!name) return;
-  // find all entries for this article name (possibly multiple entities)
-  const matching=alertsData.filter(a=>a.nombre===name);
+  const val=document.getElementById('chartArtSelect').value;
+  if(!val) return;
+  const [name,pres]=val.split('||');
+  // find all entries for this article name+presentation (possibly multiple entities)
+  const matching=alertsData.filter(a=>a.nombre===name&&a.presentacion===pres);
   const colors=['#1A3560','#B45309','#166534','#6D28D9'];
   const datasets=matching.map((a,i)=>({
     label: a.entidad||a.codigo,
@@ -821,7 +829,7 @@ function renderPriceEvolutionChart(){
 
 function populateAISelect(){
   document.getElementById('aiArticleSelect').innerHTML='<option value="">— Selecciona un artículo —</option>'+
-    alertsData.map((a,i)=>`<option value="${i}">${a.entidad?'['+a.entidad+'] ':''}${a.codigo} — ${a.nombre} (Prom: ${fCOP(a.avgPrice)})</option>`).join('');
+    alertsData.map((a,i)=>`<option value="${i}">${a.entidad?'['+a.entidad+'] ':''}${a.codigo} — ${a.nombre}${a.presentacion?' · '+a.presentacion:''} (Prom: ${fCOP(a.avgPrice)})</option>`).join('');
 }
 
 async function consultAI(){
