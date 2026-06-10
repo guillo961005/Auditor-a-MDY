@@ -771,7 +771,7 @@
               code: "A10",
               severity: "ALTA",
               title: "Fraccionamiento de OC (posible evasión de comité)",
-              details: `Proveedor=${provKey}. Suma=${suma.toFixed(2)}. N_OC=${ventanaOCs.length}. Ventana=${ventanaFraccNum}d. Umbral=${umbralComiteNum}.`,
+              details: `Proveedor=${provKey}. Período=${dateKey(ventanaOCs[0].FECHA_OC)} → ${dateKey(ventanaOCs[ventanaOCs.length-1].FECHA_OC)}. Suma=${suma.toFixed(2)}. N_OC=${ventanaOCs.length}. Ventana=${ventanaFraccNum}d. Umbral=${umbralComiteNum}.`,
               PROVEEDOR_KEY: provKey,
               NOMBRETERCERO: ocs[i].NOMBRETERCERO,
               SUMA_ACUMULADA: suma,
