@@ -99,7 +99,7 @@
           <input id="tolMin" type="number" step="1000" min="0" value="50000" />
         </div>
         <div>
-          <label>Burst (entradas/día/proveedor)</label>
+          <label>Burst — concentración entradas/día/proveedor (alerta A8)</label>
           <input id="burstN" type="number" step="1" min="2" value="3" />
         </div>
 
@@ -150,6 +150,167 @@
       </ul>
     </div>
   </div>
+
+  <!-- GLOSARIO -->
+  <details style="border:1px solid var(--line);border-radius:14px;overflow:hidden;background:#0c1430;margin-top:12px">
+    <summary style="cursor:pointer;padding:12px 14px;font-weight:800;font-size:13px;background:rgba(12,20,48,.9)">
+      📖 Glosario de términos — ¿qué significa cada campo y parámetro?
+    </summary>
+    <div style="padding:14px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+
+        <!-- columna izquierda: documentos y flujo -->
+        <div>
+          <div style="font-weight:800;font-size:12px;color:#7fa8ff;margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">Documentos del flujo</div>
+          <table style="width:100%;border-collapse:collapse;font-size:12px">
+            <tr>
+              <td style="padding:6px 8px;border-bottom:1px solid var(--line);color:#cfe0ff;font-weight:700;white-space:nowrap">C14</td>
+              <td style="padding:6px 8px;border-bottom:1px solid var(--line);color:var(--muted)">Auxiliar contable de inventarios (libro mayor). Es la fuente contable: registra los débitos/créditos de cada movimiento de inventario. La columna <span style="font-family:monospace;color:#e8efff">DESCRITRA</span> contiene el número de entrada en formato <span style="font-family:monospace;color:#e8efff">E : XXXX</span>.</td>
+            </tr>
+            <tr>
+              <td style="padding:6px 8px;border-bottom:1px solid var(--line);color:#cfe0ff;font-weight:700;white-space:nowrap">Entradas</td>
+              <td style="padding:6px 8px;border-bottom:1px solid var(--line);color:var(--muted)">Documento operativo de recepción de mercancía en bodega. Confirma que los bienes físicamente ingresaron. Contiene el número de OC(s) asociada(s) en la columna <span style="font-family:monospace;color:#e8efff">Ordenes</span>.</td>
+            </tr>
+            <tr>
+              <td style="padding:6px 8px;border-bottom:1px solid var(--line);color:#cfe0ff;font-weight:700;white-space:nowrap">OC</td>
+              <td style="padding:6px 8px;border-bottom:1px solid var(--line);color:var(--muted)">Orden de Compra. Autorización formal para adquirir bienes/servicios a un proveedor. Debe existir <em>antes</em> de que lleguen los bienes (antes de la Entrada).</td>
+            </tr>
+            <tr>
+              <td style="padding:6px 8px;color:#cfe0ff;font-weight:700;white-space:nowrap">3-Way Match</td>
+              <td style="padding:6px 8px;color:var(--muted)">Cruce triple: <strong>C14 ↔ Entrada ↔ OC</strong>. Verifica que el registro contable, la recepción física y la orden de compra coincidan en proveedor y valor. Es el control antifraude más básico en compras.</td>
+            </tr>
+          </table>
+
+          <div style="font-weight:800;font-size:12px;color:#7fa8ff;margin:14px 0 8px;text-transform:uppercase;letter-spacing:.5px">Parámetros configurables</div>
+          <table style="width:100%;border-collapse:collapse;font-size:12px">
+            <tr>
+              <td style="padding:6px 8px;border-bottom:1px solid var(--line);color:#cfe0ff;font-weight:700;white-space:nowrap">Burst (entradas/día/proveedor)</td>
+              <td style="padding:6px 8px;border-bottom:1px solid var(--line);color:var(--muted)">Umbral de <strong>concentración</strong>: si un mismo proveedor tiene N o más entradas en el mismo día, se genera la alerta A8. Ejemplo: si <em>Burst = 3</em>, un proveedor con 3 entradas el mismo día activa la alerta. Señal de posible división artificial de compras.</td>
+            </tr>
+            <tr>
+              <td style="padding:6px 8px;border-bottom:1px solid var(--line);color:#cfe0ff;font-weight:700;white-space:nowrap">Tolerancia dif. valor (%)</td>
+              <td style="padding:6px 8px;border-bottom:1px solid var(--line);color:var(--muted)">Porcentaje máximo de diferencia aceptable entre el valor en C14 y el valor en la Entrada, antes de generar alerta A5. Se combina con el mínimo en COP (se toma el mayor de los dos).</td>
+            </tr>
+            <tr>
+              <td style="padding:6px 8px;border-bottom:1px solid var(--line);color:#cfe0ff;font-weight:700;white-space:nowrap">Umbral comité (COP)</td>
+              <td style="padding:6px 8px;border-bottom:1px solid var(--line);color:var(--muted)">Monto a partir del cual una OC requiere aprobación de comité de compras. OCs individuales por debajo de este monto que, sumadas en una ventana de días, lo superan, activan la alerta A10 (fraccionamiento).</td>
+            </tr>
+            <tr>
+              <td style="padding:6px 8px;border-bottom:1px solid var(--line);color:#cfe0ff;font-weight:700;white-space:nowrap">Ventana fraccionam. (días)</td>
+              <td style="padding:6px 8px;border-bottom:1px solid var(--line);color:var(--muted)">Número de días dentro del cual se acumulan las OCs de un proveedor para verificar fraccionamiento (alerta A10). Por defecto 30 días.</td>
+            </tr>
+            <tr>
+              <td style="padding:6px 8px;border-bottom:1px solid var(--line);color:#cfe0ff;font-weight:700;white-space:nowrap">Lead time máx/mín (días)</td>
+              <td style="padding:6px 8px;color:var(--muted)">Rango aceptable de días entre la fecha de la OC y la fecha de la Entrada. Si el tiempo es mayor al máximo → alerta A11a (demora excesiva). Si es menor o igual al mínimo → alerta A11b (llegada antes de la OC o el mismo día).</td>
+            </tr>
+          </table>
+        </div>
+
+        <!-- columna derecha: alertas -->
+        <div>
+          <div style="font-weight:800;font-size:12px;color:#7fa8ff;margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">Catálogo de alertas</div>
+          <table style="width:100%;border-collapse:collapse;font-size:12px">
+            <tr style="background:rgba(43,99,255,.12)">
+              <th style="padding:5px 8px;text-align:left;color:#cfe0ff;font-size:11px">Código</th>
+              <th style="padding:5px 8px;text-align:left;color:#cfe0ff;font-size:11px">Severidad</th>
+              <th style="padding:5px 8px;text-align:left;color:#cfe0ff;font-size:11px">Qué detecta</th>
+            </tr>
+            <tr>
+              <td style="padding:5px 8px;border-bottom:1px solid var(--line);color:#cfe0ff;font-weight:700">A1</td>
+              <td style="padding:5px 8px;border-bottom:1px solid var(--line);color:#ffd4cf">ALTA</td>
+              <td style="padding:5px 8px;border-bottom:1px solid var(--line);color:var(--muted)">OC posterior a la Entrada: la orden se emitió <em>después</em> de recibir la mercancía (compra sin autorización previa).</td>
+            </tr>
+            <tr>
+              <td style="padding:5px 8px;border-bottom:1px solid var(--line);color:#cfe0ff;font-weight:700">A2</td>
+              <td style="padding:5px 8px;border-bottom:1px solid var(--line);color:#ffe0b2">MEDIA/ALTA</td>
+              <td style="padding:5px 8px;border-bottom:1px solid var(--line);color:var(--muted)">OC emitida más de 30 días antes de la Entrada (antigüedad excesiva; puede indicar OC "comodín" reutilizada).</td>
+            </tr>
+            <tr>
+              <td style="padding:5px 8px;border-bottom:1px solid var(--line);color:#cfe0ff;font-weight:700">A3</td>
+              <td style="padding:5px 8px;border-bottom:1px solid var(--line);color:#ffd4cf">ALTA</td>
+              <td style="padding:5px 8px;border-bottom:1px solid var(--line);color:var(--muted)">Entrada registrada en C14 pero sin registro en el módulo de Entradas (desconexión entre contabilidad y bodega).</td>
+            </tr>
+            <tr>
+              <td style="padding:5px 8px;border-bottom:1px solid var(--line);color:#cfe0ff;font-weight:700">A4</td>
+              <td style="padding:5px 8px;border-bottom:1px solid var(--line);color:#fff1bf">MEDIA</td>
+              <td style="padding:5px 8px;border-bottom:1px solid var(--line);color:var(--muted)">Entrada que referencia múltiples OCs (puede ser legítimo, pero incrementa el riesgo de errores).</td>
+            </tr>
+            <tr>
+              <td style="padding:5px 8px;border-bottom:1px solid var(--line);color:#cfe0ff;font-weight:700">A5</td>
+              <td style="padding:5px 8px;border-bottom:1px solid var(--line);color:#ffd4cf">ALTA</td>
+              <td style="padding:5px 8px;border-bottom:1px solid var(--line);color:var(--muted)">Diferencia de valor entre C14 y Entrada supera la tolerancia configurada.</td>
+            </tr>
+            <tr>
+              <td style="padding:5px 8px;border-bottom:1px solid var(--line);color:#cfe0ff;font-weight:700">A6</td>
+              <td style="padding:5px 8px;border-bottom:1px solid var(--line);color:#ffe0b2">MEDIA/ALTA</td>
+              <td style="padding:5px 8px;border-bottom:1px solid var(--line);color:var(--muted)">El proveedor en C14 y en Entradas no coinciden para la misma Entrada.</td>
+            </tr>
+            <tr>
+              <td style="padding:5px 8px;border-bottom:1px solid var(--line);color:#cfe0ff;font-weight:700">A7</td>
+              <td style="padding:5px 8px;border-bottom:1px solid var(--line);color:#ffe0b2">MEDIA/ALTA</td>
+              <td style="padding:5px 8px;border-bottom:1px solid var(--line);color:var(--muted)">Número de factura del proveedor repetido en múltiples Entradas (posible doble pago).</td>
+            </tr>
+            <tr>
+              <td style="padding:5px 8px;border-bottom:1px solid var(--line);color:#cfe0ff;font-weight:700">A8</td>
+              <td style="padding:5px 8px;border-bottom:1px solid var(--line);color:#fff1bf">MEDIA</td>
+              <td style="padding:5px 8px;border-bottom:1px solid var(--line);color:var(--muted)"><strong>Burst</strong>: mismo proveedor con N o más entradas el mismo día (ver parámetro Burst arriba).</td>
+            </tr>
+            <tr>
+              <td style="padding:5px 8px;border-bottom:1px solid var(--line);color:#cfe0ff;font-weight:700">A9</td>
+              <td style="padding:5px 8px;border-bottom:1px solid var(--line);color:#ffd4cf">ALTA</td>
+              <td style="padding:5px 8px;border-bottom:1px solid var(--line);color:var(--muted)">OC rechazada vinculada a una Entrada (se recibió mercancía con una orden que fue rechazada).</td>
+            </tr>
+            <tr>
+              <td style="padding:5px 8px;border-bottom:1px solid var(--line);color:#cfe0ff;font-weight:700">A10</td>
+              <td style="padding:5px 8px;border-bottom:1px solid var(--line);color:#ffd4cf">ALTA</td>
+              <td style="padding:5px 8px;border-bottom:1px solid var(--line);color:var(--muted)">Fraccionamiento de OC: múltiples OCs individuales debajo del umbral de comité que, sumadas en la ventana de días, lo superan.</td>
+            </tr>
+            <tr>
+              <td style="padding:5px 8px;border-bottom:1px solid var(--line);color:#cfe0ff;font-weight:700">A11a</td>
+              <td style="padding:5px 8px;border-bottom:1px solid var(--line);color:#ffe0b2">MEDIA/ALTA</td>
+              <td style="padding:5px 8px;border-bottom:1px solid var(--line);color:var(--muted)">Lead time excesivo: demasiados días entre OC y Entrada (retrasos operativos o OC emitida retroactivamente).</td>
+            </tr>
+            <tr>
+              <td style="padding:5px 8px;border-bottom:1px solid var(--line);color:#cfe0ff;font-weight:700">A11b</td>
+              <td style="padding:5px 8px;border-bottom:1px solid var(--line);color:#fff1bf">MEDIA</td>
+              <td style="padding:5px 8px;border-bottom:1px solid var(--line);color:var(--muted)">Lead time cero o negativo: la entrada llegó antes de la OC o el mismo día.</td>
+            </tr>
+            <tr>
+              <td style="padding:5px 8px;border-bottom:1px solid var(--line);color:#cfe0ff;font-weight:700">A12a/b</td>
+              <td style="padding:5px 8px;border-bottom:1px solid var(--line);color:#fff1bf">MEDIA</td>
+              <td style="padding:5px 8px;border-bottom:1px solid var(--line);color:var(--muted)">Entrada (A12a) u OC (A12b) registrada en fin de semana (sábado o domingo).</td>
+            </tr>
+            <tr>
+              <td style="padding:5px 8px;border-bottom:1px solid var(--line);color:#cfe0ff;font-weight:700">A13</td>
+              <td style="padding:5px 8px;border-bottom:1px solid var(--line);color:#ffe0b2">MEDIA/ALTA</td>
+              <td style="padding:5px 8px;border-bottom:1px solid var(--line);color:var(--muted)">Entrada sin número de factura del proveedor registrada (dificulta trazabilidad tributaria).</td>
+            </tr>
+            <tr>
+              <td style="padding:5px 8px;border-bottom:1px solid var(--line);color:#cfe0ff;font-weight:700">A14</td>
+              <td style="padding:5px 8px;border-bottom:1px solid var(--line);color:#fff1bf">MEDIA</td>
+              <td style="padding:5px 8px;border-bottom:1px solid var(--line);color:var(--muted)">Proveedor con una sola transacción en el período y de alto valor (sobre el percentil 75 del universo).</td>
+            </tr>
+            <tr>
+              <td style="padding:5px 8px;border-bottom:1px solid var(--line);color:#cfe0ff;font-weight:700">X1</td>
+              <td style="padding:5px 8px;border-bottom:1px solid var(--line);color:#ffe0b2">MEDIA/ALTA</td>
+              <td style="padding:5px 8px;border-bottom:1px solid var(--line);color:var(--muted)">Factura del proveedor que aparece en <em>Club</em> y en <em>Conjunto</em> (posible doble pago entre entidades).</td>
+            </tr>
+            <tr>
+              <td style="padding:5px 8px;border-bottom:1px solid var(--line);color:#cfe0ff;font-weight:700">X2</td>
+              <td style="padding:5px 8px;border-bottom:1px solid var(--line);color:#d4ecd4">BAJA/MEDIA</td>
+              <td style="padding:5px 8px;border-bottom:1px solid var(--line);color:var(--muted)">Número de OC que aparece en ambas entidades (puede ser un error de digitación o un consecutivo compartido).</td>
+            </tr>
+            <tr>
+              <td style="padding:5px 8px;color:#cfe0ff;font-weight:700">X3</td>
+              <td style="padding:5px 8px;color:#fff1bf">MEDIA</td>
+              <td style="padding:5px 8px;color:var(--muted)">Burst del mismo proveedor en Club <em>y</em> Conjunto el mismo día.</td>
+            </tr>
+          </table>
+        </div>
+
+      </div>
+    </div>
+  </details>
 
   <div class="card" style="margin-top:12px">
     <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
@@ -1090,9 +1251,13 @@
     }
 
     function applyHeaderRow(row, fillArgb) {
+      const bg = fillArgb || C.AZUL_MARINO;
       row.height = 22;
-      row.eachCell(cell => {
-        cell.fill = { type: "pattern", patternType: "solid", fgColor: { argb: fillArgb || C.AZUL_MARINO } };
+      // fill a nivel de fila para que celdas vacías también reciban el fondo oscuro
+      row.fill = { type: "pattern", patternType: "solid", fgColor: { argb: bg } };
+      row.font = { name: "Calibri", size: 10, bold: true, color: { argb: C.BLANCO } };
+      row.eachCell({ includeEmpty: true }, cell => {
+        cell.fill = { type: "pattern", patternType: "solid", fgColor: { argb: bg } };
         cell.font = { name: "Calibri", size: 10, bold: true, color: { argb: C.BLANCO } };
         cell.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
         cell.border = { top: { style: "thin", color: { argb: "FFD0D3DA" } }, left: { style: "thin", color: { argb: "FFD0D3DA" } }, bottom: { style: "thin", color: { argb: "FFD0D3DA" } }, right: { style: "thin", color: { argb: "FFD0D3DA" } } };
