@@ -1264,7 +1264,7 @@
       for (let c = 1; c <= numCols; c++) {
         const cell = ws.getCell(rowNum, c);
         cell.fill = { type:"pattern", patternType:"solid", fgColor:{argb:bg}, bgColor:{argb:"FF000000"} };
-        cell.font = { name:"Calibri", size:10, bold:true, color:{argb:C.BLANCO} };
+        cell.font = { name:"Calibri", size:10, bold:true, color:{argb:C.TEXTO_DARK} };
         cell.alignment = { horizontal:"center", vertical:"middle", wrapText:true };
         cell.border = THIN_BORDER;
       }
