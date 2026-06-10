@@ -1250,122 +1250,160 @@
       return Math.min(50, Math.max(8, max + 2));
     }
 
-    function applyHeaderRow(row, fillArgb, numCols) {
+    // Borde fino reutilizable
+    const THIN_BORDER = {
+      top:{style:"thin",color:{argb:"FFD0D3DA"}}, left:{style:"thin",color:{argb:"FFD0D3DA"}},
+      bottom:{style:"thin",color:{argb:"FFD0D3DA"}}, right:{style:"thin",color:{argb:"FFD0D3DA"}}
+    };
+
+    // ws.getCell(row,col) es la única API garantizada en ExcelJS 4.x; los objetos Row
+    // tienen bugs de sincronización interna con el worksheet en algunos builds del CDN.
+    function applyHeaderRow(ws, rowNum, numCols, fillArgb) {
       const bg = fillArgb || C.AZUL_MARINO;
-      row.height = 22;
-      // Iterar por índice explícito: eachCell puede omitir celdas en algunos builds de ExcelJS
-      const cols = numCols || row.cellCount || 1;
-      for (let c = 1; c <= cols; c++) {
-        const cell = row.getCell(c);
-        cell.fill = { type: "pattern", patternType: "solid", fgColor: { argb: bg } };
-        cell.font = { name: "Calibri", size: 10, bold: true, color: { argb: C.BLANCO } };
-        cell.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
-        cell.border = { top: { style: "thin", color: { argb: "FFD0D3DA" } }, left: { style: "thin", color: { argb: "FFD0D3DA" } }, bottom: { style: "thin", color: { argb: "FFD0D3DA" } }, right: { style: "thin", color: { argb: "FFD0D3DA" } } };
+      ws.getRow(rowNum).height = 22;
+      for (let c = 1; c <= numCols; c++) {
+        const cell = ws.getCell(rowNum, c);
+        cell.fill = { type:"pattern", patternType:"solid", fgColor:{argb:bg}, bgColor:{argb:"FF000000"} };
+        cell.font = { name:"Calibri", size:10, bold:true, color:{argb:C.BLANCO} };
+        cell.alignment = { horizontal:"center", vertical:"middle", wrapText:true };
+        cell.border = THIN_BORDER;
       }
     }
 
-    function applyDataRow(row, rowIdx, overrideCells) {
-      row.height = 16;
+    function applyDataRow(ws, rowNum, numCols, rowIdx, skipCols) {
       const bg = (rowIdx % 2 === 0) ? C.BLANCO : C.GRIS_CLARO;
-      row.eachCell({ includeEmpty: true }, (cell, colNum) => {
-        if (!overrideCells || !overrideCells[colNum]) {
-          cell.fill = { type: "pattern", patternType: "solid", fgColor: { argb: bg } };
-          cell.font = { name: "Calibri", size: 10, color: { argb: C.TEXTO_DARK } };
-        }
-        cell.border = { top: { style: "thin", color: { argb: "FFD0D3DA" } }, left: { style: "thin", color: { argb: "FFD0D3DA" } }, bottom: { style: "thin", color: { argb: "FFD0D3DA" } }, right: { style: "thin", color: { argb: "FFD0D3DA" } } };
-      });
+      ws.getRow(rowNum).height = 16;
+      for (let c = 1; c <= numCols; c++) {
+        if (skipCols && skipCols.has(c)) continue;
+        const cell = ws.getCell(rowNum, c);
+        cell.fill = { type:"pattern", patternType:"solid", fgColor:{argb:bg} };
+        cell.font = { name:"Calibri", size:10, color:{argb:C.TEXTO_DARK} };
+        cell.border = THIN_BORDER;
+      }
     }
 
-    function numFmtForHeader(h) {
+    // Convierte strings vacíos → null (celda vacía real) y
+    // strings "YYYY-MM-DD" → Date (para que Excel los trate como fecha).
+    function coerceVal(v) {
+      if (v == null || v === "") return null;
+      if (typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v)) {
+        const p = v.split("-");
+        return new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2]));
+      }
+      return v;
+    }
+
+    // Elimina columnas donde TODOS los registros están vacíos.
+    function filterActiveHeaders(headers, rows) {
+      return headers.filter(h => rows.some(r => {
+        const v = r[h];
+        return v != null && v !== "";
+      }));
+    }
+
+    // Formato numérico según nombre de columna (solo para números, no fechas).
+    function numFmtFor(h) {
       const u = h.toUpperCase();
-      if (/TOTAL|NETO|DIF|COSTO|SUMA|VALOR|MONTO/.test(u)) return "#,##0";
+      if (/TOTAL|NETO|DIF|COSTO|SUMA|VALOR|MONTO|P75/.test(u)) return "#,##0.##";
       if (/RATIO/.test(u)) return "0.00%";
-      if (/FECHA/.test(u)) return "DD/MM/YYYY";
+      if (/DIAS|ANTIGUEDAD|LEAD/.test(u)) return "0";
       return null;
     }
 
-    function addDataSheet(ws, headers, rows, titleRow) {
-      let dataStartRow = 1;
+    function addDataSheet(ws, rawHeaders, rows, titleRow) {
+      const headers = filterActiveHeaders(rawHeaders, rows);
+      if (!headers.length) return;
+
+      let hdrRowNum = 1;
       if (titleRow) {
-        const tr = ws.addRow([titleRow]);
+        ws.addRow([titleRow]);
         ws.mergeCells(1, 1, 1, headers.length);
-        const cell = tr.getCell(1);
-        cell.fill = { type: "pattern", patternType: "solid", fgColor: { argb: C.DORADO } };
-        cell.font = { name: "Calibri", size: 12, bold: true, color: { argb: C.BLANCO } };
-        cell.alignment = { horizontal: "center", vertical: "middle" };
-        tr.height = 24;
-        dataStartRow = 2;
+        const tc = ws.getCell(1, 1);
+        tc.fill = { type:"pattern", patternType:"solid", fgColor:{argb:C.DORADO} };
+        tc.font = { name:"Calibri", size:12, bold:true, color:{argb:C.BLANCO} };
+        tc.alignment = { horizontal:"center", vertical:"middle" };
+        ws.getRow(1).height = 24;
+        hdrRowNum = 2;
       }
 
-      const hdrRow = ws.addRow(headers);
-      applyHeaderRow(hdrRow, null, headers.length);
-
-      ws.views = [{ state: "frozen", ySplit: dataStartRow }];
-      ws.autoFilter = { from: { row: dataStartRow, column: 1 }, to: { row: dataStartRow, column: headers.length } };
+      ws.addRow(headers);
+      applyHeaderRow(ws, hdrRowNum, headers.length);
+      ws.views = [{ state:"frozen", ySplit:hdrRowNum }];
+      ws.autoFilter = { from:{row:hdrRowNum, column:1}, to:{row:hdrRowNum, column:headers.length} };
 
       for (let i = 0; i < rows.length; i++) {
-        const vals = headers.map(h => {
-          const v = rows[i][h];
-          return (v == null) ? "" : v;
-        });
-        const dr = ws.addRow(vals);
-        applyDataRow(dr, i + 1);
+        const vals = headers.map(h => coerceVal(rows[i][h]));
+        ws.addRow(vals);
+        const rn = hdrRowNum + 1 + i;
+        applyDataRow(ws, rn, headers.length, i + 1, null);
         headers.forEach((h, ci) => {
-          const fmt = numFmtForHeader(h);
-          if (fmt) dr.getCell(ci + 1).numFmt = fmt;
+          const v = vals[ci];
+          if (v instanceof Date) {
+            ws.getCell(rn, ci + 1).numFmt = "DD/MM/YYYY";
+          } else if (typeof v === "number") {
+            const fmt = numFmtFor(h);
+            if (fmt) ws.getCell(rn, ci + 1).numFmt = fmt;
+          }
         });
       }
 
-      headers.forEach((h, i) => {
-        ws.getColumn(i + 1).width = colWidth(h, rows);
-      });
+      headers.forEach((h, i) => { ws.getColumn(i + 1).width = colWidth(h, rows); });
     }
 
-    function addAlertsSheet(ws, headers, rows) {
+    function addAlertsSheet(ws, rawHeaders, rows) {
+      const headers = filterActiveHeaders(rawHeaders, rows);
+      if (!headers.length) return;
+
       const sorted = [...rows].sort((a, b) => {
         const sa = SEV_ORDER[String(a.severity_norm || a.severity || "").toUpperCase()] ?? 99;
         const sb = SEV_ORDER[String(b.severity_norm || b.severity || "").toUpperCase()] ?? 99;
         return sa - sb;
       });
 
-      const hdrRow = ws.addRow(headers);
-      applyHeaderRow(hdrRow, null, headers.length);
-      ws.views = [{ state: "frozen", ySplit: 1 }];
-      ws.autoFilter = { from: { row: 1, column: 1 }, to: { row: 1, column: headers.length } };
+      ws.addRow(headers);
+      applyHeaderRow(ws, 1, headers.length);
+      ws.views = [{ state:"frozen", ySplit:1 }];
+      ws.autoFilter = { from:{row:1, column:1}, to:{row:1, column:headers.length} };
 
       const sevCol = headers.findIndex(h => h === "severity_norm" || h === "severity") + 1;
       const codeCol = headers.findIndex(h => h === "code") + 1;
+      const skipCols = new Set();
+      if (sevCol > 0) skipCols.add(sevCol);
+      if (codeCol > 0) skipCols.add(codeCol);
 
       for (let i = 0; i < sorted.length; i++) {
-        const vals = headers.map(h => sorted[i][h] ?? "");
-        const dr = ws.addRow(vals);
-        applyDataRow(dr, i + 1, {});
+        const vals = headers.map(h => coerceVal(sorted[i][h]));
+        ws.addRow(vals);
+        const rn = 2 + i;
+        applyDataRow(ws, rn, headers.length, i + 1, skipCols);
         headers.forEach((h, ci) => {
-          const fmt = numFmtForHeader(h);
-          if (fmt) dr.getCell(ci + 1).numFmt = fmt;
+          const v = vals[ci];
+          if (v instanceof Date) ws.getCell(rn, ci + 1).numFmt = "DD/MM/YYYY";
+          else if (typeof v === "number") { const fmt = numFmtFor(h); if (fmt) ws.getCell(rn, ci + 1).numFmt = fmt; }
         });
 
         if (sevCol > 0) {
           const sev = String(sorted[i].severity_norm || sorted[i].severity || "").toUpperCase();
-          const sc = dr.getCell(sevCol);
-          let fillArgb, fontColor, bold = true;
+          let fillArgb, fontColor;
           if (sev === "ALTA") { fillArgb = C.ROJO_ALTA; fontColor = C.BLANCO; }
           else if (sev === "MEDIA/ALTA") { fillArgb = C.NARANJA; fontColor = C.BLANCO; }
           else if (sev === "MEDIA") { fillArgb = C.AMARILLO; fontColor = C.TEXTO_DARK; }
           else { fillArgb = C.VERDE_BAJA; fontColor = C.BLANCO; }
-          sc.fill = { type: "pattern", patternType: "solid", fgColor: { argb: fillArgb } };
-          sc.font = { name: "Calibri", size: 10, bold, color: { argb: fontColor } };
+          const sc = ws.getCell(rn, sevCol);
+          sc.fill = { type:"pattern", patternType:"solid", fgColor:{argb:fillArgb} };
+          sc.font = { name:"Calibri", size:10, bold:true, color:{argb:fontColor} };
+          sc.border = THIN_BORDER;
         }
         if (codeCol > 0) {
-          const cc = dr.getCell(codeCol);
-          cc.fill = { type: "pattern", patternType: "solid", fgColor: { argb: C.AZUL_MARINO } };
-          cc.font = { name: "Calibri", size: 10, bold: false, color: { argb: C.BLANCO } };
+          const cc = ws.getCell(rn, codeCol);
+          cc.fill = { type:"pattern", patternType:"solid", fgColor:{argb:C.AZUL_MARINO} };
+          cc.font = { name:"Calibri", size:10, bold:false, color:{argb:C.BLANCO} };
+          cc.border = THIN_BORDER;
         }
       }
 
       headers.forEach((h, i) => {
-        const w = h === "code" ? 9 : colWidth(h, sorted);
-        ws.getColumn(i + 1).width = w;
+        ws.getColumn(i + 1).width = h === "code" ? 9 : colWidth(h, sorted);
       });
     }
 
@@ -1391,7 +1429,7 @@
     r3.height = 10;
 
     const r4 = wsPortada.addRow(["PARÁMETRO", "VALOR"]);
-    applyHeaderRow(r4, C.AZUL_MARINO, 2);
+    applyHeaderRow(wsPortada, r4.number, 2, C.AZUL_MARINO);
 
     const meta = result.metadata;
     const paramRows = [
