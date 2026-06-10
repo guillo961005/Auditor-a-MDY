@@ -1,0 +1,1615 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>3-Way Match + Análisis Avanzado (C14 ↔ Entradas ↔ OC) | Club + Conjunto</title>
+  <style>
+    :root{
+      --bg:#0b1020; --card:#111a33; --muted:#93a4c7; --text:#e8efff;
+      --ok:#2ecc71; --warn:#f1c40f; --bad:#e74c3c; --line:#23325f; --btn:#2b63ff;
+    }
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:linear-gradient(180deg,#070b16,#0b1020);color:var(--text)}
+    header{padding:18px 18px 10px;border-bottom:1px solid var(--line);background:rgba(10,15,30,.7);position:sticky;top:0;backdrop-filter: blur(8px);z-index:5}
+    h1{margin:0;font-size:18px;font-weight:700;letter-spacing:.2px}
+    .sub{margin-top:6px;color:var(--muted);font-size:12.5px;line-height:1.35}
+    main{padding:16px;max-width:1200px;margin:0 auto}
+    .grid{display:grid;grid-template-columns:1fr;gap:12px}
+    @media(min-width:980px){.grid{grid-template-columns:1.1fr .9fr}}
+    .card{background:rgba(17,26,51,.92);border:1px solid var(--line);border-radius:14px;padding:14px;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+    .row{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end}
+    label{display:block;font-size:12px;color:var(--muted);margin:0 0 6px}
+    input[type="date"], input[type="number"], input[type="text"]{
+      background:#0c1430;color:var(--text);border:1px solid var(--line);border-radius:10px;
+      padding:10px 10px;font-size:13px;outline:none;min-width:170px
+    }
+    input[type="file"]{color:var(--muted)}
+    .btn{
+      background:var(--btn);color:white;border:0;border-radius:12px;padding:10px 12px;
+      font-weight:700;font-size:13px;cursor:pointer;box-shadow:0 10px 20px rgba(43,99,255,.22)
+    }
+    .btn.secondary{background:#1b2b57;color:var(--text);box-shadow:none;border:1px solid var(--line)}
+    .btn:disabled{opacity:.45;cursor:not-allowed}
+    .pill{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;border:1px solid var(--line);color:var(--muted);font-size:12px}
+    .k{color:var(--muted);font-size:12px}
+    .status{padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:#0c1430;color:var(--muted);font-size:13px;line-height:1.35}
+    .status.ok{border-color:rgba(46,204,113,.45);color:#c9f7dc}
+    .status.warn{border-color:rgba(241,196,15,.45);color:#fff1bf}
+    .status.bad{border-color:rgba(231,76,60,.55);color:#ffd4cf}
+    details{border:1px solid var(--line);border-radius:14px;overflow:hidden;background:#0c1430;margin-top:10px}
+    summary{cursor:pointer;padding:10px 12px;font-weight:800;font-size:13px;background:rgba(12,20,48,.9)}
+    .details-body{padding:12px}
+    table{width:100%;border-collapse:collapse;font-size:12.5px}
+    th,td{border-bottom:1px solid var(--line);padding:7px 8px;vertical-align:top}
+    th{position:sticky;top:0;background:#0b1434;text-align:left;color:#cfe0ff;font-weight:800}
+    .right{text-align:right}
+    .muted{color:var(--muted)}
+    .tiny{font-size:11px;color:var(--muted)}
+    .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace}
+    .hr{height:1px;background:var(--line);margin:12px 0}
+  </style>
+</head>
+<body>
+<header>
+  <h1>3-Way Match + Análisis Avanzado (C14 ↔ Entradas ↔ OC) | Club + Conjunto</h1>
+  <div class="sub">
+    Procesa localmente en tu navegador (SheetJS). Señales ≠ prueba: las alertas son banderas rojas, no veredictos.
+    <span class="pill">UMBRAL_ANTIGUEDAD_DIAS = <span id="pillUmbral" class="mono">30</span></span>
+    <span class="pill">Separador órdenes ENTRADAS.Ordenes = <span class="mono">","</span></span>
+    <span class="pill">Llave OC: <span class="mono">ENTRADAS.Ordenes → OC.Consecutivo</span></span>
+  </div>
+</header>
+
+<main>
+  <div class="grid">
+    <div class="card">
+      <div class="row">
+        <div style="flex:1;min-width:270px">
+          <label>Archivo Excel maestro (6 hojas: Club_C14, Club_Entradas, Club_OC, Conjunto_C14, Conjunto_Entradas, Conjunto_OC)</label>
+          <input id="file" type="file" accept=".xlsx,.xls" />
+          <div class="tiny">Si quieres modo 100% offline: descarga <span class="mono">xlsx.full.min.js</span> y úsalo local en vez del CDN.</div>
+        </div>
+      </div>
+
+      <details>
+        <summary>Diagnóstico de hojas (parseo)</summary>
+        <div class="details-body">
+          <div id="diag" class="tiny muted">Carga un archivo para ver el diagnóstico.</div>
+        </div>
+      </details>
+
+      <div class="hr"></div>
+
+      <div class="row">
+        <div>
+          <label>Fecha inicio (incluye)</label>
+          <input id="startDate" type="date" />
+        </div>
+        <div>
+          <label>Fecha fin (incluye)</label>
+          <input id="endDate" type="date" />
+        </div>
+
+        <div>
+          <label>Tolerancia diferencia valor (%)</label>
+          <input id="tolPct" type="number" step="0.1" min="0" value="1" />
+        </div>
+        <div>
+          <label>y mínimo (COP)</label>
+          <input id="tolMin" type="number" step="1000" min="0" value="50000" />
+        </div>
+        <div>
+          <label>Burst (entradas/día/proveedor)</label>
+          <input id="burstN" type="number" step="1" min="2" value="3" />
+        </div>
+
+        <div style="margin-left:auto;display:flex;gap:10px;align-items:flex-end">
+          <button id="btnGen" class="btn" disabled>Generar tablas</button>
+          <button id="btnXls" class="btn secondary" disabled>Excel ejecutivo (XLS)</button>
+          <button id="btnJson" class="btn secondary" disabled>JSON para IA</button>
+        </div>
+      </div>
+
+      <div class="row" style="margin-top:10px">
+        <div>
+          <label>Umbral comité (COP)</label>
+          <input id="umbralComite" type="number" step="100000" min="0" value="2000000" />
+        </div>
+        <div>
+          <label>Ventana fraccionam. (días)</label>
+          <input id="ventanaFracc" type="number" step="1" min="1" value="30" />
+        </div>
+        <div>
+          <label>Lead time máx (días)</label>
+          <input id="leadTimeMax" type="number" step="1" min="0" value="45" />
+        </div>
+        <div>
+          <label>Lead time mín (días)</label>
+          <input id="leadTimeMin" type="number" step="1" min="0" value="0" />
+        </div>
+      </div>
+
+      <div class="hr"></div>
+      <div id="status" class="status">Carga un archivo para comenzar.</div>
+    </div>
+
+    <div class="card">
+      <div class="k" style="font-weight:900;margin-bottom:8px">Reglas clave</div>
+      <ul class="tiny" style="margin:0;padding-left:16px;line-height:1.5">
+        <li>Parseo hojas: <span class="mono">&lt;entidad&gt;_&lt;tipo&gt;</span>, entidad ∈ {Club, Conjunto}, tipo ∈ {C14, Entradas, OC} (case-insensitive).</li>
+        <li>Si falta una hoja requerida por entidad: error claro; procesa SOLO la entidad completa disponible y advierte.</li>
+        <li>Filtro de período: por entidad, sobre C14.FECHATRA. Universo inventario: C14.DESCRITRA contiene <span class="mono">"E :"</span> y se extrae entry_no con regex.</li>
+        <li>Join C14 ↔ ENTRADAS: <span class="mono">entry_no == Entrada</span>. Validaciones temporales: ENTRADAS.FechaDocumento (fallback FECHATRA de C14).</li>
+        <li>Join ENTRADAS ↔ OC: ENTRADAS.Ordenes split “,”, extrae dígitos, cruza con OC.Consecutivo.</li>
+        <li>3-way match correcto: control fuerte C14 vs Entradas por Entrada; control informativo ratio Entrada/OC; seguimiento OC sin entrada.</li>
+        <li><b>A10:</b> Fraccionamiento OC (ventana configurable vs umbral comité)</li>
+        <li><b>A11:</b> Lead time OC→Entrada excesivo o cero</li>
+        <li><b>A12:</b> Registros en fin de semana (Entrada y OC)</li>
+        <li><b>A13:</b> Entrada sin número de factura de proveedor</li>
+        <li><b>A14:</b> Proveedor de una sola transacción de alto valor</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:12px">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+      <div style="font-weight:900">Resultados</div>
+      <div class="tiny muted" id="resultMeta"></div>
+    </div>
+    <div class="hr"></div>
+    <div id="output" class="tiny muted">Aún no hay resultados.</div>
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
+
+<script>
+(() => {
+  const CONFIG = {
+    UMBRAL_ANTIGUEDAD_DIAS: 30,
+    DEFAULT_TOL_PCT: 1,
+    DEFAULT_TOL_MIN: 50000,
+    DEFAULT_BURST_N: 3,
+    SHEETS_REQUIRED: ["C14","ENTRADAS","OC"],
+    ENTITIES: ["CLUB","CONJUNTO"],
+    ENTRY_REGEX: /E\s*:\s*(\d+)/i
+  };
+  document.getElementById("pillUmbral").textContent = String(CONFIG.UMBRAL_ANTIGUEDAD_DIAS);
+
+  const el = (id) => document.getElementById(id);
+  const statusEl = el("status");
+  const outEl = el("output");
+  const metaEl = el("resultMeta");
+  const diagEl = el("diag");
+
+  let workbook = null;
+  let fileNameBase = "3way_match";
+  let lastResult = null;
+
+  function setStatus(msg, kind="") {
+    statusEl.className = "status" + (kind ? " " + kind : "");
+    statusEl.textContent = msg;
+  }
+
+  function normalizeHeader(h) {
+    if (h == null) return "";
+    return String(h)
+      .replace(/^\uFEFF/, "")
+      .trim()
+      .toUpperCase()
+      .replace(/\s+/g, " ");
+  }
+
+  function digitsOnly(x) {
+    if (x == null) return "";
+    const m = String(x).match(/\d+/g);
+    return m ? m.join("") : "";
+  }
+
+  function normalizeText(x) {
+    if (x == null) return "";
+    return String(x).trim().toUpperCase().replace(/\s+/g," ");
+  }
+
+  function toNumber(v) {
+    if (v == null || v === "") return 0;
+    if (typeof v === "number" && isFinite(v)) return v;
+    if (typeof v === "boolean") return v ? 1 : 0;
+    let s = String(v).trim();
+    if (!s) return 0;
+
+    s = s.replace(/[$\s]/g,"");
+
+    const hasDot = s.includes(".");
+    const hasComma = s.includes(",");
+
+    if (hasDot && hasComma) {
+      const lastDot = s.lastIndexOf(".");
+      const lastComma = s.lastIndexOf(",");
+      if (lastComma > lastDot) {
+        s = s.replace(/\./g,"").replace(",","."); // 1.234.567,89 -> 1234567.89
+      } else {
+        s = s.replace(/,/g,""); // 1,234,567.89 -> 1234567.89
+      }
+    } else if (hasComma && !hasDot) {
+      s = s.replace(",",".");
+    }
+
+    s = s.replace(/[^0-9\-\.]/g,"");
+    const n = Number(s);
+    return isFinite(n) ? n : 0;
+  }
+
+  function toDate(v) {
+    if (v == null || v === "") return null;
+    if (v instanceof Date && !isNaN(v)) return v;
+
+    if (typeof v === "number" && isFinite(v)) {
+      const o = XLSX.SSF.parse_date_code(v);
+      if (o && o.y && o.m && o.d) return new Date(o.y, o.m - 1, o.d, o.H||0, o.M||0, o.S||0);
+      return null;
+    }
+
+    const s = String(v).trim();
+    if (!s) return null;
+
+    let m = s.match(/^\s*(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})/);
+    if (m) return new Date(Number(m[1]), Number(m[2])-1, Number(m[3]));
+
+    m = s.match(/^\s*(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})/);
+    if (m) return new Date(Number(m[3]), Number(m[2])-1, Number(m[1]));
+
+    const d = new Date(s);
+    if (!isNaN(d)) return d;
+    return null;
+  }
+
+  function dateKey(d) {
+    if (!d || isNaN(d)) return "";
+    const y = d.getFullYear();
+    const m = String(d.getMonth()+1).padStart(2,"0");
+    const day = String(d.getDate()).padStart(2,"0");
+    return `${y}-${m}-${day}`;
+  }
+
+  function diffDays(a, b) {
+    const ms = (b.getTime() - a.getTime());
+    return Math.floor(ms / (24*3600*1000));
+  }
+
+  function readSheetAsObjects(ws) {
+    const rows = XLSX.utils.sheet_to_json(ws, { header: 1, raw: true, defval: null });
+    if (!rows || rows.length === 0) return { headers: [], data: [] };
+
+    const hdr = rows[0].map(normalizeHeader);
+    const idx = [];
+    const keys = [];
+    for (let c=0; c<hdr.length; c++) {
+      const k = hdr[c];
+      if (!k) continue;
+      idx.push(c);
+      keys.push(k);
+    }
+
+    const data = [];
+    for (let r=1; r<rows.length; r++) {
+      const row = rows[r];
+      if (!row || row.every(x => x == null || String(x).trim() === "")) continue;
+      const obj = {};
+      for (let i=0; i<idx.length; i++) obj[keys[i]] = row[idx[i]];
+      data.push(obj);
+    }
+    return { headers: keys, data };
+  }
+
+  function mapAliases(type, obj) {
+    const o = {};
+    const get = (...names) => {
+      for (const n of names) if (n in obj) return obj[n];
+      return null;
+    };
+
+    if (type === "C14") {
+      o.NITTRA = get("NITTRA","NIT","NIT TERCERO","NIT_TERCERO");
+      o.IDTERCERO = get("IDTERCERO","ID TERCERO","TERCERO");
+      o.NOMBRETER = get("NOMBRETER","NOMBRE TERCERO","NOMBRETERCERO");
+      o.FECHATRA = get("FECHATRA","FECHA TRA","FECHA");
+      o.DESCRITRA = get("DESCRITRA","DESCRIPCION","DESCRIPCIÓN");
+      o.DEBITOS = get("DEBITOS","DÉBITOS","DEBITO","DEBITO(S)");
+      o.CREDITOS = get("CREDITOS","CRÉDITOS","CREDITO","CREDITO(S)");
+      o.CONSECUTRA = get("CONSECUTRA");
+      o.IDFUENTE = get("IDFUENTE","FUENTE");
+      o.NUMDOCTRA = get("NUMDOCTRA","NUMDOC","DOCUMENTO");
+      return o;
+    }
+
+    if (type === "ENTRADAS") {
+      o.PROVEEDOR = get("PROVEEDOR","NITPROVEEDOR","NIT PROVEEDOR");
+      o.NOMBREPROVEEDOR = get("NOMBREPROVEEDOR","NOMBRE PROVEEDOR");
+      o.ORDENES = get("ORDENES","OC","ORDEN","ORDENES OC");
+      o.ENTRADA = get("ENTRADA","NO ENTRADA","NRO ENTRADA");
+      o.FECHADOCUMENTO = get("FECHADOCUMENTO","FECHA DOCUMENTO","FECHA");
+      o.ESTADO = get("ESTADO");
+      o.DOCUMENTO = get("DOCUMENTO");
+      o.BODEGANOMBRE = get("BODEGANOMBRE","BODEGA");
+      o.CANTIDAD = get("CANTIDAD","CANT");
+      o.VALORUNIDAD = get("VALORUNIDAD","VALOR UNIDAD","VR UNIDAD");
+      o.COSTOTOTAL = get("COSTOTOTAL","COSTO TOTAL","TOTAL");
+      o.FACTURAPROVEEDOR = get("FACTURAPROVEEDOR","FACTURA","FACTURA PROVEEDOR");
+      o.IDARTICULO = get("IDARTICULO","CODIGOARTICULO","CODIGO ARTICULO","CÓDIGO");
+      o.NOMBREITEM = get("NOMBRE","NOMBREITEM","NOMBRE ÍTEM","NOMBRE ARTICULO","NOMBREARTICULO");
+      return o;
+    }
+
+    if (type === "OC") {
+      o.CONSECUTIVO = get("CONSECUTIVO","OC","ORDEN","ORDEN COMPRA","NRO ORDEN");
+      o.FECHADOCUMENTO = get("FECHADOCUMENTO","FECHA DOCUMENTO","FECHA");
+      o.ESTADO = get("ESTADO");
+      o.TERCERO = get("TERCERO","NIT","NIT TERCERO");
+      o.NOMBRETERCERO = get("NOMBRETERCERO","NOMBRE TERCERO");
+      o.TOTAL = get("TOTAL","VALOR","VR TOTAL");
+      o.USUARIO = get("USUARIO","USER");
+      o.NOMBREUSUARIO = get("NOMBREUSUARIO","NOMBREUSARIO","NOMBRE USUARIO");
+      o.RECHAZADO = get("RECHAZADO","RECHAZADA","RECHAZADO?");
+      o.MOTIVORECHAZO = get("MOTIVORECHAZO","MOTIVO RECHAZO");
+      o.OBSERVACIONRECHAZO = get("OBSERVACIONRECHAZO","OBSERVACION RECHAZO","OBSERVACIÓN RECHAZO");
+      return o;
+    }
+
+    return obj;
+  }
+
+  function validateMinColumns(type, rowsMapped) {
+    const must = {
+      "C14": ["NITTRA","IDTERCERO","NOMBRETER","FECHATRA","DESCRITRA","DEBITOS","CREDITOS"],
+      "ENTRADAS": ["PROVEEDOR","NOMBREPROVEEDOR","ORDENES","ENTRADA","FECHADOCUMENTO","COSTOTOTAL","FACTURAPROVEEDOR","IDARTICULO","NOMBREITEM"],
+      "OC": ["CONSECUTIVO","FECHADOCUMENTO","ESTADO","TERCERO","NOMBRETERCERO","TOTAL"]
+    }[type];
+
+    const missing = [];
+    for (const col of must) {
+      const anyVal = rowsMapped.some(r => r[col] != null && String(r[col]).trim() !== "");
+      if (!anyVal) missing.push(col);
+    }
+    return missing;
+  }
+
+  function parseSheetName(name) {
+    const s = String(name || "");
+    const m = s.match(/^\s*([^_]+)\s*_\s*(.+?)\s*$/);
+    if (!m) return null;
+    const entity = normalizeText(m[1]);
+    let type = normalizeText(m[2]);
+
+    if (type === "ENTRADA") type = "ENTRADAS";
+    if (type === "ORDENES" || type === "ORDEN" || type === "ORDENESCOMPRA") type = "OC";
+    if (type === "O.C" || type === "O C") type = "OC";
+    if (type === "ENTRADAS") type = "ENTRADAS";
+    return { entity, type };
+  }
+
+  function truthy(v) {
+    const s = normalizeText(v);
+    return s === "SI" || s === "SÍ" || s === "YES" || s === "TRUE" || s === "1" || s === "X";
+  }
+
+  function computeTolerance(absDiff, base, tolPct, tolMin) {
+    const pct = (tolPct || 0) / 100;
+    const th = Math.max(tolMin || 0, Math.abs(base || 0) * pct);
+    return absDiff > th;
+  }
+
+  function buildEntity(entityName, sheets) {
+    const c14Raw = sheets.C14.data.map(r => mapAliases("C14", r));
+    const c14Missing = validateMinColumns("C14", c14Raw);
+    if (c14Missing.length) throw new Error(`[${entityName}] Falta(n) columnas mínimas en C14: ${c14Missing.join(", ")}`);
+
+    const c14 = c14Raw.map(r => {
+      const d = toDate(r.FECHATRA);
+      const deb = toNumber(r.DEBITOS);
+      const cre = toNumber(r.CREDITOS);
+      const descr = r.DESCRITRA == null ? "" : String(r.DESCRITRA);
+      const hasE = /E\s*:/i.test(descr);
+      const m = descr.match(CONFIG.ENTRY_REGEX);
+      const entryNo = m ? m[1] : "";
+      const net = (cre < 0) ? (deb + cre) : (deb - cre);
+
+      return {
+        NITTRA: digitsOnly(r.NITTRA) || String(r.NITTRA || "").trim(),
+        NOMBRETER: String(r.NOMBRETER || "").trim(),
+        IDTERCERO: String(r.IDTERCERO || "").trim(),
+        FECHATRA: d,
+        FECHATRA_KEY: d ? dateKey(d) : "",
+        DESCRITRA: descr,
+        DEBITOS: deb,
+        CREDITOS: cre,
+        NETO: net,
+        HAS_E: hasE,
+        ENTRY_NO: entryNo,
+        ENTRY_EXTRACT_OK: !!entryNo,
+        ENTRY_EXTRACT_FAIL: hasE && !entryNo
+      };
+    });
+
+    const entRaw = sheets.ENTRADAS.data.map(r => mapAliases("ENTRADAS", r));
+    const entMissing = validateMinColumns("ENTRADAS", entRaw);
+    if (entMissing.length) throw new Error(`[${entityName}] Falta(n) columnas mínimas en ENTRADAS: ${entMissing.join(", ")}`);
+
+    const entradasLines = entRaw.map(r => {
+      const entrada = digitsOnly(r.ENTRADA) || String(r.ENTRADA || "").trim();
+      const fd = toDate(r.FECHADOCUMENTO);
+      return {
+        ENTRADA: entrada,
+        PROVEEDOR: digitsOnly(r.PROVEEDOR) || String(r.PROVEEDOR || "").trim(),
+        NOMBREPROVEEDOR: String(r.NOMBREPROVEEDOR || "").trim(),
+        ORDENES: (r.ORDENES == null) ? "" : String(r.ORDENES),
+        FECHADOCUMENTO: fd,
+        FECHA_KEY: fd ? dateKey(fd) : "",
+        ESTADO: String(r.ESTADO || "").trim(),
+        DOCUMENTO: String(r.DOCUMENTO || "").trim(),
+        BODEGANOMBRE: String(r.BODEGANOMBRE || "").trim(),
+        CANTIDAD: toNumber(r.CANTIDAD),
+        VALORUNIDAD: toNumber(r.VALORUNIDAD),
+        COSTOTOTAL: toNumber(r.COSTOTOTAL),
+        FACTURAPROVEEDOR: String(r.FACTURAPROVEEDOR || "").trim(),
+        IDARTICULO: String(r.IDARTICULO || "").trim(),
+        NOMBREITEM: String(r.NOMBREITEM || "").trim()
+      };
+    }).filter(x => x.ENTRADA);
+
+    const ocRaw = sheets.OC.data.map(r => mapAliases("OC", r));
+    const ocMissing = validateMinColumns("OC", ocRaw);
+    if (ocMissing.length) throw new Error(`[${entityName}] Falta(n) columnas mínimas en OC: ${ocMissing.join(", ")}`);
+
+    const ocLines = ocRaw.map(r => ({
+      CONSECUTIVO: digitsOnly(r.CONSECUTIVO) || String(r.CONSECUTIVO || "").trim(),
+      FECHADOCUMENTO: toDate(r.FECHADOCUMENTO),
+      ESTADO: String(r.ESTADO || "").trim(),
+      TERCERO: digitsOnly(r.TERCERO) || String(r.TERCERO || "").trim(),
+      NOMBRETERCERO: String(r.NOMBRETERCERO || "").trim(),
+      TOTAL_LINEA: toNumber(r.TOTAL),
+      USUARIO: String(r.USUARIO || "").trim(),
+      NOMBREUSUARIO: String(r.NOMBREUSUARIO || "").trim(),
+      RECHAZADO: truthy(r.RECHAZADO),
+      MOTIVORECHAZO: String(r.MOTIVORECHAZO || "").trim(),
+      OBSERVACIONRECHAZO: String(r.OBSERVACIONRECHAZO || "").trim()
+    })).filter(x => x.CONSECUTIVO);
+
+    return { entityName, c14, entradasLines, ocLines };
+  }
+
+  function processEntity(entityObj, periodStart, periodEnd, tolPct, tolMin, burstN, umbralComite, ventanaFracc, leadTimeMax, leadTimeMin) {
+    const entity = entityObj.entityName;
+
+    let c14InvalidDate = 0;
+    const c14InRange = entityObj.c14.filter(r => {
+      if (!r.FECHATRA || isNaN(r.FECHATRA)) { c14InvalidDate++; return false; }
+      if (periodStart && r.FECHATRA < periodStart) return false;
+      if (periodEnd && r.FECHATRA > periodEnd) return false;
+      return true;
+    });
+
+    const c14Universe = c14InRange.filter(r => r.HAS_E);
+    const c14EWithoutNumber = c14Universe.filter(r => r.ENTRY_EXTRACT_FAIL).length;
+
+    const c14ByEntry = new Map();
+    for (const r of c14Universe) {
+      if (!r.ENTRY_NO) continue;
+      const k = String(r.ENTRY_NO);
+      if (!c14ByEntry.has(k)) {
+        c14ByEntry.set(k, {
+          ENTRY_NO: k,
+          NITTRA: r.NITTRA,
+          NOMBRETER: r.NOMBRETER,
+          FECHA_FALLBACK: r.FECHATRA,
+          TOTAL_C14_NETO: 0,
+          ROWS: 0
+        });
+      }
+      const g = c14ByEntry.get(k);
+      g.TOTAL_C14_NETO += r.NETO;
+      g.ROWS += 1;
+      if (r.FECHATRA && g.FECHA_FALLBACK && r.FECHATRA < g.FECHA_FALLBACK) g.FECHA_FALLBACK = r.FECHATRA;
+    }
+
+    const entByEntrada = new Map();
+    const facturaMap = new Map();
+    for (const ln of entityObj.entradasLines) {
+      const k = String(ln.ENTRADA);
+      if (!entByEntrada.has(k)) {
+        entByEntrada.set(k, {
+          ENTRADA: k,
+          PROVEEDOR: ln.PROVEEDOR,
+          NOMBREPROVEEDOR: ln.NOMBREPROVEEDOR,
+          FECHA_ENTRADA: ln.FECHADOCUMENTO,
+          ESTADO: ln.ESTADO,
+          ORDENES_RAW: [],
+          TOTAL_ENTRADAS: 0,
+          ITEMS: new Map(),
+          FACTURAS: new Set()
+        });
+      }
+      const g = entByEntrada.get(k);
+      g.TOTAL_ENTRADAS += ln.COSTOTOTAL;
+      if (ln.FECHADOCUMENTO && (!g.FECHA_ENTRADA || ln.FECHADOCUMENTO < g.FECHA_ENTRADA)) g.FECHA_ENTRADA = ln.FECHADOCUMENTO;
+      if (ln.ORDENES) g.ORDENES_RAW.push(ln.ORDENES);
+      if (ln.FACTURAPROVEEDOR) {
+        g.FACTURAS.add(ln.FACTURAPROVEEDOR);
+        const provKey = digitsOnly(ln.PROVEEDOR) || normalizeText(ln.NOMBREPROVEEDOR);
+        const facKey = provKey + "|" + normalizeText(ln.FACTURAPROVEEDOR);
+        if (!facturaMap.has(facKey)) facturaMap.set(facKey, new Set());
+        facturaMap.get(facKey).add(k);
+      }
+      const itemKey = `${ln.IDARTICULO}|${normalizeText(ln.NOMBREITEM)}`;
+      if (!g.ITEMS.has(itemKey)) g.ITEMS.set(itemKey, { IDARTICULO: ln.IDARTICULO, NOMBRE: ln.NOMBREITEM, CANTIDAD: 0, COSTO: 0 });
+      const it = g.ITEMS.get(itemKey);
+      it.CANTIDAD += ln.CANTIDAD;
+      it.COSTO += ln.COSTOTOTAL;
+    }
+
+    const ocByConsec = new Map();
+    for (const ln of entityObj.ocLines) {
+      const k = String(ln.CONSECUTIVO);
+      if (!ocByConsec.has(k)) {
+        ocByConsec.set(k, {
+          CONSECUTIVO: k,
+          FECHA_OC: ln.FECHADOCUMENTO,
+          ESTADO: ln.ESTADO,
+          TERCERO: ln.TERCERO,
+          NOMBRETERCERO: ln.NOMBRETERCERO,
+          TOTAL_OC: 0,
+          USUARIO: ln.USUARIO,
+          NOMBREUSUARIO: ln.NOMBREUSUARIO,
+          RECHAZADO: false,
+          MOTIVORECHAZO: "",
+          OBSERVACIONRECHAZO: ""
+        });
+      }
+      const g = ocByConsec.get(k);
+      g.TOTAL_OC += ln.TOTAL_LINEA;
+      if (ln.FECHADOCUMENTO && (!g.FECHA_OC || ln.FECHADOCUMENTO < g.FECHA_OC)) g.FECHA_OC = ln.FECHADOCUMENTO;
+      g.RECHAZADO = g.RECHAZADO || ln.RECHAZADO;
+      if (ln.MOTIVORECHAZO && !g.MOTIVORECHAZO) g.MOTIVORECHAZO = ln.MOTIVORECHAZO;
+      if (ln.OBSERVACIONRECHAZO && !g.OBSERVACIONRECHAZO) g.OBSERVACIONRECHAZO = ln.OBSERVACIONRECHAZO;
+      if (ln.USUARIO && !g.USUARIO) g.USUARIO = ln.USUARIO;
+      if (ln.NOMBREUSUARIO && !g.NOMBREUSUARIO) g.NOMBREUSUARIO = ln.NOMBREUSUARIO;
+    }
+
+    const entradasConsol = [];
+    const alerts = [];
+    const usedOCs = new Set();
+
+    // A10: Fraccionamiento de OC por proveedor en ventana deslizante
+    const umbralComiteNum = Number(umbralComite || 2000000);
+    const ventanaFraccNum = Number(ventanaFracc || 30);
+    {
+      const ocsByTercero = new Map();
+      for (const [, oc] of ocByConsec.entries()) {
+        if (!oc.FECHA_OC) continue;
+        const key = digitsOnly(oc.TERCERO) || normalizeText(oc.NOMBRETERCERO);
+        if (!key) continue;
+        if (!ocsByTercero.has(key)) ocsByTercero.set(key, []);
+        ocsByTercero.get(key).push(oc);
+      }
+      for (const [provKey, ocs] of ocsByTercero.entries()) {
+        ocs.sort((a, b) => a.FECHA_OC - b.FECHA_OC);
+        for (let i = 0; i < ocs.length; i++) {
+          if (ocs[i].TOTAL_OC >= umbralComiteNum) continue;
+          const ventanaOCs = [ocs[i]];
+          for (let j = i + 1; j < ocs.length; j++) {
+            if (ocs[j].TOTAL_OC >= umbralComiteNum) continue;
+            if (diffDays(ocs[i].FECHA_OC, ocs[j].FECHA_OC) > ventanaFraccNum) break;
+            ventanaOCs.push(ocs[j]);
+          }
+          if (ventanaOCs.length < 2) continue;
+          const suma = ventanaOCs.reduce((s, o) => s + o.TOTAL_OC, 0);
+          if (suma > umbralComiteNum) {
+            alerts.push({
+              entity,
+              code: "A10",
+              severity: "ALTA",
+              title: "Fraccionamiento de OC (posible evasión de comité)",
+              details: `Proveedor=${provKey}. Suma=${suma.toFixed(2)}. N_OC=${ventanaOCs.length}. Ventana=${ventanaFraccNum}d. Umbral=${umbralComiteNum}.`,
+              PROVEEDOR_KEY: provKey,
+              NOMBRETERCERO: ocs[i].NOMBRETERCERO,
+              SUMA_ACUMULADA: suma,
+              N_OC_EN_VENTANA: ventanaOCs.length,
+              FECHA_PRIMERA: dateKey(ventanaOCs[0].FECHA_OC),
+              FECHA_ULTIMA: dateKey(ventanaOCs[ventanaOCs.length - 1].FECHA_OC),
+              UMBRAL_COMITE: umbralComiteNum
+            });
+            i += ventanaOCs.length - 1;
+          }
+        }
+      }
+    }
+
+    const tolPctNum = Number(tolPct || 0);
+    const tolMinNum = Number(tolMin || 0);
+
+    function addAlert(code, severity, title, details, ref) {
+      alerts.push({ entity, code, severity, title, details, ...ref });
+    }
+
+    for (const [entryNo, c14g] of c14ByEntry.entries()) {
+      const entg = entByEntrada.get(entryNo);
+      if (!entg) {
+        addAlert("A3", "ALTA", "Entrada en C14 sin match en ENTRADAS",
+          `entry_no=${entryNo}. C14_NETO=${c14g.TOTAL_C14_NETO.toFixed(2)}.`,
+          { ENTRY_NO: entryNo, NITTRA: c14g.NITTRA, NOMBRETER: c14g.NOMBRETER }
+        );
+      }
+    }
+
+    for (const [entrada, entg] of entByEntrada.entries()) {
+      const c14g = c14ByEntry.get(entrada);
+      const totalC14 = c14g ? c14g.TOTAL_C14_NETO : 0;
+      const totalEnt = entg.TOTAL_ENTRADAS;
+      const dif = totalC14 - totalEnt;
+
+      const ordersSet = new Set();
+      for (const raw of entg.ORDENES_RAW) {
+        const parts = String(raw).split(",").map(s => s.trim()).filter(Boolean);
+        for (const p of parts) {
+          const num = digitsOnly(p);
+          if (num) ordersSet.add(num);
+        }
+      }
+      const ordersList = Array.from(ordersSet);
+
+      let fechaEntrada = entg.FECHA_ENTRADA;
+      if (!fechaEntrada && c14g && c14g.FECHA_FALLBACK) fechaEntrada = c14g.FECHA_FALLBACK;
+
+      const flagDifValor = c14g ? computeTolerance(Math.abs(dif), totalEnt, tolPctNum, tolMinNum) : false;
+      const provKeyEnt = digitsOnly(entg.PROVEEDOR) || normalizeText(entg.NOMBREPROVEEDOR);
+      const provKeyC14 = c14g ? (digitsOnly(c14g.NITTRA) || normalizeText(c14g.NOMBRETER)) : "";
+      const flagDifProveedor = (provKeyC14 && provKeyEnt) ? (provKeyC14 !== provKeyEnt) : false;
+
+      if (c14g && flagDifValor) {
+        addAlert("A5","ALTA","Diferencia C14 vs ENTRADAS > tolerancia",
+          `Entrada=${entrada}. C14_NETO=${totalC14.toFixed(2)} vs ENTRADAS=${totalEnt.toFixed(2)}. Dif=${dif.toFixed(2)}.`,
+          { ENTRADA: entrada, TOTAL_C14_NETO: totalC14, TOTAL_ENTRADAS: totalEnt, DIF: dif }
+        );
+      }
+
+      if (c14g && flagDifProveedor) {
+        addAlert("A6","MEDIA/ALTA","Proveedor discrepante (C14 vs ENTRADAS)",
+          `Entrada=${entrada}. C14(${c14g.NITTRA} - ${c14g.NOMBRETER}) vs ENTRADAS(${entg.PROVEEDOR} - ${entg.NOMBREPROVEEDOR}).`,
+          { ENTRADA: entrada }
+        );
+      }
+
+      if (ordersList.length > 1) {
+        addAlert("A4","MEDIA","Entrada con múltiples OCs",
+          `Entrada=${entrada}. OCs=${ordersList.join(", ")}.`,
+          { ENTRADA: entrada, OCS: ordersList.join(", ") }
+        );
+      }
+
+      const ocInfo = [];
+      let ocPosteriorCount = 0;
+      let ocAntiguaCount = 0;
+      let ocRechazadaCount = 0;
+
+      for (const ocId of ordersList) {
+        const oc = ocByConsec.get(ocId);
+        if (!oc) continue;
+        usedOCs.add(ocId);
+
+        const fechaOC = oc.FECHA_OC;
+        let flagPosterior = false, flagAntigua = false;
+        let antigDays = null;
+
+        if (fechaOC && fechaEntrada) {
+          flagPosterior = fechaOC > fechaEntrada;
+          antigDays = diffDays(fechaOC, fechaEntrada);
+          flagAntigua = antigDays > CONFIG.UMBRAL_ANTIGUEDAD_DIAS;
+        }
+
+        if (flagPosterior) {
+          ocPosteriorCount++;
+          addAlert("A1","ALTA","OC posterior a entrada",
+            `Entrada=${entrada} | OC=${ocId}. FechaOC=${dateKey(fechaOC)} > FechaEntrada=${dateKey(fechaEntrada)}.`,
+            { ENTRADA: entrada, OC: ocId }
+          );
+        }
+        if (flagAntigua) {
+          ocAntiguaCount++;
+          addAlert("A2","MEDIA/ALTA","OC con antigüedad > 30 días vs entrada",
+            `Entrada=${entrada} | OC=${ocId}. Antigüedad=${antigDays} días.`,
+            { ENTRADA: entrada, OC: ocId, ANTIGUEDAD_DIAS: antigDays }
+          );
+        }
+
+        // A11a / A11b: Lead time OC → Entrada
+        if (fechaOC && fechaEntrada) {
+          const diasLead = diffDays(fechaOC, fechaEntrada);
+          const leadMaxNum = Number(leadTimeMax != null ? leadTimeMax : 45);
+          const leadMinNum = Number(leadTimeMin != null ? leadTimeMin : 0);
+          if (diasLead > leadMaxNum) {
+            addAlert("A11a","MEDIA/ALTA","Lead time OC→Entrada excesivo",
+              `Entrada=${entrada} | OC=${ocId}. DiasLead=${diasLead} > Máx=${leadMaxNum}.`,
+              { ENTRADA: entrada, OC: ocId, DIAS_LEAD_TIME: diasLead, FECHA_OC: dateKey(fechaOC), FECHA_ENTRADA: dateKey(fechaEntrada) }
+            );
+          } else if (diasLead <= leadMinNum) {
+            addAlert("A11b","MEDIA","Lead time OC→Entrada cero o negativo",
+              `Entrada=${entrada} | OC=${ocId}. DiasLead=${diasLead} <= Mín=${leadMinNum}.`,
+              { ENTRADA: entrada, OC: ocId, DIAS_LEAD_TIME: diasLead, FECHA_OC: dateKey(fechaOC), FECHA_ENTRADA: dateKey(fechaEntrada) }
+            );
+          }
+        }
+
+        if (oc.RECHAZADO) {
+          ocRechazadaCount++;
+          addAlert("A9","ALTA","OC rechazada vinculada a Entrada",
+            `Entrada=${entrada} | OC=${ocId}. Rechazado=Sí.`,
+            { ENTRADA: entrada, OC: ocId }
+          );
+        }
+
+        const ratio = (oc.TOTAL_OC > 0) ? (totalEnt / oc.TOTAL_OC) : null;
+        ocInfo.push({
+          OC: ocId,
+          TOTAL_OC: oc.TOTAL_OC,
+          FECHA_OC: oc.FECHA_OC ? dateKey(oc.FECHA_OC) : "",
+          ESTADO_OC: oc.ESTADO,
+          RATIO_ENTRADA_OC: ratio == null ? "" : ratio
+        });
+      }
+
+      const sinOC = ordersList.length === 0;
+
+      entradasConsol.push({
+        ENTITY: entity,
+        ENTRADA: entrada,
+        FECHA_ENTRADA: fechaEntrada ? dateKey(fechaEntrada) : "",
+        PROVEEDOR: entg.PROVEEDOR,
+        NOMBREPROVEEDOR: entg.NOMBREPROVEEDOR,
+        TOTAL_ENTRADAS: totalEnt,
+        TOTAL_C14_NETO: totalC14,
+        DIF_C14_MENOS_ENTRADAS: dif,
+        FLAG_DIF_VALOR: c14g ? (flagDifValor ? "SI" : "NO") : "N/A",
+        FLAG_DIF_PROVEEDOR: c14g ? (flagDifProveedor ? "SI" : "NO") : "N/A",
+        OCS_LIST: ordersList.join(", "),
+        MULTI_OC: ordersList.length > 1 ? "SI" : "NO",
+        SIN_OC: sinOC ? "SI" : "NO",
+        OC_POSTERIOR_COUNT: ocPosteriorCount,
+        OC_ANTIGUA_COUNT: ocAntiguaCount,
+        OC_RECHAZADA_COUNT: ocRechazadaCount,
+        FACTURAS: Array.from(entg.FACTURAS).join(" | "),
+        ITEMS_RESUMEN: Array.from(entg.ITEMS.values()).slice(0,8)
+          .map(it => `${it.IDARTICULO}:${it.NOMBRE} (cant=${it.CANTIDAD.toFixed(2)}, $=${it.COSTO.toFixed(2)})`).join(" | "),
+        OC_INFO: ocInfo
+      });
+    }
+
+    for (const [facKey, entradasSet] of facturaMap.entries()) {
+      if (entradasSet.size >= 2) {
+        const [provKey, facturaNorm] = facKey.split("|");
+        addAlert("A7","MEDIA/ALTA","FacturaProveedor repetida en múltiples Entradas",
+          `Factura=${facturaNorm}. Entradas: ${Array.from(entradasSet).join(", ")}.`,
+          { FACTURA: facturaNorm, PROVEEDOR_KEY: provKey }
+        );
+      }
+    }
+
+    const burstMap = new Map();
+    for (const e of entradasConsol) {
+      const provKey = digitsOnly(e.PROVEEDOR) || normalizeText(e.NOMBREPROVEEDOR);
+      const dk = e.FECHA_ENTRADA || "";
+      if (!provKey || !dk) continue;
+      const k = provKey + "|" + dk;
+      if (!burstMap.has(k)) burstMap.set(k, []);
+      burstMap.get(k).push(e.ENTRADA);
+    }
+    for (const [k, arr] of burstMap.entries()) {
+      if (arr.length >= burstN) {
+        const [provKey, dk] = k.split("|");
+        addAlert("A8","MEDIA","Burst de entradas (mismo día / mismo proveedor)",
+          `ProveedorKey=${provKey}. Fecha=${dk}. Entradas=${arr.join(", ")} (n=${arr.length}).`,
+          { PROVEEDOR_KEY: provKey, FECHA: dk, N: arr.length }
+        );
+      }
+    }
+
+    // A12a: Entrada registrada en fin de semana
+    for (const e of entradasConsol) {
+      const fd = entByEntrada.get(e.ENTRADA);
+      const fechaEnt = fd ? fd.FECHA_ENTRADA : null;
+      if (fechaEnt) {
+        const dow = fechaEnt.getDay();
+        if (dow === 0 || dow === 6) {
+          alerts.push({
+            entity, code: "A12a", severity: "MEDIA",
+            title: "Entrada registrada en fin de semana",
+            details: `Entrada=${e.ENTRADA} | Proveedor=${e.PROVEEDOR}. Fecha=${e.FECHA_ENTRADA}.`,
+            ENTRADA: e.ENTRADA, PROVEEDOR: e.PROVEEDOR,
+            FECHA_ENTRADA: e.FECHA_ENTRADA,
+            DIA_SEMANA: dow === 6 ? "Sábado" : "Domingo"
+          });
+        }
+      }
+    }
+
+    // A13: Entrada sin número de factura de proveedor
+    for (const e of entradasConsol) {
+      const fd = entByEntrada.get(e.ENTRADA);
+      if (!fd) continue;
+      const facturas = fd.FACTURAS;
+      const sinFactura = facturas.size === 0 || Array.from(facturas).every(f => !f || !f.trim());
+      if (sinFactura) {
+        alerts.push({
+          entity, code: "A13", severity: "MEDIA/ALTA",
+          title: "Entrada sin factura de proveedor registrada",
+          details: `Entrada=${e.ENTRADA} | Proveedor=${e.PROVEEDOR}.`,
+          ENTRADA: e.ENTRADA, PROVEEDOR: e.PROVEEDOR,
+          NOMBREPROVEEDOR: e.NOMBREPROVEEDOR,
+          FECHA_ENTRADA: e.FECHA_ENTRADA,
+          TOTAL_ENTRADAS: e.TOTAL_ENTRADAS
+        });
+      }
+    }
+
+    // A14: Proveedor con única transacción de alto valor
+    {
+      const provFreq = new Map();
+      for (const e of entradasConsol) {
+        const k = digitsOnly(e.PROVEEDOR) || normalizeText(e.NOMBREPROVEEDOR);
+        if (!k) continue;
+        if (!provFreq.has(k)) provFreq.set(k, { count: 0, entry: null });
+        const p = provFreq.get(k);
+        p.count++;
+        p.entry = e;
+      }
+      const allTotals = entradasConsol.map(e => e.TOTAL_ENTRADAS || 0).sort((a, b) => a - b);
+      const p75idx = Math.floor(allTotals.length * 0.75);
+      const p75 = allTotals.length > 0 ? allTotals[p75idx] : 0;
+      for (const [k, p] of provFreq.entries()) {
+        if (p.count === 1 && (p.entry.TOTAL_ENTRADAS || 0) > p75) {
+          alerts.push({
+            entity, code: "A14", severity: "MEDIA",
+            title: "Proveedor con única transacción de alto valor en el período",
+            details: `Proveedor=${k}. Total=${(p.entry.TOTAL_ENTRADAS||0).toFixed(2)}. P75=${p75.toFixed(2)}.`,
+            PROVEEDOR: p.entry.PROVEEDOR,
+            NOMBREPROVEEDOR: p.entry.NOMBREPROVEEDOR,
+            TOTAL_ENTRADAS: p.entry.TOTAL_ENTRADAS,
+            P75_UNIVERSO: p75
+          });
+        }
+      }
+    }
+
+    // A12b: OC creada en fin de semana
+    for (const [ocId, oc] of ocByConsec.entries()) {
+      if (oc.FECHA_OC) {
+        const dow = oc.FECHA_OC.getDay();
+        if (dow === 0 || dow === 6) {
+          alerts.push({
+            entity, code: "A12b", severity: "MEDIA",
+            title: "OC creada en fin de semana",
+            details: `OC=${ocId} | Tercero=${oc.TERCERO}. FechaOC=${dateKey(oc.FECHA_OC)}.`,
+            OC: ocId, TERCERO: oc.TERCERO, FECHA_OC: dateKey(oc.FECHA_OC),
+            DIA_SEMANA: dow === 6 ? "Sábado" : "Domingo"
+          });
+        }
+      }
+    }
+
+    const ordenesConsol = [];
+    for (const [ocId, oc] of ocByConsec.entries()) {
+      const sinEntrada = !usedOCs.has(ocId);
+      ordenesConsol.push({
+        ENTITY: entity,
+        CONSECUTIVO: ocId,
+        FECHA_OC: oc.FECHA_OC ? dateKey(oc.FECHA_OC) : "",
+        ESTADO: oc.ESTADO,
+        TERCERO: oc.TERCERO,
+        NOMBRETERCERO: oc.NOMBRETERCERO,
+        TOTAL_OC: oc.TOTAL_OC,
+        USUARIO: oc.USUARIO,
+        NOMBREUSUARIO: oc.NOMBREUSUARIO,
+        RECHAZADO: oc.RECHAZADO ? "SI" : "NO",
+        MOTIVORECHAZO: oc.MOTIVORECHAZO,
+        OBSERVACIONRECHAZO: oc.OBSERVACIONRECHAZO,
+        ORDEN_SIN_ENTRADA: sinEntrada ? "SI" : "NO"
+      });
+    }
+
+    const kpis = {
+      entity,
+      periodo: { start: periodStart ? dateKey(periodStart) : "", end: periodEnd ? dateKey(periodEnd) : "" },
+      c14_invalid_date_rows_excluded: c14InvalidDate,
+      c14_e_sin_numero: c14EWithoutNumber,
+      entradas_detectadas_c14: c14ByEntry.size,
+      entradas_sin_detalle_en_entradas: Array.from(c14ByEntry.keys()).filter(k => !entByEntrada.has(k)).length,
+      entradas_sin_oc: entradasConsol.filter(e => e.SIN_OC === "SI").length,
+      entradas_multi_oc: entradasConsol.filter(e => e.MULTI_OC === "SI").length,
+      oc_posterior_a_entrada: alerts.filter(a => a.code === "A1").length,
+      oc_antiguedad_mayor_30: alerts.filter(a => a.code === "A2").length,
+      discrepancias_proveedor: alerts.filter(a => a.code === "A6").length,
+      factura_duplicada: alerts.filter(a => a.code === "A7").length,
+      dif_valor_mayor_tolerancia: alerts.filter(a => a.code === "A5").length,
+      oc_rechazada_vinculada: alerts.filter(a => a.code === "A9").length,
+      oc_sin_entrada: ordenesConsol.filter(o => o.ORDEN_SIN_ENTRADA === "SI").length,
+      fraccionamiento_oc: alerts.filter(a => a.code === "A10").length,
+      lead_time_excesivo: alerts.filter(a => a.code === "A11a").length,
+      lead_time_cero: alerts.filter(a => a.code === "A11b").length,
+      entradas_fin_semana: alerts.filter(a => a.code === "A12a").length,
+      oc_fin_semana: alerts.filter(a => a.code === "A12b").length,
+      entradas_sin_factura: alerts.filter(a => a.code === "A13").length,
+      proveedor_unico_alto_valor: alerts.filter(a => a.code === "A14").length,
+      total_c14_neto_universo: Array.from(c14ByEntry.values()).reduce((s,x) => s + x.TOTAL_C14_NETO, 0),
+      total_entradas_universo: entradasConsol.reduce((s,x) => s + (x.TOTAL_ENTRADAS||0), 0)
+    };
+    kpis.diferencia_total_c14_menos_entradas = kpis.total_c14_neto_universo - kpis.total_entradas_universo;
+
+    const alertsNorm = alerts.map(a => {
+      const sev = String(a.severity || "").toUpperCase();
+      let sevNorm = "MEDIA";
+      if (sev === "ALTA") sevNorm = "ALTA";
+      else if (sev === "MEDIA/ALTA") sevNorm = "MEDIA/ALTA";
+      else if (sev.includes("ALTA")) sevNorm = "ALTA";
+      else if (sev.includes("BAJA")) sevNorm = "BAJA";
+      return { ...a, severity_norm: sevNorm };
+    });
+
+    return { entity, kpis, entradasConsol, ordenesConsol, alerts: alertsNorm };
+  }
+
+  function buildCrossEntityAlerts(resultClub, resultConj, burstN) {
+    const cross = [];
+    const add = (code, severity, title, details, ref) => cross.push({ code, severity, title, details, ...ref });
+    if (!resultClub || !resultConj) return cross;
+
+    const mapFac = (res) => {
+      const m = new Map();
+      for (const e of res.entradasConsol) {
+        const provKey = digitsOnly(e.PROVEEDOR) || normalizeText(e.NOMBREPROVEEDOR);
+        const facts = String(e.FACTURAS || "").split("|").map(x => x.trim()).filter(Boolean);
+        for (const f of facts) {
+          const key = provKey + "|" + normalizeText(f);
+          if (!m.has(key)) m.set(key, new Set());
+          m.get(key).add(e.ENTRADA);
+        }
+      }
+      return m;
+    };
+
+    const facClub = mapFac(resultClub);
+    const facConj = mapFac(resultConj);
+
+    for (const [key, setClub] of facClub.entries()) {
+      if (facConj.has(key)) {
+        const setConj = facConj.get(key);
+        const [provKey, facturaNorm] = key.split("|");
+        add("X1","MEDIA/ALTA","FacturaProveedor repetida en Club y Conjunto",
+          `Factura=${facturaNorm} | ProveedorKey=${provKey}. Club(entradas=${Array.from(setClub).join(", ")}) vs Conjunto(entradas=${Array.from(setConj).join(", ")}).`,
+          { FACTURA: facturaNorm, PROVEEDOR_KEY: provKey }
+        );
+      }
+    }
+
+    const ocSet = (res) => new Set(res.ordenesConsol.map(o => String(o.CONSECUTIVO)));
+    const ocClub = ocSet(resultClub), ocConj = ocSet(resultConj);
+    for (const id of ocClub) if (ocConj.has(id)) add("X2","BAJA/MEDIA","Consecutivo de OC aparece en ambas entidades", `OC=${id} aparece en Club y Conjunto.`, { OC: id });
+
+    function burstKeys(res) {
+      const m = new Map();
+      for (const e of res.entradasConsol) {
+        const provKey = digitsOnly(e.PROVEEDOR) || normalizeText(e.NOMBREPROVEEDOR);
+        const dk = e.FECHA_ENTRADA || "";
+        if (!provKey || !dk) continue;
+        const k = provKey + "|" + dk;
+        m.set(k, (m.get(k) || 0) + 1);
+      }
+      const hits = new Set();
+      for (const [k,n] of m.entries()) if (n >= burstN) hits.add(k);
+      return hits;
+    }
+    const bClub = burstKeys(resultClub), bConj = burstKeys(resultConj);
+    for (const k of bClub) if (bConj.has(k)) {
+      const [provKey, dk] = k.split("|");
+      add("X3","MEDIA","Burst de proveedor en ambas entidades el mismo día", `ProveedorKey=${provKey} | Fecha=${dk} (>=${burstN}).`, { PROVEEDOR_KEY: provKey, FECHA: dk });
+    }
+
+    return cross;
+  }
+
+  function buildJsonExport(meta, resClub, resConj, crossAlerts) {
+    const entities = {};
+    if (resClub) entities.Club = { kpis: resClub.kpis, entradas_resumen: resClub.entradasConsol, ordenes_resumen: resClub.ordenesConsol, alerts: resClub.alerts };
+    if (resConj) entities.Conjunto = { kpis: resConj.kpis, entradas_resumen: resConj.entradasConsol, ordenes_resumen: resConj.ordenesConsol, alerts: resConj.alerts };
+
+    const resumenPorEntidad = [];
+    for (const k of ["Club","Conjunto"]) {
+      if (!entities[k]) continue;
+      const p = entities[k].kpis;
+      resumenPorEntidad.push({
+        entidad: k,
+        entradas_detectadas_c14: p.entradas_detectadas_c14,
+        entradas_sin_detalle: p.entradas_sin_detalle_en_entradas,
+        entradas_sin_oc: p.entradas_sin_oc,
+        entradas_multi_oc: p.entradas_multi_oc,
+        oc_posterior: p.oc_posterior_a_entrada,
+        oc_antigua: p.oc_antiguedad_mayor_30,
+        oc_sin_entrada: p.oc_sin_entrada,
+        discrepancias_proveedor: p.discrepancias_proveedor,
+        factura_duplicada: p.factura_duplicada,
+        dif_valor_mayor_tolerancia: p.dif_valor_mayor_tolerancia,
+        oc_rechazada_vinculada: p.oc_rechazada_vinculada,
+        total_c14_neto_universo: p.total_c14_neto_universo,
+        total_entradas_universo: p.total_entradas_universo,
+        diferencia_total_c14_menos_entradas: p.diferencia_total_c14_menos_entradas
+      });
+    }
+
+    const kpisGlobal = {
+      entradas_detectadas_c14_total: resumenPorEntidad.reduce((s,x)=>s+(x.entradas_detectadas_c14||0),0),
+      entradas_sin_detalle_total: resumenPorEntidad.reduce((s,x)=>s+(x.entradas_sin_detalle||0),0),
+      entradas_sin_oc_total: resumenPorEntidad.reduce((s,x)=>s+(x.entradas_sin_oc||0),0),
+      oc_posterior_total: resumenPorEntidad.reduce((s,x)=>s+(x.oc_posterior||0),0),
+      oc_antigua_total: resumenPorEntidad.reduce((s,x)=>s+(x.oc_antigua||0),0),
+      dif_valor_mayor_tolerancia_total: resumenPorEntidad.reduce((s,x)=>s+(x.dif_valor_mayor_tolerancia||0),0),
+      factura_duplicada_total: resumenPorEntidad.reduce((s,x)=>s+(x.factura_duplicada||0),0),
+      total_c14_neto_universo: resumenPorEntidad.reduce((s,x)=>s+(x.total_c14_neto_universo||0),0),
+      total_entradas_universo: resumenPorEntidad.reduce((s,x)=>s+(x.total_entradas_universo||0),0),
+      diferencia_total_c14_menos_entradas: resumenPorEntidad.reduce((s,x)=>s+(x.diferencia_total_c14_menos_entradas||0),0)
+    };
+
+    return {
+      metadata: meta,
+      entities,
+      global: {
+        kpis_globales: kpisGlobal,
+        resumen_por_entidad: resumenPorEntidad,
+        alerts_cross_entidad: crossAlerts || []
+      }
+    };
+  }
+
+  async function buildExecutiveWorkbookXLSJ(result) {
+    const C = {
+      AZUL_MARINO: "FF1A3560", DORADO: "FFB8962E", GRIS_CLARO: "FFF2F4F8",
+      BLANCO: "FFFFFFFF", ROJO_ALTA: "FFC0392B", NARANJA: "FFE67E22",
+      AMARILLO: "FFF1C40F", VERDE_BAJA: "FF27AE60", TEXTO_DARK: "FF1A1A1A"
+    };
+
+    const SEV_ORDER = { "ALTA": 0, "MEDIA/ALTA": 1, "MEDIA": 2, "BAJA": 3 };
+
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = "MDY Auditoría";
+
+    function colWidth(header, rows) {
+      let max = header.length;
+      for (let i = 0; i < Math.min(rows.length, 100); i++) {
+        const v = rows[i][header];
+        if (v != null) max = Math.max(max, String(v).length);
+      }
+      return Math.min(50, Math.max(8, max + 2));
+    }
+
+    function applyHeaderRow(row, fillArgb) {
+      row.height = 22;
+      row.eachCell(cell => {
+        cell.fill = { type: "pattern", patternType: "solid", fgColor: { argb: fillArgb || C.AZUL_MARINO } };
+        cell.font = { name: "Calibri", size: 10, bold: true, color: { argb: C.BLANCO } };
+        cell.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
+        cell.border = { top: { style: "thin", color: { argb: "FFD0D3DA" } }, left: { style: "thin", color: { argb: "FFD0D3DA" } }, bottom: { style: "thin", color: { argb: "FFD0D3DA" } }, right: { style: "thin", color: { argb: "FFD0D3DA" } } };
+      });
+    }
+
+    function applyDataRow(row, rowIdx, overrideCells) {
+      row.height = 16;
+      const bg = (rowIdx % 2 === 0) ? C.BLANCO : C.GRIS_CLARO;
+      row.eachCell({ includeEmpty: true }, (cell, colNum) => {
+        if (!overrideCells || !overrideCells[colNum]) {
+          cell.fill = { type: "pattern", patternType: "solid", fgColor: { argb: bg } };
+          cell.font = { name: "Calibri", size: 10, color: { argb: C.TEXTO_DARK } };
+        }
+        cell.border = { top: { style: "thin", color: { argb: "FFD0D3DA" } }, left: { style: "thin", color: { argb: "FFD0D3DA" } }, bottom: { style: "thin", color: { argb: "FFD0D3DA" } }, right: { style: "thin", color: { argb: "FFD0D3DA" } } };
+      });
+    }
+
+    function numFmtForHeader(h) {
+      const u = h.toUpperCase();
+      if (/TOTAL|NETO|DIF|COSTO|SUMA|VALOR|MONTO/.test(u)) return "#,##0";
+      if (/RATIO/.test(u)) return "0.00%";
+      if (/FECHA/.test(u)) return "DD/MM/YYYY";
+      return null;
+    }
+
+    function addDataSheet(ws, headers, rows, titleRow) {
+      let dataStartRow = 1;
+      if (titleRow) {
+        const tr = ws.addRow([titleRow]);
+        ws.mergeCells(1, 1, 1, headers.length);
+        const cell = tr.getCell(1);
+        cell.fill = { type: "pattern", patternType: "solid", fgColor: { argb: C.DORADO } };
+        cell.font = { name: "Calibri", size: 12, bold: true, color: { argb: C.BLANCO } };
+        cell.alignment = { horizontal: "center", vertical: "middle" };
+        tr.height = 24;
+        dataStartRow = 2;
+      }
+
+      const hdrRow = ws.addRow(headers);
+      applyHeaderRow(hdrRow);
+
+      ws.views = [{ state: "frozen", ySplit: dataStartRow }];
+      ws.autoFilter = { from: { row: dataStartRow, column: 1 }, to: { row: dataStartRow, column: headers.length } };
+
+      for (let i = 0; i < rows.length; i++) {
+        const vals = headers.map(h => {
+          const v = rows[i][h];
+          return (v == null) ? "" : v;
+        });
+        const dr = ws.addRow(vals);
+        applyDataRow(dr, i + 1);
+        headers.forEach((h, ci) => {
+          const fmt = numFmtForHeader(h);
+          if (fmt) dr.getCell(ci + 1).numFmt = fmt;
+        });
+      }
+
+      headers.forEach((h, i) => {
+        ws.getColumn(i + 1).width = colWidth(h, rows);
+      });
+    }
+
+    function addAlertsSheet(ws, headers, rows) {
+      const sorted = [...rows].sort((a, b) => {
+        const sa = SEV_ORDER[String(a.severity_norm || a.severity || "").toUpperCase()] ?? 99;
+        const sb = SEV_ORDER[String(b.severity_norm || b.severity || "").toUpperCase()] ?? 99;
+        return sa - sb;
+      });
+
+      const hdrRow = ws.addRow(headers);
+      applyHeaderRow(hdrRow);
+      ws.views = [{ state: "frozen", ySplit: 1 }];
+      ws.autoFilter = { from: { row: 1, column: 1 }, to: { row: 1, column: headers.length } };
+
+      const sevCol = headers.findIndex(h => h === "severity_norm" || h === "severity") + 1;
+      const codeCol = headers.findIndex(h => h === "code") + 1;
+
+      for (let i = 0; i < sorted.length; i++) {
+        const vals = headers.map(h => sorted[i][h] ?? "");
+        const dr = ws.addRow(vals);
+        applyDataRow(dr, i + 1, {});
+        headers.forEach((h, ci) => {
+          const fmt = numFmtForHeader(h);
+          if (fmt) dr.getCell(ci + 1).numFmt = fmt;
+        });
+
+        if (sevCol > 0) {
+          const sev = String(sorted[i].severity_norm || sorted[i].severity || "").toUpperCase();
+          const sc = dr.getCell(sevCol);
+          let fillArgb, fontColor, bold = true;
+          if (sev === "ALTA") { fillArgb = C.ROJO_ALTA; fontColor = C.BLANCO; }
+          else if (sev === "MEDIA/ALTA") { fillArgb = C.NARANJA; fontColor = C.BLANCO; }
+          else if (sev === "MEDIA") { fillArgb = C.AMARILLO; fontColor = C.TEXTO_DARK; }
+          else { fillArgb = C.VERDE_BAJA; fontColor = C.BLANCO; }
+          sc.fill = { type: "pattern", patternType: "solid", fgColor: { argb: fillArgb } };
+          sc.font = { name: "Calibri", size: 10, bold, color: { argb: fontColor } };
+        }
+        if (codeCol > 0) {
+          const cc = dr.getCell(codeCol);
+          cc.fill = { type: "pattern", patternType: "solid", fgColor: { argb: C.AZUL_MARINO } };
+          cc.font = { name: "Calibri", size: 10, bold: false, color: { argb: C.BLANCO } };
+        }
+      }
+
+      headers.forEach((h, i) => {
+        const w = h === "code" ? 9 : colWidth(h, sorted);
+        ws.getColumn(i + 1).width = w;
+      });
+    }
+
+    // ── PORTADA ──
+    const wsPortada = workbook.addWorksheet("Portada");
+    const r1 = wsPortada.addRow(["AUDITORÍA INTERNA – 3-WAY MATCH INVENTARIOS (C14 ↔ ENTRADAS ↔ OC)"]);
+    wsPortada.mergeCells("A1:E1");
+    r1.height = 32;
+    const c1 = r1.getCell(1);
+    c1.fill = { type: "pattern", patternType: "solid", fgColor: { argb: C.AZUL_MARINO } };
+    c1.font = { name: "Calibri", size: 14, bold: true, color: { argb: C.BLANCO } };
+    c1.alignment = { horizontal: "center", vertical: "middle" };
+
+    const r2 = wsPortada.addRow(["Corporación Mesa de Yeguas Country Club + Conjunto Recreacional Campestre"]);
+    wsPortada.mergeCells("A2:E2");
+    r2.height = 26;
+    const c2 = r2.getCell(1);
+    c2.fill = { type: "pattern", patternType: "solid", fgColor: { argb: C.DORADO } };
+    c2.font = { name: "Calibri", size: 12, bold: true, color: { argb: C.BLANCO } };
+    c2.alignment = { horizontal: "center", vertical: "middle" };
+
+    const r3 = wsPortada.addRow([]);
+    r3.height = 10;
+
+    const r4 = wsPortada.addRow(["PARÁMETRO", "VALOR"]);
+    r4.height = 22;
+    ["A4","B4"].forEach(ref => {
+      const cell = wsPortada.getCell(ref);
+      cell.fill = { type: "pattern", patternType: "solid", fgColor: { argb: C.AZUL_MARINO } };
+      cell.font = { name: "Calibri", size: 10, bold: true, color: { argb: C.BLANCO } };
+    });
+
+    const meta = result.metadata;
+    const paramRows = [
+      ["Período", `${meta.periodo.start || "(sin inicio)"} a ${meta.periodo.end || "(sin fin)"}`],
+      ["Umbral antigüedad (días)", meta.umbral_antiguedad_dias],
+      ["Tolerancia (%)", meta.tolerancias.pct],
+      ["Tolerancia mín (COP)", meta.tolerancias.min_cop],
+      ["BurstN", meta.burst_threshold],
+      ["Umbral comité (COP)", meta.umbral_comite],
+      ["Ventana fraccionamiento (días)", meta.ventana_fracc_dias],
+      ["Lead time máx (días)", meta.lead_time_max_dias],
+      ["Lead time mín (días)", meta.lead_time_min_dias],
+      ["Fecha generación", meta.generado_en]
+    ];
+    for (let i = 0; i < paramRows.length; i++) {
+      const pr = wsPortada.addRow(paramRows[i]);
+      pr.height = 16;
+      const bg = (i % 2 === 0) ? C.BLANCO : C.GRIS_CLARO;
+      [1, 2].forEach(ci => {
+        const pc = pr.getCell(ci);
+        pc.fill = { type: "pattern", patternType: "solid", fgColor: { argb: bg } };
+        pc.font = { name: "Calibri", size: 10, color: { argb: C.TEXTO_DARK } };
+        pc.border = { top: { style: "thin", color: { argb: "FFD0D3DA" } }, left: { style: "thin", color: { argb: "FFD0D3DA" } }, bottom: { style: "thin", color: { argb: "FFD0D3DA" } }, right: { style: "thin", color: { argb: "FFD0D3DA" } } };
+      });
+    }
+
+    wsPortada.addRow([]).height = 10;
+    const legHeader = wsPortada.addRow(["LEYENDA DE SEVERIDADES", ""]);
+    legHeader.height = 20;
+    const lhc = legHeader.getCell(1);
+    lhc.fill = { type: "pattern", patternType: "solid", fgColor: { argb: C.AZUL_MARINO } };
+    lhc.font = { name: "Calibri", size: 10, bold: true, color: { argb: C.BLANCO } };
+
+    const sevLegend = [
+      [C.ROJO_ALTA, C.BLANCO, "ALTA", "Requiere atención inmediata y corroboración documental"],
+      [C.NARANJA, C.BLANCO, "MEDIA/ALTA", "Analizar en el período siguiente a la extracción"],
+      [C.AMARILLO, C.TEXTO_DARK, "MEDIA", "Seguimiento en proceso de auditoría"],
+      [C.VERDE_BAJA, C.BLANCO, "BAJA", "Informativo, bajo impacto esperado"]
+    ];
+    for (const [fillA, fontA, sev, desc] of sevLegend) {
+      const lr = wsPortada.addRow([sev, desc]);
+      lr.height = 18;
+      [1, 2].forEach(ci => {
+        const lc = lr.getCell(ci);
+        lc.fill = { type: "pattern", patternType: "solid", fgColor: { argb: fillA } };
+        lc.font = { name: "Calibri", size: 10, bold: true, color: { argb: fontA } };
+        lc.border = { top: { style: "thin", color: { argb: "FFD0D3DA" } }, left: { style: "thin", color: { argb: "FFD0D3DA" } }, bottom: { style: "thin", color: { argb: "FFD0D3DA" } }, right: { style: "thin", color: { argb: "FFD0D3DA" } } };
+      });
+    }
+    wsPortada.getColumn(1).width = 30;
+    wsPortada.getColumn(2).width = 55;
+
+    // ── GLOBAL RESUMEN ──
+    const wsGR = workbook.addWorksheet("Global_Resumen");
+    const grRows = result.global.resumen_por_entidad || [];
+    const grHeaders = grRows.length ? Object.keys(grRows[0]) : [];
+    addDataSheet(wsGR, grHeaders, grRows, "RESUMEN CONSOLIDADO POR ENTIDAD");
+
+    // ── CROSS ALERTAS ──
+    const wsCross = workbook.addWorksheet("Cross_Alertas");
+    const crossRows = (result.global.alerts_cross_entidad || []).map(a => ({
+      code: a.code, severity_norm: a.severity || a.severity_norm, title: a.title, details: a.details,
+      FACTURA: a.FACTURA || "", PROVEEDOR_KEY: a.PROVEEDOR_KEY || "", OC: a.OC || ""
+    }));
+    const crossHeaders = crossRows.length ? Object.keys(crossRows[0]) : ["code","severity_norm","title","details","FACTURA","PROVEEDOR_KEY","OC"];
+    addAlertsSheet(wsCross, crossHeaders, crossRows);
+
+    // ── PER-ENTITY SHEETS ──
+    const sheetOrder = [
+      { ent: "Club", suffix: "Alertas", type: "alerts" },
+      { ent: "Club", suffix: "Entradas", type: "data" },
+      { ent: "Club", suffix: "Ordenes", type: "data" },
+      { ent: "Conjunto", suffix: "Alertas", type: "alerts" },
+      { ent: "Conjunto", suffix: "Entradas", type: "data" },
+      { ent: "Conjunto", suffix: "Ordenes", type: "data" }
+    ];
+
+    for (const { ent, suffix, type } of sheetOrder) {
+      const entData = result.entities[ent];
+      if (!entData) continue;
+
+      const wsName = `${ent}_${suffix}`;
+      const ws = workbook.addWorksheet(wsName);
+
+      if (type === "alerts") {
+        const alertRows = (entData.alerts || []).map(a => ({
+          entity: a.entity, code: a.code, severity_norm: a.severity_norm || a.severity,
+          title: a.title, details: a.details,
+          ENTRADA: a.ENTRADA || a.ENTRY_NO || "", OC: a.OC || "",
+          FACTURA: a.FACTURA || "", FECHA: a.FECHA || "",
+          PROVEEDOR_KEY: a.PROVEEDOR_KEY || "", DIAS_LEAD_TIME: a.DIAS_LEAD_TIME ?? "",
+          FECHA_OC: a.FECHA_OC || "", FECHA_ENTRADA: a.FECHA_ENTRADA || "",
+          DIA_SEMANA: a.DIA_SEMANA || "", SUMA_ACUMULADA: a.SUMA_ACUMULADA ?? "",
+          N_OC_EN_VENTANA: a.N_OC_EN_VENTANA ?? "", TOTAL_ENTRADAS: a.TOTAL_ENTRADAS ?? "",
+          P75_UNIVERSO: a.P75_UNIVERSO ?? ""
+        }));
+        const alertHdrs = alertRows.length ? Object.keys(alertRows[0]) : ["entity","code","severity_norm","title","details"];
+        addAlertsSheet(ws, alertHdrs, alertRows);
+      } else if (suffix === "Entradas") {
+        const rows = entData.entradas_resumen || [];
+        const hdrs = rows.length ? Object.keys(rows[0]) : [];
+        addDataSheet(ws, hdrs, rows);
+      } else {
+        const rows = entData.ordenes_resumen || [];
+        const hdrs = rows.length ? Object.keys(rows[0]) : [];
+        addDataSheet(ws, hdrs, rows);
+      }
+    }
+
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+    downloadBlob(blob, fileNameBase + "__Auditoria_Ejecutivo.xlsx");
+  }
+
+  function downloadBlob(blob, filename) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  function renderResults(result) {
+    const resumen = result.global.resumen_por_entidad || [];
+    const cross = result.global.alerts_cross_entidad || [];
+
+    function mkTable(rows, cols, maxRows=40) {
+      const head = cols.map(c => `<th>${c}</th>`).join("");
+      const body = (rows || []).slice(0,maxRows).map(r => {
+        const tds = cols.map(c => {
+          const v = r[c];
+          const isNum = typeof v === "number";
+          return `<td class="${isNum ? "right mono" : ""}">${(v == null ? "" : String(v))}</td>`;
+        }).join("");
+        return `<tr>${tds}</tr>`;
+      }).join("");
+      const note = (rows && rows.length > maxRows) ? `<div class="tiny muted">Mostrando ${maxRows} de ${rows.length} filas (exporta para detalle completo).</div>` : "";
+      return `${note}<div style="max-height:360px;overflow:auto;border:1px solid var(--line);border-radius:12px"><table><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>`;
+    }
+
+    const parts = [];
+    parts.push(`<details open><summary>Consolidado global</summary><div class="details-body">`);
+    if (resumen.length) parts.push(mkTable(resumen, Object.keys(resumen[0] || {}), 10));
+    else parts.push(`<div class="tiny muted">Sin resumen global (no hay entidades procesadas).</div>`);
+    parts.push(`<div class="hr"></div><div style="font-weight:900;margin-bottom:6px">Alertas cross-entidad</div>`);
+    if (cross.length) parts.push(mkTable(cross, Object.keys(cross[0] || {}), 20));
+    else parts.push(`<div class="tiny muted">Sin coincidencias cross-entidad.</div>`);
+    parts.push(`</div></details>`);
+
+    for (const entName of ["Club","Conjunto"]) {
+      const ent = result.entities[entName];
+      if (!ent) continue;
+      parts.push(`<details><summary>${entName} | KPIs + Tablas</summary><div class="details-body">`);
+      parts.push(`<div class="tiny muted">KPIs clave:</div>`);
+      parts.push(mkTable([ent.kpis], Object.keys(ent.kpis), 5));
+      parts.push(`<div class="hr"></div><div style="font-weight:900;margin-bottom:6px">Entradas consolidadas</div>`);
+      parts.push(mkTable(ent.entradas_resumen, Object.keys(ent.entradas_resumen[0] || {}), 40));
+      parts.push(`<div class="hr"></div><div style="font-weight:900;margin-bottom:6px">Alertas determinísticas</div>`);
+      if (ent.alerts.length) parts.push(mkTable(ent.alerts.map(a=>({code:a.code,severity:a.severity_norm,title:a.title,details:a.details})), ["code","severity","title","details"], 60));
+      else parts.push(`<div class="tiny muted">Sin alertas determinísticas bajo reglas actuales.</div>`);
+      parts.push(`<div class="hr"></div><div style="font-weight:900;margin-bottom:6px">Órdenes (OC) + ORDEN_SIN_ENTRADA</div>`);
+      parts.push(mkTable(ent.ordenes_resumen, Object.keys(ent.ordenes_resumen[0] || {}), 40));
+      parts.push(`</div></details>`);
+    }
+
+    outEl.innerHTML = parts.join("");
+  }
+
+  el("file").addEventListener("change", async (ev) => {
+    lastResult = null;
+    el("btnXls").disabled = true;
+    el("btnJson").disabled = true;
+    outEl.textContent = "Aún no hay resultados.";
+    metaEl.textContent = "";
+    diagEl.textContent = "Cargando…";
+
+    const f = ev.target.files && ev.target.files[0];
+    if (!f) return;
+
+    fileNameBase = f.name.replace(/\.(xlsx|xls)$/i,"");
+    setStatus("Leyendo archivo…", "");
+
+    try {
+      const buf = await f.arrayBuffer();
+      workbook = XLSX.read(buf, { type: "array", raw: true, cellDates: false, cellText: false });
+      el("btnGen").disabled = false;
+
+      // Diagnóstico parseo
+      const lines = [];
+      lines.push(`Hojas detectadas: ${workbook.SheetNames.length}`);
+      for (const sName of workbook.SheetNames) {
+        const p = parseSheetName(sName);
+        lines.push(`${sName} -> ${p ? (p.entity + " / " + p.type) : "NO PARSE"}`);
+      }
+      diagEl.innerHTML = `<pre class="mono" style="white-space:pre-wrap;margin:0">${lines.join("\n")}</pre>`;
+
+      if (!el("startDate").value || !el("endDate").value) {
+        const today = new Date();
+        const end = dateKey(today);
+        const start = new Date(today.getTime() - 30*24*3600*1000);
+        el("startDate").value = dateKey(start);
+        el("endDate").value = end;
+      }
+
+      setStatus(`Archivo cargado. Hojas detectadas: ${workbook.SheetNames.length}. Configura período y ejecuta "Generar tablas".`, "ok");
+    } catch (e) {
+      console.error(e);
+      workbook = null;
+      el("btnGen").disabled = true;
+      diagEl.textContent = "Error leyendo archivo.";
+      setStatus("Error leyendo el archivo. Verifica que sea .xlsx/.xls válido.", "bad");
+    }
+  });
+
+  el("btnGen").addEventListener("click", () => {
+    if (!workbook) return;
+
+    const start = el("startDate").value ? toDate(el("startDate").value) : null;
+    const end = el("endDate").value ? toDate(el("endDate").value) : null;
+    const tolPct = Number(el("tolPct").value || CONFIG.DEFAULT_TOL_PCT);
+    const tolMin = Number(el("tolMin").value || CONFIG.DEFAULT_TOL_MIN);
+    const burstN = Number(el("burstN").value || CONFIG.DEFAULT_BURST_N);
+    const umbralComite = Number(el("umbralComite").value || 2000000);
+    const ventanaFracc = Number(el("ventanaFracc").value || 30);
+    const leadTimeMax  = Number(el("leadTimeMax").value  || 45);
+    const leadTimeMin  = Number(el("leadTimeMin").value  || 0);
+
+    if (start && end && start > end) {
+      setStatus("Rango de fechas inválido: inicio > fin.", "bad");
+      return;
+    }
+
+    setStatus("Procesando…", "");
+
+    try {
+      const indexed = {
+        CLUB: { C14:null, ENTRADAS:null, OC:null },
+        CONJUNTO: { C14:null, ENTRADAS:null, OC:null }
+      };
+
+      for (const sName of workbook.SheetNames) {
+        const p = parseSheetName(sName);
+        if (!p) continue;
+        if (!CONFIG.ENTITIES.includes(p.entity)) continue;
+        const t = p.type;
+        if (!CONFIG.SHEETS_REQUIRED.includes(t)) continue;
+        indexed[p.entity][t] = sName;
+      }
+
+      const missing = [];
+      for (const ent of CONFIG.ENTITIES) {
+        for (const t of CONFIG.SHEETS_REQUIRED) {
+          if (!indexed[ent][t]) missing.push(`${ent}_${t}`);
+        }
+      }
+
+      const complete = {};
+      for (const ent of CONFIG.ENTITIES) complete[ent] = CONFIG.SHEETS_REQUIRED.every(t => !!indexed[ent][t]);
+
+      const canProcessClub = complete.CLUB;
+      const canProcessConj = complete.CONJUNTO;
+
+      if (!canProcessClub && !canProcessConj) {
+        setStatus(`Error: no hay ninguna entidad completa. Faltan hojas: ${missing.join(", ")}`, "bad");
+        return;
+      }
+
+      if (missing.length) setStatus(`Advertencia: faltan hojas (${missing.join(", ")}). Se procesará SOLO la entidad completa disponible.`, "warn");
+      else setStatus("Hojas OK. Ejecutando cruces y alertas…", "ok");
+
+      function getSheetsForEntity(entKey) {
+        const res = {};
+        for (const t of CONFIG.SHEETS_REQUIRED) {
+          const sName = indexed[entKey][t];
+          if (!sName) continue;
+          res[t] = readSheetAsObjects(workbook.Sheets[sName]);
+        }
+        return res;
+      }
+
+      let resClub = null, resConj = null;
+
+      if (canProcessClub) {
+        const sheets = getSheetsForEntity("CLUB");
+        const entityObj = buildEntity("Club", sheets);
+        resClub = processEntity(entityObj, start, end, tolPct, tolMin, burstN, umbralComite, ventanaFracc, leadTimeMax, leadTimeMin);
+      }
+
+      if (canProcessConj) {
+        const sheets = getSheetsForEntity("CONJUNTO");
+        const entityObj = buildEntity("Conjunto", sheets);
+        resConj = processEntity(entityObj, start, end, tolPct, tolMin, burstN, umbralComite, ventanaFracc, leadTimeMax, leadTimeMin);
+      }
+
+      const crossAlerts = buildCrossEntityAlerts(resClub, resConj, burstN);
+
+      const metadata = {
+        periodo: { start: start ? dateKey(start) : "", end: end ? dateKey(end) : "" },
+        umbral_antiguedad_dias: CONFIG.UMBRAL_ANTIGUEDAD_DIAS,
+        tolerancias: { pct: tolPct, min_cop: tolMin },
+        separador_ordenes: ",",
+        definiciones: {
+          entry_no_regex: CONFIG.ENTRY_REGEX.toString(),
+          llave_oc: "ENTRADAS.Ordenes -> OC.Consecutivo",
+          control_fuerte: "C14 vs ENTRADAS por Entrada",
+          control_informativo: "ratio Entrada/OC (solo OCs vinculadas a entradas)",
+          seguimiento: "OC sin entrada"
+        },
+        burst_threshold: burstN,
+        umbral_comite: umbralComite,
+        ventana_fracc_dias: ventanaFracc,
+        lead_time_max_dias: leadTimeMax,
+        lead_time_min_dias: leadTimeMin,
+        generado_en: new Date().toISOString()
+      };
+
+      const jsonExport = buildJsonExport(metadata, resClub, resConj, crossAlerts);
+
+      const xlsxPayload = {
+        metadata,
+        entities: {
+          Club: resClub ? { kpis: resClub.kpis, entradas_resumen: resClub.entradasConsol, ordenes_resumen: resClub.ordenesConsol, alerts: resClub.alerts } : null,
+          Conjunto: resConj ? { kpis: resConj.kpis, entradas_resumen: resConj.entradasConsol, ordenes_resumen: resConj.ordenesConsol, alerts: resConj.alerts } : null
+        },
+        global: { resumen_por_entidad: jsonExport.global.resumen_por_entidad, alerts_cross_entidad: crossAlerts }
+      };
+
+      lastResult = { json: jsonExport, xlsxPayload };
+
+      el("btnXls").disabled = false;
+      el("btnJson").disabled = false;
+
+      metaEl.textContent = `Período: ${metadata.periodo.start || "(sin inicio)"} → ${metadata.periodo.end || "(sin fin)"} | Tol: ${tolPct}% + min ${tolMin} | BurstN: ${burstN}`;
+
+      renderResults({
+        metadata,
+        entities: {
+          Club: resClub ? { kpis: resClub.kpis, entradas_resumen: resClub.entradasConsol, ordenes_resumen: resClub.ordenesConsol, alerts: resClub.alerts } : null,
+          Conjunto: resConj ? { kpis: resConj.kpis, entradas_resumen: resConj.entradasConsol, ordenes_resumen: resConj.ordenesConsol, alerts: resConj.alerts } : null
+        },
+        global: { resumen_por_entidad: jsonExport.global.resumen_por_entidad, alerts_cross_entidad: crossAlerts }
+      });
+
+      const entProc = [resClub ? "Club" : null, resConj ? "Conjunto" : null].filter(Boolean).join(" + ");
+      setStatus(`Listo. Entidad(es) procesada(s): ${entProc}. Descargas habilitadas.`, missing.length ? "warn" : "ok");
+    } catch (e) {
+      console.error(e);
+      setStatus(`Error: ${e.message || e}`, "bad");
+    }
+  });
+
+  el("btnJson").addEventListener("click", () => {
+    if (!lastResult) return;
+    const payload = JSON.stringify(lastResult.json, null, 2);
+    downloadBlob(new Blob([payload], { type: "application/json;charset=utf-8" }), `${fileNameBase}__JSON_para_IA.json`);
+  });
+
+  el("btnXls").addEventListener("click", async () => {
+    if (!lastResult) return;
+    const btn = el("btnXls");
+    const origText = btn.textContent;
+    btn.textContent = "Generando…";
+    btn.disabled = true;
+    try {
+      await buildExecutiveWorkbookXLSJ(lastResult.xlsxPayload);
+    } catch (e) {
+      console.error(e);
+      setStatus("No se pudo generar el Excel. Exporta JSON o reintenta.", "bad");
+    } finally {
+      btn.textContent = origText;
+      btn.disabled = false;
+    }
+  });
+
+})();
+</script>
+</body>
+</html>
