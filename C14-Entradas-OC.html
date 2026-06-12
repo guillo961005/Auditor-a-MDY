@@ -629,6 +629,12 @@ const el = (id) => document.getElementById(id);
   function processEntity(entityObj, periodStart, periodEnd, tolPct, tolMin, burstN, umbralComite, ventanaFracc, leadTimeMax, leadTimeMin) {
     const entity = entityObj.entityName;
 
+    // Artículos que van a cuentas separadas (retención e IVA) y no aparecen en C14
+    function esItemExcluido(nombreItem) {
+      const n = String(nombreItem || "").toUpperCase().trim();
+      return n.startsWith("RET FTE") || n.startsWith("IVA");
+    }
+
     let c14InvalidDate = 0;
     const c14InRange = entityObj.c14.filter(r => {
       if (!r.FECHATRA || isNaN(r.FECHATRA)) { c14InvalidDate++; return false; }
@@ -686,12 +692,14 @@ const el = (id) => document.getElementById(id);
           ESTADO: ln.ESTADO,
           ORDENES_RAW: [],
           TOTAL_ENTRADAS: 0,
+          TOTAL_ENTRADAS_NETO: 0, // excluye RET FTE e IVA
           ITEMS: new Map(),
           FACTURAS: new Set()
         });
       }
       const g = entByEntrada.get(k);
       g.TOTAL_ENTRADAS += ln.COSTOTOTAL;
+      if (!esItemExcluido(ln.NOMBREITEM)) g.TOTAL_ENTRADAS_NETO += ln.CANTIDAD * ln.VALORUNIDAD;
       if (ln.FECHADOCUMENTO && (!g.FECHA_ENTRADA || ln.FECHADOCUMENTO < g.FECHA_ENTRADA)) g.FECHA_ENTRADA = ln.FECHADOCUMENTO;
       if (ln.ORDENES) g.ORDENES_RAW.push(ln.ORDENES);
       if (ln.FACTURAPROVEEDOR) {
@@ -813,7 +821,8 @@ const el = (id) => document.getElementById(id);
       const c14g = c14ByEntry.get(entrada);
       const totalC14 = c14g ? c14g.TOTAL_C14_NETO : 0;
       const totalEnt = entg.TOTAL_ENTRADAS;
-      const dif = totalC14 - totalEnt;
+      const totalEntNeto = entg.TOTAL_ENTRADAS_NETO; // sin RET FTE ni IVA
+      const dif = totalC14 - totalEntNeto;
 
       const ordersSet = new Set();
       for (const raw of entg.ORDENES_RAW) {
@@ -828,20 +837,20 @@ const el = (id) => document.getElementById(id);
       let fechaEntrada = entg.FECHA_ENTRADA;
       if (!fechaEntrada && c14g && c14g.FECHA_FALLBACK) fechaEntrada = c14g.FECHA_FALLBACK;
 
-      const flagDifValor = c14g ? computeTolerance(Math.abs(dif), totalEnt, tolPctNum, tolMinNum) : false;
+      const flagDifValor = c14g ? computeTolerance(Math.abs(dif), totalEntNeto, tolPctNum, tolMinNum) : false;
       const provKeyEnt = digitsOnly(entg.PROVEEDOR) || normalizeText(entg.NOMBREPROVEEDOR);
       const provKeyC14 = c14g ? (digitsOnly(c14g.NITTRA) || normalizeText(c14g.NOMBRETER)) : "";
       const flagDifProveedor = (provKeyC14 && provKeyEnt) ? (provKeyC14 !== provKeyEnt) : false;
 
       if (c14g && flagDifValor) {
-        const difPctVsEnt = totalEnt !== 0 ? parseFloat(((Math.abs(dif) / Math.abs(totalEnt)) * 100).toFixed(2)) : null;
+        const difPctVsEnt = totalEntNeto !== 0 ? parseFloat(((Math.abs(dif) / Math.abs(totalEntNeto)) * 100).toFixed(2)) : null;
         const difPctVsC14 = totalC14 !== 0 ? parseFloat(((Math.abs(dif) / Math.abs(totalC14)) * 100).toFixed(2)) : null;
         const nitProv = c14g.NITTRA || entg.PROVEEDOR || "";
         const nombreProv = c14g.NOMBRETER || entg.NOMBREPROVEEDOR || "";
         addAlert("A5","ALTA","Diferencia C14 vs ENTRADAS > tolerancia",
-          `Entrada=${entrada} | Proveedor=${nitProv} ${nombreProv}. C14_NETO=${totalC14.toFixed(2)} vs ENTRADAS=${totalEnt.toFixed(2)}. Dif=${dif.toFixed(2)} (vs Entradas: ${difPctVsEnt ?? "N/A"}% | vs C14: ${difPctVsC14 ?? "N/A"}%).`,
+          `Entrada=${entrada} | Proveedor=${nitProv} ${nombreProv}. C14_NETO=${totalC14.toFixed(2)} vs ENTRADAS_NETO=${totalEntNeto.toFixed(2)} (bruto=${totalEnt.toFixed(2)}). Dif=${dif.toFixed(2)} (vs EntNeto: ${difPctVsEnt ?? "N/A"}% | vs C14: ${difPctVsC14 ?? "N/A"}%).`,
           { ENTRADA: entrada, NIT_PROVEEDOR: nitProv, NOMBRE_PROVEEDOR: nombreProv,
-            TOTAL_C14_NETO: totalC14, TOTAL_ENTRADAS: totalEnt, DIF: dif,
+            TOTAL_C14_NETO: totalC14, TOTAL_ENTRADAS_NETO: totalEntNeto, TOTAL_ENTRADAS_BRUTO: totalEnt, DIF: dif,
             DIF_PCT_VS_ENTRADAS: difPctVsEnt, DIF_PCT_VS_C14: difPctVsC14 }
         );
       }
@@ -1519,7 +1528,7 @@ const el = (id) => document.getElementById(id);
           FECHA_OC: a.FECHA_OC || "", FECHA_ENTRADA: a.FECHA_ENTRADA || "",
           DIA_SEMANA: a.DIA_SEMANA || "", SUMA_ACUMULADA: a.SUMA_ACUMULADA ?? "",
           N_OC_EN_VENTANA: a.N_OC_EN_VENTANA ?? "",
-          TOTAL_C14_NETO: a.TOTAL_C14_NETO ?? "", TOTAL_ENTRADAS: a.TOTAL_ENTRADAS ?? "",
+          TOTAL_C14_NETO: a.TOTAL_C14_NETO ?? "", TOTAL_ENTRADAS_NETO: a.TOTAL_ENTRADAS_NETO ?? "", TOTAL_ENTRADAS_BRUTO: a.TOTAL_ENTRADAS_BRUTO ?? "",
           DIF: a.DIF ?? "", DIF_PCT_VS_ENTRADAS: a.DIF_PCT_VS_ENTRADAS ?? "", DIF_PCT_VS_C14: a.DIF_PCT_VS_C14 ?? "",
           P75_UNIVERSO: a.P75_UNIVERSO ?? ""
         }));
