@@ -814,9 +814,10 @@ const el = (id) => document.getElementById(id);
       const flagDifProveedor = (provKeyC14 && provKeyEnt) ? (provKeyC14 !== provKeyEnt) : false;
 
       if (c14g && flagDifValor) {
+        const difPct = totalEnt !== 0 ? (Math.abs(dif) / Math.abs(totalEnt)) * 100 : null;
         addAlert("A5","ALTA","Diferencia C14 vs ENTRADAS > tolerancia",
-          `Entrada=${entrada}. C14_NETO=${totalC14.toFixed(2)} vs ENTRADAS=${totalEnt.toFixed(2)}. Dif=${dif.toFixed(2)}.`,
-          { ENTRADA: entrada, TOTAL_C14_NETO: totalC14, TOTAL_ENTRADAS: totalEnt, DIF: dif }
+          `Entrada=${entrada}. C14_NETO=${totalC14.toFixed(2)} vs ENTRADAS=${totalEnt.toFixed(2)}. Dif=${dif.toFixed(2)}${difPct != null ? ` (${difPct.toFixed(2)}%)` : ""}.`,
+          { ENTRADA: entrada, TOTAL_C14_NETO: totalC14, TOTAL_ENTRADAS: totalEnt, DIF: dif, DIF_PCT: difPct != null ? parseFloat(difPct.toFixed(2)) : null }
         );
       }
 
