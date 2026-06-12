@@ -932,6 +932,19 @@ const el = (id) => document.getElementById(id);
     for (const [facKey, entradasSet] of facturaMap.entries()) {
       if (entradasSet.size >= 2) {
         const [provKey, facturaNorm] = facKey.split("|");
+        // Cancelar pares individuales (valor X + valor -X) dentro del grupo.
+        // Solo si quedan ≥2 entradas sin parear se reporta como duplicado real.
+        const valueCounts = new Map();
+        for (const eid of entradasSet) {
+          const e = entByEntrada.get(eid);
+          const val = Math.round((e ? e.TOTAL_ENTRADAS : 0) * 100);
+          valueCounts.set(val, (valueCounts.get(val) || 0) + 1);
+        }
+        let canceladas = 0;
+        for (const [val, cnt] of valueCounts.entries()) {
+          if (val > 0) canceladas += Math.min(cnt, valueCounts.get(-val) || 0) * 2;
+        }
+        if (entradasSet.size - canceladas < 2) continue;
         addAlert("A7","MEDIA/ALTA","FacturaProveedor repetida en múltiples Entradas",
           `Factura=${facturaNorm}. Entradas: ${Array.from(entradasSet).join(", ")}.`,
           { FACTURA: facturaNorm, PROVEEDOR_KEY: provKey }
