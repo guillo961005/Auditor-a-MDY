@@ -932,6 +932,13 @@ const el = (id) => document.getElementById(id);
     for (const [facKey, entradasSet] of facturaMap.entries()) {
       if (entradasSet.size >= 2) {
         const [provKey, facturaNorm] = facKey.split("|");
+        // Si la suma de TOTAL_ENTRADAS del grupo es ~0, las entradas se anulan entre sí
+        // (reversión contable) — no se reporta como duplicado
+        const sumaTotal = [...entradasSet].reduce((s, eid) => {
+          const e = entByEntrada.get(eid);
+          return s + (e ? e.TOTAL_ENTRADAS : 0);
+        }, 0);
+        if (Math.round(sumaTotal * 100) === 0) continue;
         addAlert("A7","MEDIA/ALTA","FacturaProveedor repetida en múltiples Entradas",
           `Factura=${facturaNorm}. Entradas: ${Array.from(entradasSet).join(", ")}.`,
           { FACTURA: facturaNorm, PROVEEDOR_KEY: provKey }
