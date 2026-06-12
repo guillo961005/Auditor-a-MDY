@@ -814,10 +814,15 @@ const el = (id) => document.getElementById(id);
       const flagDifProveedor = (provKeyC14 && provKeyEnt) ? (provKeyC14 !== provKeyEnt) : false;
 
       if (c14g && flagDifValor) {
-        const difPct = totalEnt !== 0 ? (Math.abs(dif) / Math.abs(totalEnt)) * 100 : null;
+        const difPctVsEnt = totalEnt !== 0 ? parseFloat(((Math.abs(dif) / Math.abs(totalEnt)) * 100).toFixed(2)) : null;
+        const difPctVsC14 = totalC14 !== 0 ? parseFloat(((Math.abs(dif) / Math.abs(totalC14)) * 100).toFixed(2)) : null;
+        const nitProv = c14g.NITTRA || entg.PROVEEDOR || "";
+        const nombreProv = c14g.NOMBRETER || entg.NOMBREPROVEEDOR || "";
         addAlert("A5","ALTA","Diferencia C14 vs ENTRADAS > tolerancia",
-          `Entrada=${entrada}. C14_NETO=${totalC14.toFixed(2)} vs ENTRADAS=${totalEnt.toFixed(2)}. Dif=${dif.toFixed(2)}${difPct != null ? ` (${difPct.toFixed(2)}%)` : ""}.`,
-          { ENTRADA: entrada, TOTAL_C14_NETO: totalC14, TOTAL_ENTRADAS: totalEnt, DIF: dif, DIF_PCT: difPct != null ? parseFloat(difPct.toFixed(2)) : null }
+          `Entrada=${entrada} | Proveedor=${nitProv} ${nombreProv}. C14_NETO=${totalC14.toFixed(2)} vs ENTRADAS=${totalEnt.toFixed(2)}. Dif=${dif.toFixed(2)} (vs Entradas: ${difPctVsEnt ?? "N/A"}% | vs C14: ${difPctVsC14 ?? "N/A"}%).`,
+          { ENTRADA: entrada, NIT_PROVEEDOR: nitProv, NOMBRE_PROVEEDOR: nombreProv,
+            TOTAL_C14_NETO: totalC14, TOTAL_ENTRADAS: totalEnt, DIF: dif,
+            DIF_PCT_VS_ENTRADAS: difPctVsEnt, DIF_PCT_VS_C14: difPctVsC14 }
         );
       }
 
@@ -1476,10 +1481,13 @@ const el = (id) => document.getElementById(id);
           title: a.title, details: a.details,
           ENTRADA: a.ENTRADA || a.ENTRY_NO || "", OC: a.OC || "",
           FACTURA: a.FACTURA || "", FECHA: a.FECHA || "",
+          NIT_PROVEEDOR: a.NIT_PROVEEDOR || a.NITTRA || "", NOMBRE_PROVEEDOR: a.NOMBRE_PROVEEDOR || a.NOMBRETER || "",
           PROVEEDOR_KEY: a.PROVEEDOR_KEY || "", DIAS_LEAD_TIME: a.DIAS_LEAD_TIME ?? "",
           FECHA_OC: a.FECHA_OC || "", FECHA_ENTRADA: a.FECHA_ENTRADA || "",
           DIA_SEMANA: a.DIA_SEMANA || "", SUMA_ACUMULADA: a.SUMA_ACUMULADA ?? "",
-          N_OC_EN_VENTANA: a.N_OC_EN_VENTANA ?? "", TOTAL_ENTRADAS: a.TOTAL_ENTRADAS ?? "",
+          N_OC_EN_VENTANA: a.N_OC_EN_VENTANA ?? "",
+          TOTAL_C14_NETO: a.TOTAL_C14_NETO ?? "", TOTAL_ENTRADAS: a.TOTAL_ENTRADAS ?? "",
+          DIF: a.DIF ?? "", DIF_PCT_VS_ENTRADAS: a.DIF_PCT_VS_ENTRADAS ?? "", DIF_PCT_VS_C14: a.DIF_PCT_VS_C14 ?? "",
           P75_UNIVERSO: a.P75_UNIVERSO ?? ""
         }));
         const alertHdrs = alertRows.length ? Object.keys(alertRows[0]) : ["entity","code","severity_norm","title","details"];
