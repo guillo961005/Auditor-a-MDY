@@ -651,16 +651,21 @@ const el = (id) => document.getElementById(id);
           NOMBRETER: r.NOMBRETER,
           FECHA_FALLBACK: r.FECHATRA,
           TOTAL_C14_NETO: 0,
-          ROWS: 0,
-          HAS_REVERSAL: false
+          TOTAL_DEBITOS: 0,
+          ROWS: 0
         });
       }
       const g = c14ByEntry.get(k);
       g.TOTAL_C14_NETO += r.NETO;
+      g.TOTAL_DEBITOS += r.DEBITOS;
       g.ROWS += 1;
-      if (r.CREDITOS < 0) g.HAS_REVERSAL = true;
       if (r.FECHATRA && g.FECHA_FALLBACK && r.FECHATRA < g.FECHA_FALLBACK) g.FECHA_FALLBACK = r.FECHATRA;
     }
+
+    // Set de valores CREDITOS presentes en c14InRange para detectar contrapartidas
+    const creditosEnC14 = new Set(
+      c14InRange.filter(r => r.CREDITOS !== 0).map(r => Math.round(r.CREDITOS * 100))
+    );
 
     const entByEntrada = new Map();
     const facturaMap = new Map();
@@ -784,7 +789,10 @@ const el = (id) => document.getElementById(id);
     for (const [entryNo, c14g] of c14ByEntry.entries()) {
       const entg = entByEntrada.get(entryNo);
       if (!entg) {
-        if (c14g.HAS_REVERSAL) continue; // entrada revertida (CREDITOS negativo en C14) — no se reporta
+        // Si existe en c14InRange un CREDITOS igual al negativo del DEBITOS de esta entrada,
+        // el movimiento queda en cero y la entrada se considera revertida — no se reporta.
+        const debKey = Math.round(c14g.TOTAL_DEBITOS * 100);
+        if (debKey !== 0 && creditosEnC14.has(-debKey)) continue;
         addAlert("A3", "ALTA", "Entrada en C14 sin match en ENTRADAS",
           `entry_no=${entryNo} | Proveedor=${c14g.NITTRA} ${c14g.NOMBRETER}. C14_NETO=${c14g.TOTAL_C14_NETO.toFixed(2)}.`,
           { ENTRY_NO: entryNo, NITTRA: c14g.NITTRA, NOMBRETER: c14g.NOMBRETER }
