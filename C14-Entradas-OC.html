@@ -54,8 +54,7 @@
   <h1>3-Way Match + Análisis Avanzado (C14 ↔ Entradas ↔ OC) | Club + Conjunto</h1>
   <div class="sub">
     Procesa localmente en tu navegador (SheetJS). Señales ≠ prueba: las alertas son banderas rojas, no veredictos.
-    <span class="pill">UMBRAL_ANTIGUEDAD_DIAS = <span id="pillUmbral" class="mono">30</span></span>
-    <span class="pill">Separador órdenes ENTRADAS.Ordenes = <span class="mono">","</span></span>
+<span class="pill">Separador órdenes ENTRADAS.Ordenes = <span class="mono">","</span></span>
     <span class="pill">Llave OC: <span class="mono">ENTRADAS.Ordenes → OC.Consecutivo</span></span>
   </div>
 </header>
@@ -121,7 +120,7 @@
         </div>
         <div>
           <label>Lead time máx (días)</label>
-          <input id="leadTimeMax" type="number" step="1" min="0" value="45" />
+          <input id="leadTimeMax" type="number" step="1" min="0" value="30" />
         </div>
         <div>
           <label>Lead time mín (días)</label>
@@ -216,16 +215,6 @@
               <th style="padding:5px 8px;text-align:left;color:#cfe0ff;font-size:11px">Qué detecta</th>
             </tr>
             <tr>
-              <td style="padding:5px 8px;border-bottom:1px solid var(--line);color:#cfe0ff;font-weight:700">A1</td>
-              <td style="padding:5px 8px;border-bottom:1px solid var(--line);color:#ffd4cf">ALTA</td>
-              <td style="padding:5px 8px;border-bottom:1px solid var(--line);color:var(--muted)">OC posterior a la Entrada: la orden se emitió <em>después</em> de recibir la mercancía (compra sin autorización previa).</td>
-            </tr>
-            <tr>
-              <td style="padding:5px 8px;border-bottom:1px solid var(--line);color:#cfe0ff;font-weight:700">A2</td>
-              <td style="padding:5px 8px;border-bottom:1px solid var(--line);color:#ffe0b2">MEDIA/ALTA</td>
-              <td style="padding:5px 8px;border-bottom:1px solid var(--line);color:var(--muted)">OC emitida más de 30 días antes de la Entrada (antigüedad excesiva; puede indicar OC "comodín" reutilizada).</td>
-            </tr>
-            <tr>
               <td style="padding:5px 8px;border-bottom:1px solid var(--line);color:#cfe0ff;font-weight:700">A3</td>
               <td style="padding:5px 8px;border-bottom:1px solid var(--line);color:#ffd4cf">ALTA</td>
               <td style="padding:5px 8px;border-bottom:1px solid var(--line);color:var(--muted)">Entrada registrada en C14 pero sin registro en el módulo de Entradas (desconexión entre contabilidad y bodega).</td>
@@ -268,7 +257,7 @@
             <tr>
               <td style="padding:5px 8px;border-bottom:1px solid var(--line);color:#cfe0ff;font-weight:700">A11a</td>
               <td style="padding:5px 8px;border-bottom:1px solid var(--line);color:#ffe0b2">MEDIA/ALTA</td>
-              <td style="padding:5px 8px;border-bottom:1px solid var(--line);color:var(--muted)">Lead time excesivo: demasiados días entre OC y Entrada (retrasos operativos o OC emitida retroactivamente).</td>
+              <td style="padding:5px 8px;border-bottom:1px solid var(--line);color:var(--muted)">Lead time excesivo: más días entre OC y Entrada que el umbral configurado (retrasos operativos, OC "comodín" reutilizada o emitida retroactivamente).</td>
             </tr>
             <tr>
               <td style="padding:5px 8px;border-bottom:1px solid var(--line);color:#cfe0ff;font-weight:700">A11b</td>
@@ -328,7 +317,6 @@
 <script>
 (() => {
   const CONFIG = {
-    UMBRAL_ANTIGUEDAD_DIAS: 30,
     DEFAULT_TOL_PCT: 1,
     DEFAULT_TOL_MIN: 50000,
     DEFAULT_BURST_N: 3,
@@ -336,9 +324,7 @@
     ENTITIES: ["CLUB","CONJUNTO"],
     ENTRY_REGEX: /E\s*:\s*(\d+)/i
   };
-  document.getElementById("pillUmbral").textContent = String(CONFIG.UMBRAL_ANTIGUEDAD_DIAS);
-
-  const el = (id) => document.getElementById(id);
+const el = (id) => document.getElementById(id);
   const statusEl = el("status");
   const outEl = el("output");
   const metaEl = el("resultMeta");
@@ -849,8 +835,6 @@
       }
 
       const ocInfo = [];
-      let ocPosteriorCount = 0;
-      let ocAntiguaCount = 0;
       let ocRechazadaCount = 0;
 
       for (const ocId of ordersList) {
@@ -859,30 +843,6 @@
         usedOCs.add(ocId);
 
         const fechaOC = oc.FECHA_OC;
-        let flagPosterior = false, flagAntigua = false;
-        let antigDays = null;
-
-        if (fechaOC && fechaEntrada) {
-          flagPosterior = fechaOC > fechaEntrada;
-          antigDays = diffDays(fechaOC, fechaEntrada);
-          flagAntigua = antigDays > CONFIG.UMBRAL_ANTIGUEDAD_DIAS;
-        }
-
-        if (flagPosterior) {
-          ocPosteriorCount++;
-          addAlert("A1","ALTA","OC posterior a entrada",
-            `Entrada=${entrada} | OC=${ocId}. FechaOC=${dateKey(fechaOC)} > FechaEntrada=${dateKey(fechaEntrada)}.`,
-            { ENTRADA: entrada, OC: ocId }
-          );
-        }
-        if (flagAntigua) {
-          ocAntiguaCount++;
-          addAlert("A2","MEDIA/ALTA","OC con antigüedad > 30 días vs entrada",
-            `Entrada=${entrada} | OC=${ocId}. Antigüedad=${antigDays} días.`,
-            { ENTRADA: entrada, OC: ocId, ANTIGUEDAD_DIAS: antigDays }
-          );
-        }
-
         // A11a / A11b: Lead time OC → Entrada
         if (fechaOC && fechaEntrada) {
           const diasLead = diffDays(fechaOC, fechaEntrada);
@@ -935,8 +895,6 @@
         OCS_LIST: ordersList.join(", "),
         MULTI_OC: ordersList.length > 1 ? "SI" : "NO",
         SIN_OC: sinOC ? "SI" : "NO",
-        OC_POSTERIOR_COUNT: ocPosteriorCount,
-        OC_ANTIGUA_COUNT: ocAntiguaCount,
         OC_RECHAZADA_COUNT: ocRechazadaCount,
         FACTURAS: Array.from(entg.FACTURAS).join(" | "),
         ITEMS_RESUMEN: Array.from(entg.ITEMS.values()).slice(0,8)
@@ -1086,8 +1044,6 @@
       entradas_sin_detalle_en_entradas: Array.from(c14ByEntry.keys()).filter(k => !entByEntrada.has(k)).length,
       entradas_sin_oc: entradasConsol.filter(e => e.SIN_OC === "SI").length,
       entradas_multi_oc: entradasConsol.filter(e => e.MULTI_OC === "SI").length,
-      oc_posterior_a_entrada: alerts.filter(a => a.code === "A1").length,
-      oc_antiguedad_mayor_30: alerts.filter(a => a.code === "A2").length,
       discrepancias_proveedor: alerts.filter(a => a.code === "A6").length,
       factura_duplicada: alerts.filter(a => a.code === "A7").length,
       dif_valor_mayor_tolerancia: alerts.filter(a => a.code === "A5").length,
@@ -1434,7 +1390,6 @@
     const meta = result.metadata;
     const paramRows = [
       ["Período", `${meta.periodo.start || "(sin inicio)"} a ${meta.periodo.end || "(sin fin)"}`],
-      ["Umbral antigüedad (días)", meta.umbral_antiguedad_dias],
       ["Tolerancia (%)", meta.tolerancias.pct],
       ["Tolerancia mín (COP)", meta.tolerancias.min_cop],
       ["BurstN", meta.burst_threshold],
@@ -1731,7 +1686,6 @@
 
       const metadata = {
         periodo: { start: start ? dateKey(start) : "", end: end ? dateKey(end) : "" },
-        umbral_antiguedad_dias: CONFIG.UMBRAL_ANTIGUEDAD_DIAS,
         tolerancias: { pct: tolPct, min_cop: tolMin },
         separador_ordenes: ",",
         definiciones: {
