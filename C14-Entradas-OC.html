@@ -651,21 +651,26 @@ const el = (id) => document.getElementById(id);
           NOMBRETER: r.NOMBRETER,
           FECHA_FALLBACK: r.FECHATRA,
           TOTAL_C14_NETO: 0,
-          DEBITOS_KEYS: new Set(), // valores individuales de DEBITOS (centavos) para matching
+          DEBITOS_KEYS: new Set(),  // valores individuales de DEBITOS (centavos)
+          CREDITOS_KEYS: new Set(), // valores absolutos de CREDITOS (centavos)
           ROWS: 0
         });
       }
       const g = c14ByEntry.get(k);
       g.TOTAL_C14_NETO += r.NETO;
       if (r.DEBITOS !== 0) g.DEBITOS_KEYS.add(Math.round(r.DEBITOS * 100));
+      if (r.CREDITOS !== 0) g.CREDITOS_KEYS.add(Math.round(Math.abs(r.CREDITOS) * 100));
       g.ROWS += 1;
       if (r.FECHATRA && g.FECHA_FALLBACK && r.FECHATRA < g.FECHA_FALLBACK) g.FECHA_FALLBACK = r.FECHATRA;
     }
 
-    // Set de valores CREDITOS presentes en TODO c14 (sin filtro de fecha) para detectar
-    // contrapartidas que podrían estar fuera del período seleccionado
+    // Sets de valores de DEBITOS y CREDITOS presentes en TODO c14 (sin filtro de fecha)
+    // para detectar contrapartidas que podrían estar fuera del período seleccionado
     const creditosEnC14 = new Set(
       entityObj.c14.filter(r => r.CREDITOS !== 0).map(r => Math.round(r.CREDITOS * 100))
+    );
+    const debitosEnC14 = new Set(
+      entityObj.c14.filter(r => r.DEBITOS !== 0).map(r => Math.round(r.DEBITOS * 100))
     );
 
     const entByEntrada = new Map();
@@ -790,12 +795,13 @@ const el = (id) => document.getElementById(id);
     for (const [entryNo, c14g] of c14ByEntry.entries()) {
       const entg = entByEntrada.get(entryNo);
       if (!entg) {
-        // Si algún valor de DEBITOS de esta entrada tiene una contrapartida exacta como
-        // CREDITOS negativo en cualquier fila de C14, el movimiento queda en cero
-        // y la entrada se considera revertida — no se reporta.
-        const esRevertida = c14g.DEBITOS_KEYS.size > 0 &&
+        // Lado débito (ej. entrada 46404): su DEBITOS tiene un CREDITOS negativo equivalente en C14
+        const esDebitoRevertido = c14g.DEBITOS_KEYS.size > 0 &&
           [...c14g.DEBITOS_KEYS].some(dk => creditosEnC14.has(-dk));
-        if (esRevertida) continue;
+        // Lado crédito (ej. entrada 46405): es la contraparte — su CREDITOS tiene un DEBITOS equivalente en C14
+        const esCreditoContraparte = c14g.CREDITOS_KEYS.size > 0 &&
+          [...c14g.CREDITOS_KEYS].some(ck => debitosEnC14.has(ck));
+        if (esDebitoRevertido || esCreditoContraparte) continue;
         addAlert("A3", "ALTA", "Entrada en C14 sin match en ENTRADAS",
           `entry_no=${entryNo} | Proveedor=${c14g.NITTRA} ${c14g.NOMBRETER}. C14_NETO=${c14g.TOTAL_C14_NETO.toFixed(2)}.`,
           { ENTRY_NO: entryNo, NITTRA: c14g.NITTRA, NOMBRETER: c14g.NOMBRETER }
