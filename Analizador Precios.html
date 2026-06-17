@@ -954,10 +954,9 @@ function exportFull(){
   });
   sheets.push({name:'Alertas Importantes',data:[h1,...r1]});
 
-  // Hoja 2: An\u00E1lisis interentidad \u2014 TODOS los pares que cumplen el umbral (igual que pantalla)
+  // Hoja 2: An\u00E1lisis interentidad \u2014 TODOS los pares calculados (sin filtro de umbral)
   if(knownEntities.length>=2&&interEntityPairs.length>0){
-    const threshold=parseInt((document.getElementById('simThreshold')||{value:'70'}).value)||70;
-    const allPairs=interEntityPairs.filter(p=>p.sim>=threshold);
+    const allPairs=interEntityPairs; // todos, sin filtrar por umbral de similitud
     if(allPairs.length>0){
       const h2=['Entidad A','Art\u00EDculo A','C\u00F3digo A','Entidad B','Art\u00EDculo B','C\u00F3digo B','Similitud %','Precio Prom. A','Precio Prom. B','Diferencia % (promedio)','Entidad m\u00E1s cara','Severidad','Mes Mayor Diferencia','Precio '+((knownEntities[0])||'Ent A')+' ese mes','Precio '+((knownEntities[1])||'Ent B')+' ese mes','Diferencia % ese mes','Meses con datos en ambas entidades'];
       const r2=allPairs.map(p=>{
@@ -1041,8 +1040,7 @@ function exportFull(){
   const criticos=alertsData.filter(a=>a.severity==='CR\u00CDTICO').length;
   const altos=alertsData.filter(a=>a.severity==='ALTO').length;
   const medios=alertsData.filter(a=>a.severity==='MEDIO').length;
-  const threshold2=parseInt((document.getElementById('simThreshold')||{value:'70'}).value)||70;
-  const interAll=interEntityPairs.filter(p=>p.sim>=threshold2);
+  const interAll=interEntityPairs; // todos sin filtro
   const interCrit=interAll.filter(p=>p.sev==='CR\u00CDTICO').length;
   const resumen=[
     ['M\u00E9trica','Valor'],
@@ -1062,7 +1060,7 @@ function exportFull(){
     ['C-04 Art. con pico puntual >25%',spikes.length],
     ['C-05 Art. con outliers estad\u00EDsticos',outliers.length],
     ['C-06 Art. con meses sin compra',gapArts.length],
-    ['C-07 Pares interentidad comparados (umbral '+threshold2+'%)',interAll.length],
+    ['C-07 Pares interentidad comparados (todos)',interAll.length],
     ['C-07 Pares con diferencia cr\u00EDtica (>30%)',interCrit],
   ];
   sheets.push({name:'Resumen Ejecutivo',data:resumen});
