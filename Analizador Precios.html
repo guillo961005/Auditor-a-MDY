@@ -891,31 +891,81 @@ function exportInterEntity(){
 
 function exportFull(){
   const sheets=[];
+  const arts=Object.values(articleStats);
+  const totalSpend=arts.reduce((s,a)=>s+a.totalSpend,0);
 
-  // Hoja 1: Solo alertas importantes (CR\u00CDTICO, ALTO, MEDIO)
+  // Hoja 1: Alertas importantes (CR\u00CDTICO, ALTO, MEDIO)
   const alertasImportantes=alertsData.filter(a=>a.severity==='CR\u00CDTICO'||a.severity==='ALTO'||a.severity==='MEDIO');
   const h1=['Entidad','C\u00F3digo','Art\u00EDculo','Presentaci\u00F3n','Precio M\u00EDn.','Precio M\u00E1x.','Precio Promedio','Variaci\u00F3n M\u00E1x. %','CV %','Tendencia','Salto M\u00E1x. Mensual %','Meses Presentes','Gasto Total','Tipo Alerta','Severidad'];
   const r1=alertasImportantes.map(a=>[a.entidad,a.codigo,a.nombre,a.presentacion,parseFloat(a.minPrice.toFixed(0)),parseFloat(a.maxPrice.toFixed(0)),parseFloat(a.avgPrice.toFixed(0)),parseFloat(a.varMaxPct.toFixed(1)),parseFloat(a.cv.toFixed(1)),a.trend,parseFloat(a.maxMonthlyJump.toFixed(1)),a.monthCount,parseFloat(a.totalSpend.toFixed(0)),a.alertType,a.severity]);
   sheets.push({name:'Alertas Importantes',data:[h1,...r1]});
 
-  // Hoja 2: An\u00E1lisis interentidad (si aplica)
+  // Hoja 2: An\u00E1lisis interentidad \u2014 TODOS los pares que cumplen el umbral (igual que pantalla)
   if(knownEntities.length>=2&&interEntityPairs.length>0){
     const threshold=parseInt((document.getElementById('simThreshold')||{value:'70'}).value)||70;
-    const pairsImportantes=interEntityPairs.filter(p=>p.sim>=threshold&&(p.sev==='CR\u00CDTICO'||p.sev==='ALTO'||p.sev==='MEDIO'));
-    if(pairsImportantes.length>0){
+    const allPairs=interEntityPairs.filter(p=>p.sim>=threshold);
+    if(allPairs.length>0){
       const h2=['Entidad A','Art\u00EDculo A','C\u00F3digo A','Entidad B','Art\u00EDculo B','C\u00F3digo B','Similitud %','Precio Prom. A','Precio Prom. B','Diferencia %','Entidad m\u00E1s cara','Severidad'];
-      const r2=pairsImportantes.map(p=>[p.entA,p.nameA,p.codeA,p.entB,p.nameB,p.codeB,p.sim,parseFloat(p.avgA.toFixed(0)),parseFloat(p.avgB.toFixed(0)),parseFloat(p.priceDiff.toFixed(1)),p.higherEnt,p.sev]);
-      sheets.push({name:'Interentidad \u2014 Alertas',data:[h2,...r2]});
+      const r2=allPairs.map(p=>[p.entA,p.nameA,p.codeA,p.entB,p.nameB,p.codeB,p.sim,parseFloat(p.avgA.toFixed(0)),parseFloat(p.avgB.toFixed(0)),parseFloat(p.priceDiff.toFixed(1)),p.higherEnt,p.sev]);
+      sheets.push({name:'C-07 Interentidad',data:[h2,...r2]});
     }
   }
 
-  // Hoja 3: Resumen ejecutivo de m\u00E9tricas
-  const arts=Object.values(articleStats);
-  const totalSpend=arts.reduce((s,a)=>s+a.totalSpend,0);
+  // Hoja 3: C-01 Art\u00EDculos con un solo mes
+  const singleMonth=arts.filter(a=>a.monthCount===1);
+  if(singleMonth.length>0){
+    const h3=['Entidad','C\u00F3digo','Art\u00EDculo','Presentaci\u00F3n','Precio','Gasto Total','Control'];
+    const r3=singleMonth.map(a=>[a.entidad,a.codigo,a.nombre,a.presentacion,parseFloat(a.avgPrice.toFixed(0)),parseFloat(a.totalSpend.toFixed(0)),'C-01: Registro en un solo mes']);
+    sheets.push({name:'C-01 Un Solo Mes',data:[h3,...r3]});
+  }
+
+  // Hoja 4: C-02 Concentraci\u00F3n de gasto (top art\u00EDculos)
+  const highConc=arts.filter(a=>totalSpend>0&&(a.totalSpend/totalSpend)*100>1).sort((a,b)=>b.totalSpend-a.totalSpend);
+  if(highConc.length>0){
+    const h4=['Entidad','C\u00F3digo','Art\u00EDculo','Presentaci\u00F3n','Gasto Total','% del Gasto Total','Control'];
+    const r4=highConc.map(a=>[a.entidad,a.codigo,a.nombre,a.presentacion,parseFloat(a.totalSpend.toFixed(0)),parseFloat(((a.totalSpend/totalSpend)*100).toFixed(2)),'C-02: Concentraci\u00F3n de gasto']);
+    sheets.push({name:'C-02 Concentraci\u00F3n Gasto',data:[h4,...r4]});
+  }
+
+  // Hoja 5: C-03 Tendencia alcista sistem\u00E1tica
+  const systematic=alertsData.filter(a=>a.trend==='ALCISTA'&&a.monthCount>=3);
+  if(systematic.length>0){
+    const h5=['Entidad','C\u00F3digo','Art\u00EDculo','Presentaci\u00F3n','Precio Promedio','CV %','Pendiente ($/mes)','Meses','Control'];
+    const r5=systematic.map(a=>[a.entidad,a.codigo,a.nombre,a.presentacion,parseFloat(a.avgPrice.toFixed(0)),parseFloat(a.cv.toFixed(1)),parseFloat(a.trendSlope.toFixed(0)),a.monthCount,'C-03: Tendencia alcista sistem\u00E1tica']);
+    sheets.push({name:'C-03 Tendencia Alcista',data:[h5,...r5]});
+  }
+
+  // Hoja 6: C-04 Picos puntuales de precio
+  const spikes=alertsData.filter(a=>Math.abs(a.maxMonthlyJump)>25).sort((a,b)=>Math.abs(b.maxMonthlyJump)-Math.abs(a.maxMonthlyJump));
+  if(spikes.length>0){
+    const h6=['Entidad','C\u00F3digo','Art\u00EDculo','Presentaci\u00F3n','Precio Promedio','Salto M\u00E1x. Mensual %','Tendencia','Severidad','Control'];
+    const r6=spikes.map(a=>[a.entidad,a.codigo,a.nombre,a.presentacion,parseFloat(a.avgPrice.toFixed(0)),parseFloat(a.maxMonthlyJump.toFixed(1)),a.trend,a.severity,'C-04: Pico puntual de precio']);
+    sheets.push({name:'C-04 Picos de Precio',data:[h6,...r6]});
+  }
+
+  // Hoja 7: C-05 Outliers estad\u00EDsticos
+  const outliers=arts.filter(a=>{ const vs=Object.values(a.prices).flat(); if(vs.length<3) return false; const mean=vs.reduce((s,v)=>s+v,0)/vs.length; const std=Math.sqrt(vs.reduce((s,v)=>s+Math.pow(v-mean,2),0)/vs.length); return vs.some(v=>Math.abs(v-mean)>2*std); });
+  if(outliers.length>0){
+    const h7=['Entidad','C\u00F3digo','Art\u00EDculo','Presentaci\u00F3n','Precio M\u00EDn.','Precio M\u00E1x.','Precio Promedio','CV %','Control'];
+    const r7=outliers.map(a=>[a.entidad,a.codigo,a.nombre,a.presentacion,parseFloat(a.minPrice.toFixed(0)),parseFloat(a.maxPrice.toFixed(0)),parseFloat(a.avgPrice.toFixed(0)),parseFloat(a.cv.toFixed(1)),'C-05: Valor at\u00EDpico (>2\u03C3)']);
+    sheets.push({name:'C-05 Outliers',data:[h7,...r7]});
+  }
+
+  // Hoja 8: C-06 Art\u00EDculos con meses sin compra
+  const gapArts=arts.filter(a=>a.monthCount<months.length);
+  if(gapArts.length>0){
+    const h8=['Entidad','C\u00F3digo','Art\u00EDculo','Presentaci\u00F3n','Meses Presentes','Total Meses Periodo','Meses Ausentes','Control'];
+    const r8=gapArts.map(a=>[a.entidad,a.codigo,a.nombre,a.presentacion,a.monthCount,months.length,months.length-a.monthCount,'C-06: Meses sin compra']);
+    sheets.push({name:'C-06 Meses Ausentes',data:[h8,...r8]});
+  }
+
+  // Hoja 9: Resumen ejecutivo
   const criticos=alertsData.filter(a=>a.severity==='CR\u00CDTICO').length;
   const altos=alertsData.filter(a=>a.severity==='ALTO').length;
   const medios=alertsData.filter(a=>a.severity==='MEDIO').length;
-  const interCrit=interEntityPairs.filter(p=>p.sev==='CR\u00CDTICO').length;
+  const threshold2=parseInt((document.getElementById('simThreshold')||{value:'70'}).value)||70;
+  const interAll=interEntityPairs.filter(p=>p.sim>=threshold2);
+  const interCrit=interAll.filter(p=>p.sev==='CR\u00CDTICO').length;
   const resumen=[
     ['M\u00E9trica','Valor'],
     ['Fecha de generaci\u00F3n',new Date().toLocaleDateString('es-CO')],
@@ -923,10 +973,19 @@ function exportFull(){
     ['Meses del periodo',months.length],
     ['Entidades',knownEntities.join(' / ')||'No especificada'],
     ['Gasto total del periodo',parseFloat(totalSpend.toFixed(0))],
-    ['Alertas CR\u00CDTICAS',criticos],
-    ['Alertas ALTAS',altos],
-    ['Alertas MEDIAS',medios],
-    ['Pares interentidad con diferencia cr\u00EDtica',interCrit],
+    ['',''],
+    ['Alertas CR\u00CDTICAS (CV>40% o Var>100%)',criticos],
+    ['Alertas ALTAS (CV 20-40%)',altos],
+    ['Alertas MEDIAS (CV 10-20%)',medios],
+    ['',''],
+    ['C-01 Art. con un solo mes',singleMonth.length],
+    ['C-02 Art. con concentraci\u00F3n de gasto >1%',highConc.length],
+    ['C-03 Art. con tendencia alcista sistem\u00E1tica',systematic.length],
+    ['C-04 Art. con pico puntual >25%',spikes.length],
+    ['C-05 Art. con outliers estad\u00EDsticos',outliers.length],
+    ['C-06 Art. con meses sin compra',gapArts.length],
+    ['C-07 Pares interentidad comparados (umbral '+threshold2+'%)',interAll.length],
+    ['C-07 Pares con diferencia cr\u00EDtica (>30%)',interCrit],
   ];
   sheets.push({name:'Resumen Ejecutivo',data:resumen});
 
