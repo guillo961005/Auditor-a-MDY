@@ -876,24 +876,75 @@ function showTab(id,btn){
 }
 
 function exportAlerts(){
-  const h=['Entidad','Codigo','Articulo','Presentacion','PrecioMin','PrecioMax','PrecioPromedio','VariacionMaxPct','CV_Pct','Tendencia','TipoAlerta','Severidad'];
-  const r=filteredAlerts.map(a=>[a.entidad,a.codigo,`"${a.nombre}"`,a.presentacion,a.minPrice.toFixed(0),a.maxPrice.toFixed(0),a.avgPrice.toFixed(0),a.varMaxPct.toFixed(1),a.cv.toFixed(1),a.trend,a.alertType,a.severity]);
-  dlCSV([h,...r],'Alertas_Precios_MDY.csv');
+  const h=['Entidad','C\u00F3digo','Art\u00EDculo','Presentaci\u00F3n','Precio M\u00EDn.','Precio M\u00E1x.','Precio Promedio','Variaci\u00F3n M\u00E1x. %','CV %','Tendencia','Tipo Alerta','Severidad'];
+  const rows=filteredAlerts.map(a=>[a.entidad,a.codigo,a.nombre,a.presentacion,parseFloat(a.minPrice.toFixed(0)),parseFloat(a.maxPrice.toFixed(0)),parseFloat(a.avgPrice.toFixed(0)),parseFloat(a.varMaxPct.toFixed(1)),parseFloat(a.cv.toFixed(1)),a.trend,a.alertType,a.severity]);
+  dlXLSX([{name:'Alertas de Precios',data:[h,...rows]}],'Alertas_Precios_MDY.xlsx');
 }
+
 function exportInterEntity(){
-  const h=['EntidadA','ArticuloA','CodigoA','EntidadB','ArticuloB','CodigoB','Similitud_Pct','PrecioPromA','PrecioPromB','DifPct','EntidadMasCara','Severidad'];
-  const r=interEntityPairs.map(p=>[p.entA,`"${p.nameA}"`,p.codeA,p.entB,`"${p.nameB}"`,p.codeB,p.sim,p.avgA.toFixed(0),p.avgB.toFixed(0),p.priceDiff.toFixed(1),p.higherEnt,p.sev]);
-  dlCSV([h,...r],'Analisis_Interentidad_MDY.csv');
+  const threshold=parseInt((document.getElementById('simThreshold')||{value:'70'}).value)||70;
+  const h=['Entidad A','Art\u00EDculo A','C\u00F3digo A','Entidad B','Art\u00EDculo B','C\u00F3digo B','Similitud %','Precio Prom. A','Precio Prom. B','Diferencia %','Entidad m\u00E1s cara','Severidad'];
+  const pairs=interEntityPairs.filter(p=>p.sim>=threshold);
+  const rows=pairs.map(p=>[p.entA,p.nameA,p.codeA,p.entB,p.nameB,p.codeB,p.sim,parseFloat(p.avgA.toFixed(0)),parseFloat(p.avgB.toFixed(0)),parseFloat(p.priceDiff.toFixed(1)),p.higherEnt,p.sev]);
+  dlXLSX([{name:'An\u00E1lisis Interentidad',data:[h,...rows]}],'Analisis_Interentidad_MDY.xlsx');
 }
+
 function exportFull(){
-  const h=['Entidad','Codigo','Articulo','Presentacion','PrecioMin','PrecioMax','PrecioPromedio','VariacionMaxPct','CV_Pct','Tendencia','SaltoMaxMensualPct','MesesPresentes','GastoTotal','TipoAlerta','Severidad'];
-  const r=alertsData.map(a=>[a.entidad,a.codigo,`"${a.nombre}"`,a.presentacion,a.minPrice.toFixed(0),a.maxPrice.toFixed(0),a.avgPrice.toFixed(0),a.varMaxPct.toFixed(1),a.cv.toFixed(1),a.trend,a.maxMonthlyJump.toFixed(1),a.monthCount,a.totalSpend.toFixed(0),a.alertType,a.severity]);
-  dlCSV([h,...r],'Reporte_Completo_Precios_MDY.csv');
+  const sheets=[];
+
+  // Hoja 1: Solo alertas importantes (CR\u00CDTICO, ALTO, MEDIO)
+  const alertasImportantes=alertsData.filter(a=>a.severity==='CR\u00CDTICO'||a.severity==='ALTO'||a.severity==='MEDIO');
+  const h1=['Entidad','C\u00F3digo','Art\u00EDculo','Presentaci\u00F3n','Precio M\u00EDn.','Precio M\u00E1x.','Precio Promedio','Variaci\u00F3n M\u00E1x. %','CV %','Tendencia','Salto M\u00E1x. Mensual %','Meses Presentes','Gasto Total','Tipo Alerta','Severidad'];
+  const r1=alertasImportantes.map(a=>[a.entidad,a.codigo,a.nombre,a.presentacion,parseFloat(a.minPrice.toFixed(0)),parseFloat(a.maxPrice.toFixed(0)),parseFloat(a.avgPrice.toFixed(0)),parseFloat(a.varMaxPct.toFixed(1)),parseFloat(a.cv.toFixed(1)),a.trend,parseFloat(a.maxMonthlyJump.toFixed(1)),a.monthCount,parseFloat(a.totalSpend.toFixed(0)),a.alertType,a.severity]);
+  sheets.push({name:'Alertas Importantes',data:[h1,...r1]});
+
+  // Hoja 2: An\u00E1lisis interentidad (si aplica)
+  if(knownEntities.length>=2&&interEntityPairs.length>0){
+    const threshold=parseInt((document.getElementById('simThreshold')||{value:'70'}).value)||70;
+    const pairsImportantes=interEntityPairs.filter(p=>p.sim>=threshold&&(p.sev==='CR\u00CDTICO'||p.sev==='ALTO'||p.sev==='MEDIO'));
+    if(pairsImportantes.length>0){
+      const h2=['Entidad A','Art\u00EDculo A','C\u00F3digo A','Entidad B','Art\u00EDculo B','C\u00F3digo B','Similitud %','Precio Prom. A','Precio Prom. B','Diferencia %','Entidad m\u00E1s cara','Severidad'];
+      const r2=pairsImportantes.map(p=>[p.entA,p.nameA,p.codeA,p.entB,p.nameB,p.codeB,p.sim,parseFloat(p.avgA.toFixed(0)),parseFloat(p.avgB.toFixed(0)),parseFloat(p.priceDiff.toFixed(1)),p.higherEnt,p.sev]);
+      sheets.push({name:'Interentidad \u2014 Alertas',data:[h2,...r2]});
+    }
+  }
+
+  // Hoja 3: Resumen ejecutivo de m\u00E9tricas
+  const arts=Object.values(articleStats);
+  const totalSpend=arts.reduce((s,a)=>s+a.totalSpend,0);
+  const criticos=alertsData.filter(a=>a.severity==='CR\u00CDTICO').length;
+  const altos=alertsData.filter(a=>a.severity==='ALTO').length;
+  const medios=alertsData.filter(a=>a.severity==='MEDIO').length;
+  const interCrit=interEntityPairs.filter(p=>p.sev==='CR\u00CDTICO').length;
+  const resumen=[
+    ['M\u00E9trica','Valor'],
+    ['Fecha de generaci\u00F3n',new Date().toLocaleDateString('es-CO')],
+    ['Total art\u00EDculos analizados',arts.length],
+    ['Meses del periodo',months.length],
+    ['Entidades',knownEntities.join(' / ')||'No especificada'],
+    ['Gasto total del periodo',parseFloat(totalSpend.toFixed(0))],
+    ['Alertas CR\u00CDTICAS',criticos],
+    ['Alertas ALTAS',altos],
+    ['Alertas MEDIAS',medios],
+    ['Pares interentidad con diferencia cr\u00EDtica',interCrit],
+  ];
+  sheets.push({name:'Resumen Ejecutivo',data:resumen});
+
+  dlXLSX(sheets,'Reporte_Completo_Precios_MDY.xlsx');
 }
-function dlCSV(rows,filename){
-  const blob=new Blob(['\uFEFF'+rows.map(r=>r.join(';')).join('\n')],{type:'text/csv;charset=utf-8;'});
-  const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=filename;
-  document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+
+function dlXLSX(sheets, filename){
+  const wb=XLSX.utils.book_new();
+  sheets.forEach(s=>{
+    const ws=XLSX.utils.aoa_to_sheet(s.data);
+    // Ajustar ancho de columnas autom\u00E1ticamente
+    const colWidths=s.data[0].map((_,ci)=>({
+      wch:Math.min(60,Math.max(12,...s.data.map(row=>(row[ci]!=null?String(row[ci]).length:0))))
+    }));
+    ws['!cols']=colWidths;
+    XLSX.utils.book_append_sheet(wb,ws,s.name);
+  });
+  XLSX.writeFile(wb,filename);
 }
 function resetTool(){
   parsedData=[];rawData=[];articleStats={};alertsData=[];months=[];interEntityPairs=[];knownEntities=[];
