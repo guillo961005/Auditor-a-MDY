@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Modelador de Flujogramas BPMN 2.0 · MDY</title>
+
+<!--
+  ============================================================================
+  MODELADOR DE FLUJOGRAMAS BPMN 2.0 — dirigido por texto (Estándar MDY)
+  Dirección de Auditoría Interna, Riesgos, Calidad, Inocuidad y Ética
+  Corporación Mesa de Yeguas (MDY) · Uso interno · ISO 9001:2015 compatible
+  Fuente notacional: OMG BPMN v2.0.2 (Formal/2013-12-09)
+  ----------------------------------------------------------------------------
+  Arquitectura (§1): renderizador dirigido por texto. El texto estructurado
+  (sintaxis Mermaid) es la ÚNICA fuente de verdad. La herramienta NO interpreta
+  lenguaje natural ni invoca IA; solo renderiza de forma determinística.
+  Motor de render: Mermaid.js (CDN). Exportación PDF: jsPDF (CDN).
+  Persistencia por archivos (guardar/cargar), sin localStorage/sessionStorage.
+  ============================================================================
+-->
+
+<!-- Bibliotecas desde CDN (se cargan una sola vez; luego opera sin conexión) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.6.1/mermaid.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<style>
+  /* ====================== §5. Identidad visual MDY ====================== */
+  :root{
+    --marino-900:#0F1F3D;   /* azul marino principal   */
+    --marino-700:#1A3560;   /* azul marino secundario  */
+    --teal-700:#0D7377;     /* teal profundo           */
+    --teal-500:#14919B;     /* teal medio              */
+    --dorado-700:#B8962E;   /* dorado profundo         */
+    --dorado-600:#C9981A;   /* dorado institucional    */
+    --dorado-400:#F0B429;   /* dorado claro            */
+    --gris-borde:#D8DEE9;
+    --gris-suave:#F0F2F6;
+    --gris-panel:#F7F9FC;
+    --blanco:#FFFFFF;
+    --texto:#1B2536;
+    --texto-tenue:#5A6678;
+    --verde-ok:#2E9E5B;
+    --rojo-alerta:#D1343F;
+    --sombra:0 1px 3px rgba(15,31,61,.10),0 6px 20px rgba(15,31,61,.06);
+    --radio:10px;
+    --fuente:"Calibri","Arial",Segoe UI,system-ui,sans-serif;
+  }
+
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;font-family:var(--fuente);color:var(--texto);
+    background:var(--gris-suave);font-size:15px;line-height:1.45;
+    display:flex;flex-direction:column;min-height:100vh;
+  }
+
+  /* --------------------------- Encabezado --------------------------- */
+  header.app{
+    background:linear-gradient(120deg,var(--marino-900) 0%,var(--marino-700) 62%,var(--teal-700) 140%);
+    color:var(--blanco);padding:14px 22px;display:flex;align-items:center;
+    gap:16px;box-shadow:var(--sombra);position:relative;z-index:5;
+    border-bottom:3px solid var(--dorado-600);
+  }
+  header.app .marca{display:flex;flex-direction:column;line-height:1.2}
+  header.app .marca .brand{
+    font-size:12px;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--dorado-400);font-weight:700;
+  }
+  header.app .marca h1{font-size:19px;margin:2px 0 0;font-weight:700;letter-spacing:.2px}
+  header.app .marca .sub{font-size:12px;color:#C6D2E6;margin-top:2px}
+  header.app .escudo{
+    width:44px;height:44px;border-radius:9px;flex:0 0 auto;
+    background:radial-gradient(circle at 30% 25%,var(--dorado-400),var(--dorado-700));
+    display:flex;align-items:center;justify-content:center;font-weight:800;
+    color:var(--marino-900);font-size:17px;box-shadow:inset 0 0 0 2px rgba(255,255,255,.35);
+  }
+  header.app .iso{
+    margin-left:auto;font-size:11px;text-align:right;color:#C6D2E6;
+    letter-spacing:.04em;line-height:1.5;
+  }
+  header.app .iso b{color:var(--blanco)}
+
+  /* --------------------------- Barra de acciones --------------------------- */
+  .toolbar{
+    background:var(--blanco);border-bottom:1px solid var(--gris-borde);
+    padding:10px 18px;display:flex;flex-wrap:wrap;align-items:center;gap:8px;
+    box-shadow:0 1px 0 rgba(15,31,61,.03);
+  }
+  .toolbar .grupo{display:flex;align-items:center;gap:6px}
+  .toolbar .sep{width:1px;align-self:stretch;background:var(--gris-borde);margin:2px 4px}
+  .campo-titulo{display:flex;align-items:center;gap:8px}
+  .campo-titulo label{font-size:12px;color:var(--texto-tenue);font-weight:600;white-space:nowrap}
+  .campo-titulo input{
+    border:1px solid var(--gris-borde);border-radius:8px;padding:7px 10px;
+    font-family:var(--fuente);font-size:13px;min-width:240px;color:var(--texto);
+    background:var(--gris-panel);
+  }
+  .campo-titulo input:focus{outline:none;border-color:var(--teal-500);box-shadow:0 0 0 3px rgba(20,145,155,.18)}
+
+  button.btn{
+    font-family:var(--fuente);font-size:13px;font-weight:600;cursor:pointer;
+    border:1px solid var(--gris-borde);background:var(--blanco);color:var(--texto);
+    padding:8px 13px;border-radius:8px;display:inline-flex;align-items:center;gap:6px;
+    transition:transform .04s ease,box-shadow .15s ease,background .15s ease,border-color .15s ease;
+  }
+  button.btn:hover{border-color:var(--teal-500);box-shadow:0 2px 6px rgba(15,31,61,.08)}
+  button.btn:active{transform:translateY(1px)}
+  button.btn:focus-visible{outline:3px solid rgba(20,145,155,.45);outline-offset:1px}
+  button.btn .ic{font-size:14px;line-height:1}
+  button.btn.primario{
+    background:linear-gradient(180deg,var(--teal-500),var(--teal-700));
+    color:#fff;border-color:var(--teal-700);
+  }
+  button.btn.primario:hover{box-shadow:0 3px 10px rgba(13,115,119,.35)}
+  button.btn.dorado{
+    background:linear-gradient(180deg,var(--dorado-400),var(--dorado-600));
+    color:var(--marino-900);border-color:var(--dorado-700);
+  }
+  button.btn.tenue{background:var(--gris-panel);color:var(--marino-700)}
+  .zoom{display:flex;align-items:center;gap:3px;background:var(--gris-panel);
+        border:1px solid var(--gris-borde);border-radius:8px;padding:2px}
+  .zoom button{border:none;background:transparent;width:30px;height:30px;border-radius:6px;
+        cursor:pointer;font-size:15px;font-weight:700;color:var(--marino-700)}
+  .zoom button:hover{background:#E4E9F2}
+  .zoom .nivel{font-size:12px;color:var(--texto-tenue);min-width:44px;text-align:center}
+
+  /* --------------------------- Cuerpo (editor + diagrama) --------------------------- */
+  main{flex:1;display:grid;grid-template-columns:minmax(300px,1fr) minmax(0,2fr);gap:0;min-height:0}
+  .panel-editor{display:flex;flex-direction:column;border-right:1px solid var(--gris-borde);background:var(--blanco);min-width:0}
+  .panel-editor .cab{
+    padding:9px 14px;font-size:12px;font-weight:700;color:var(--marino-700);
+    letter-spacing:.05em;text-transform:uppercase;border-bottom:1px solid var(--gris-borde);
+    background:var(--gris-panel);display:flex;align-items:center;gap:8px;
+  }
+  .panel-editor .cab .pin{width:8px;height:8px;border-radius:50%;background:var(--teal-500)}
+  textarea#editor{
+    flex:1;border:none;resize:none;padding:14px 16px;font-size:13px;line-height:1.6;
+    font-family:"Cascadia Code","Consolas","Courier New",monospace;color:var(--texto);
+    background:var(--blanco);tab-size:2;
+  }
+  textarea#editor:focus{outline:none;box-shadow:inset 0 0 0 2px rgba(20,145,155,.18)}
+
+  .panel-diagrama{display:flex;flex-direction:column;background:var(--gris-suave);min-width:0}
+  .panel-diagrama .cab{
+    padding:9px 14px;font-size:12px;font-weight:700;color:var(--marino-700);
+    letter-spacing:.05em;text-transform:uppercase;border-bottom:1px solid var(--gris-borde);
+    background:var(--gris-panel);display:flex;align-items:center;gap:8px;justify-content:space-between;
+  }
+  .panel-diagrama .cab .estado{font-weight:600;letter-spacing:0;text-transform:none;font-size:12px}
+  .estado.ok{color:var(--verde-ok)}
+  .estado.err{color:var(--rojo-alerta)}
+  .lienzo{
+    flex:1;overflow:auto;padding:26px;position:relative;
+    background:
+      radial-gradient(circle,rgba(15,31,61,.05) 1px,transparent 1.4px);
+    background-size:22px 22px;
+  }
+  .lienzo-inner{transform-origin:top left;transition:transform .08s linear;display:inline-block;min-width:100%}
+  .lienzo svg{background:transparent}
+
+  /* Mensaje de error (§4.2), sin bloquear la aplicación */
+  .error-box{
+    display:none;margin:0 26px 20px;padding:14px 16px;border-radius:var(--radio);
+    background:#FDECEE;border:1px solid #F3B7BD;color:#8A1F27;font-size:13px;
+  }
+  .error-box.visible{display:block}
+  .error-box b{display:block;margin-bottom:4px;font-size:13px}
+  .error-box code{background:#fff;border:1px solid #f0c9cd;border-radius:5px;padding:1px 5px;font-size:12px}
+
+  /* --------------------------- Paneles laterales desplegables --------------------------- */
+  .drawer-overlay{
+    position:fixed;inset:0;background:rgba(15,31,61,.42);z-index:40;opacity:0;
+    visibility:hidden;transition:opacity .2s ease,visibility .2s ease;
+  }
+  .drawer-overlay.abierto{opacity:1;visibility:visible}
+  .drawer{
+    position:fixed;top:0;right:0;height:100%;width:min(560px,92vw);background:var(--blanco);
+    z-index:50;box-shadow:-8px 0 30px rgba(15,31,61,.22);transform:translateX(100%);
+    transition:transform .24s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column;
+  }
+  .drawer.abierto{transform:translateX(0)}
+  .drawer .cab{
+    background:var(--marino-900);color:#fff;padding:16px 20px;display:flex;
+    align-items:center;justify-content:space-between;border-bottom:3px solid var(--dorado-600);
+  }
+  .drawer .cab h2{font-size:16px;margin:0;font-weight:700}
+  .drawer .cab .cerrar{
+    background:transparent;border:1px solid rgba(255,255,255,.35);color:#fff;
+    width:32px;height:32px;border-radius:7px;cursor:pointer;font-size:16px;
+  }
+  .drawer .cab .cerrar:hover{background:rgba(255,255,255,.14)}
+  .drawer .cuerpo{overflow:auto;padding:20px 22px}
+
+  /* Guía de figuras (§4.6) */
+  .guia h3{
+    font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--teal-700);
+    margin:20px 0 8px;padding-bottom:5px;border-bottom:2px solid var(--gris-borde);
+  }
+  .guia h3:first-child{margin-top:0}
+  .guia table{width:100%;border-collapse:collapse;font-size:12.5px;margin-bottom:6px}
+  .guia td{padding:6px 8px;border-bottom:1px solid var(--gris-borde);vertical-align:top}
+  .guia td:first-child{font-weight:700;color:var(--marino-700);white-space:nowrap}
+  .guia code{
+    background:var(--gris-panel);border:1px solid var(--gris-borde);border-radius:5px;
+    padding:1px 6px;font-size:11.5px;font-family:"Consolas","Courier New",monospace;color:var(--marino-900);
+  }
+  .guia .reglas li{margin-bottom:5px;font-size:12.5px}
+  .guia .chip{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700}
+
+  /* Instrucción IA (§4.8) */
+  .instr-desc{font-size:13px;color:var(--texto-tenue);margin:0 0 14px}
+  pre.instruccion{
+    background:#0E1B33;color:#DDE6F5;border-radius:var(--radio);padding:16px 18px;
+    font-size:12px;line-height:1.55;font-family:"Consolas","Courier New",monospace;
+    white-space:pre-wrap;word-break:break-word;border:1px solid #23345a;max-height:none;
+  }
+
+  /* --------------------------- Pie institucional --------------------------- */
+  footer.app{
+    background:var(--marino-900);color:#B9C6DE;padding:11px 22px;font-size:11.5px;
+    display:flex;flex-wrap:wrap;gap:6px 18px;align-items:center;justify-content:space-between;
+    border-top:3px solid var(--dorado-600);
+  }
+  footer.app b{color:#fff}
+  footer.app .der{color:#8CA0C2}
+
+  /* Utilidad de solo lectura para textos literales */
+  .oculto{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+
+  /* Responsivo */
+  @media (max-width:900px){
+    main{grid-template-columns:1fr;grid-template-rows:minmax(180px,34vh) 1fr}
+    .panel-editor{border-right:none;border-bottom:1px solid var(--gris-borde)}
+    header.app .iso{display:none}
+    .campo-titulo input{min-width:150px}
+  }
+</style>
+</head>
+<body>
+
+<!-- ============================ Encabezado (§5) ============================ -->
+<header class="app">
+  <div class="escudo" aria-hidden="true">MdY</div>
+  <div class="marca">
+    <span class="brand">Corporación Mesa de Yeguas</span>
+    <h1>Modelador de Flujogramas BPMN 2.0</h1>
+    <span class="sub">Dirección de Auditoría Interna, Riesgos, Calidad, Inocuidad y Ética</span>
+  </div>
+  <div class="iso">
+    <b>ISO 9001:2015 compatible</b><br/>
+    Notación OMG BPMN v2.0.2 · Uso interno
+  </div>
+</header>
+
+<!-- ============================ Barra de acciones ============================ -->
+<div class="toolbar">
+  <div class="campo-titulo">
+    <label for="tituloProceso">Proceso</label>
+    <input id="tituloProceso" type="text" value="Procedimiento de Atención de Titulares (PQRS)"
+           placeholder="Nombre del proceso para encabezado/pie del PDF" />
+  </div>
+  <div class="sep"></div>
+  <button class="btn primario" id="btnRenderizar" title="Renderizar (Ctrl+Enter)">
+    <span class="ic">&#9654;</span> Renderizar
+  </button>
+  <div class="zoom" role="group" aria-label="Control de zoom">
+    <button id="zoomMenos" title="Alejar" aria-label="Alejar">&minus;</button>
+    <span class="nivel" id="zoomNivel">100%</span>
+    <button id="zoomMas" title="Acercar" aria-label="Acercar">&plus;</button>
+    <button id="zoomReset" title="Restablecer zoom" aria-label="Restablecer" style="font-size:12px">100</button>
+  </div>
+  <div class="sep"></div>
+  <div class="grupo">
+    <button class="btn tenue" id="btnSVG" title="Exportar SVG vectorial"><span class="ic">&#9633;</span> SVG</button>
+    <button class="btn tenue" id="btnPNG" title="Exportar PNG alta resolución"><span class="ic">&#128444;</span> PNG</button>
+    <button class="btn dorado" id="btnPDF" title="Exportar PDF institucional"><span class="ic">&#128196;</span> PDF</button>
+  </div>
+  <div class="sep"></div>
+  <div class="grupo">
+    <button class="btn tenue" id="btnGuardar" title="Guardar proyecto (.json)"><span class="ic">&#128190;</span> Guardar</button>
+    <button class="btn tenue" id="btnCargar" title="Cargar proyecto (.json/.txt/.mmd)"><span class="ic">&#128193;</span> Cargar</button>
+    <input type="file" id="inputCargar" accept=".json,.txt,.mmd" class="oculto" />
+  </div>
+  <div class="sep"></div>
+  <div class="grupo">
+    <button class="btn" id="btnGuia" title="Abrir guía de figuras"><span class="ic">&#9432;</span> Guía de figuras</button>
+    <button class="btn" id="btnInstr" title="Instrucción para IA"><span class="ic">&#129302;</span> Instrucción IA</button>
+  </div>
+</div>
+
+<!-- ============================ Cuerpo ============================ -->
+<main>
+  <!-- Editor (fuente de verdad) -->
+  <section class="panel-editor">
+    <div class="cab"><span class="pin"></span> Texto estructurado · fuente de verdad</div>
+    <textarea id="editor" spellcheck="false" aria-label="Editor de texto estructurado BPMN"></textarea>
+  </section>
+
+  <!-- Diagrama renderizado -->
+  <section class="panel-diagrama">
+    <div class="cab">
+      <span>Diagrama BPMN 2.0</span>
+      <span class="estado ok" id="estado">Listo</span>
+    </div>
+    <div class="error-box" id="errorBox" role="alert"></div>
+    <div class="lienzo" id="lienzo">
+      <div class="lienzo-inner" id="lienzoInner"></div>
+    </div>
+  </section>
+</main>
+
+<!-- ============================ Pie institucional ============================ -->
+<footer class="app">
+  <span><b>Corporación Mesa de Yeguas Country Club</b> · Dirección de Auditoría Interna, Riesgos, Calidad, Inocuidad y Ética · Uso interno</span>
+  <span class="der">Fuente: OMG BPMN v2.0.2 (Formal/2013-12-09) · Compatible ISO 9001:2015</span>
+</footer>
+
+<!-- ============================ Drawer: Guía de figuras (§4.6) ============================ -->
+<div class="drawer-overlay" id="overlayGuia"></div>
+<aside class="drawer" id="drawerGuia" aria-hidden="true" aria-label="Guía de figuras BPMN">
+  <div class="cab">
+    <h2>Guía de Figuras BPMN 2.0</h2>
+    <button class="cerrar" data-cerrar="Guia" aria-label="Cerrar">&times;</button>
+  </div>
+  <div class="cuerpo guia">
+    <h3>① Eventos</h3>
+    <table>
+      <tr><td>Inicio</td><td>Círculo delgado. Comienza el proceso; no recibe flujos. <code>E1((Texto)):::inicio</code></td></tr>
+      <tr><td>Intermedio</td><td>Ocurre durante el flujo: captura o lanza eventos. <code>EI1((&#10227; Texto)):::intermedio</code></td></tr>
+      <tr><td>Fin</td><td>Círculo grueso. Cierra el proceso; no emite flujos. <code>E9((Texto)):::fin</code></td></tr>
+      <tr><td>Temporizador</td><td>Activa flujo por fecha, hora o intervalo. <code>A1["&#9201; Texto"]:::timer</code></td></tr>
+      <tr><td>Mensaje</td><td>Envío o recepción de mensaje. <code>A1["&#9993; Texto"]:::mensaje</code></td></tr>
+    </table>
+
+    <h3>② Actividades</h3>
+    <table>
+      <tr><td>Tarea</td><td>Unidad atómica de trabajo. <code>A1["Texto"]:::tarea</code></td></tr>
+      <tr><td>Subproceso</td><td>Detalle en nivel adicional. <code>A1[["Texto"]]:::tarea</code></td></tr>
+      <tr><td>Usuario</td><td>Requiere interacción humana. <code>A1["Texto"]:::usuario</code></td></tr>
+      <tr><td>Servicio</td><td>Ejecutada por un sistema. <code>A1["Texto"]:::servicio</code></td></tr>
+      <tr><td>Pool/Carril</td><td>Participante o rol. <code>subgraph ID["Nombre"] … end</code></td></tr>
+    </table>
+
+    <h3>③ Compuertas</h3>
+    <table>
+      <tr><td>Exclusiva (XOR)</td><td>Solo un camino se activa. <code>G1{"&times; ¿Texto?"}:::gateway</code></td></tr>
+      <tr><td>Paralela (AND)</td><td>Activa todos los caminos. <code>G1{"+ Texto"}:::gateway</code></td></tr>
+      <tr><td>Inclusiva (OR)</td><td>Uno o más caminos por condición. <code>G1{"&#9675; Texto"}:::gateway</code></td></tr>
+      <tr><td>Basada en eventos</td><td>Sigue el primer evento que ocurra. <code>G1{"&#9673; Texto"}:::gateway</code></td></tr>
+      <tr><td>Compleja</td><td>Condiciones avanzadas (uso excepcional). <code>G1{"&#10035; Texto"}:::gateway</code></td></tr>
+    </table>
+
+    <h3>④ Conectores</h3>
+    <table>
+      <tr><td>Secuencia</td><td>Orden de ejecución dentro del mismo pool. <code>A --&gt; B</code></td></tr>
+      <tr><td>Condicional</td><td>Salida etiquetada de compuerta. <code>G1 --&gt;|Sí| A2</code></td></tr>
+      <tr><td>Mensaje</td><td>Solo entre pools distintos (discontinua). <code>A -.-&gt;|Texto| B</code></td></tr>
+      <tr><td>Asociación</td><td>Vincula datos/notas; no altera el flujo. <code>A5 -.- D1</code></td></tr>
+      <tr><td>Objeto de datos</td><td>Entrada/salida auditable. <code>D1[/"Texto"/]:::datos</code></td></tr>
+      <tr><td>Anotación</td><td>Documenta políticas o normativas. <code>N1["Texto"]:::nota</code></td></tr>
+    </table>
+
+    <h3>Reglas esenciales de conexión</h3>
+    <ul class="reglas">
+      <li>El flujo de secuencia <b>no cruza</b> límites de pool.</li>
+      <li>El evento de inicio no tiene flujos entrantes; el de fin, ni salientes.</li>
+      <li>Toda compuerta XOR etiqueta cada camino saliente.</li>
+      <li>El flujo de mensaje solo conecta pools distintos.</li>
+      <li>La asociación no sustituye al flujo de secuencia.</li>
+    </ul>
+
+    <h3>Buenas prácticas en MDY</h3>
+    <ul class="reglas">
+      <li>Nombrar tareas como <b>Verbo + Objeto</b> (ej.: «Verificar presupuesto»).</li>
+      <li>Flujo de izquierda a derecha; minimizar cruces de líneas.</li>
+      <li>Usar pools solo si hay dos entidades autónomas distintas.</li>
+      <li>Anotar normativas aplicables (Res. 2674/2013, contratos) con anotaciones.</li>
+      <li>Objetos de datos para documentar entradas/salidas auditables.</li>
+    </ul>
+  </div>
+</aside>
+
+<!-- ============================ Drawer: Instrucción para IA (§4.8) ============================ -->
+<div class="drawer-overlay" id="overlayInstr"></div>
+<aside class="drawer" id="drawerInstr" aria-hidden="true" aria-label="Instrucción para IA conversacional">
+  <div class="cab">
+    <h2>Instrucción para IA conversacional</h2>
+    <button class="cerrar" data-cerrar="Instr" aria-label="Cerrar">&times;</button>
+  </div>
+  <div class="cuerpo">
+    <p class="instr-desc">
+      Copie este texto y péguelo en su asistente conversacional junto con la descripción en prosa del
+      proceso. La IA devolverá el texto estructurado que esta herramienta renderiza sin intervención adicional.
+    </p>
+    <button class="btn dorado" id="btnCopiarInstr" style="margin-bottom:14px">
+      <span class="ic">&#128203;</span> Copiar instrucción para IA
+    </button>
+    <pre class="instruccion" id="instruccionVisible"></pre>
+  </div>
+</aside>
+
+<!-- ====================================================================== -->
+<!-- CONTENIDOS LITERALES (almacenados como texto plano para fidelidad exacta) -->
+<!-- ====================================================================== -->
+
+<!-- Ejemplo precargado (§7): PQRS. Sin classDef: la herramienta los inyecta. -->
+<script type="text/plain" id="ejemploPrecargado">flowchart LR
+subgraph PT["Titular de la Información"]
+  E1(("✉ Radica PQRS")):::inicio
+  E9((Recibe respuesta)):::fin
+end
+subgraph PI["El Servicio Seleccionado"]
+  subgraph L1["Recepción / Atención"]
+    A1["Verificar identidad del titular"]:::usuario
+    G1{"× ¿Identidad válida?"}:::gateway
+    A2["Requerir subsanación"]:::tarea
+    A3["Registrar y radicar solicitud"]:::servicio
+    G2{"× ¿Tipo de solicitud?"}:::gateway
+  end
+  subgraph L2["Oficial de Protección de Datos (OPDP)"]
+    T1["⏱ Atender consulta (≤10 días háb.)"]:::timer
+    T2["⏱ Atender reclamo (≤15 días háb.)"]:::timer
+    A6["Elaborar respuesta de fondo"]:::usuario
+    A7["Notificar respuesta al titular"]:::mensaje
+    A8["Archivar evidencias"]:::servicio
+    E8((PQRS cerrada)):::fin
+  end
+  subgraph L3["Área Técnica Responsable"]
+    A4["Consultar bases de datos"]:::servicio
+    A5["Ejecutar acción sobre el dato"]:::usuario
+  end
+end
+D1[/"Registro de trazabilidad"/]:::datos
+N1["Marco normativo: Ley 1581 de 2012 y Decreto 1074 de 2015"]:::nota
+
+E1 -.->|Solicitud PQRS| A1
+A1 --> G1
+G1 -->|No| A2
+A2 -.->|Requerimiento de subsanación| E9
+G1 -->|Sí| A3
+A3 --> G2
+A3 -.- D1
+G2 -->|Consulta| T1
+G2 -->|Reclamo| T2
+T1 --> A4
+T2 --> A4
+A4 --> A5
+A5 --> A6
+A6 --> A7
+A7 -.->|Respuesta al titular| E9
+A7 --> A8
+A8 --> E8
+G2 -.- N1</script>
+
+<!-- Instrucción literal §6 (contrato para la IA). NO editar: debe entregarse sin alteraciones. -->
+<script type="text/plain" id="instruccionIA">INSTRUCCIÓN — Generación de texto estructurado para el Modelador de Flujogramas BPMN 2.0 de MDY
+
+Eres analista de procesos. Convierte la descripción de un proceso (que te daré a continuación)
+en el "texto estructurado" que el Modelador de Flujogramas BPMN 2.0 de MDY renderiza.
+Responde ÚNICAMENTE con un bloque de código en sintaxis Mermaid. Sin saludos, sin explicaciones,
+sin texto antes ni después del bloque.
+
+REGLAS DE FORMATO
+1. La primera línea debe ser exactamente:  flowchart LR
+2. Cada nodo lleva un identificador corto y único (E1, A2, G1, T1...) seguido de su figura y etiqueta.
+3. Figuras y clases (usa el sufijo :::clase; los estilos se aplican solos en la herramienta):
+   - Inicio:                 E1((Texto)):::inicio
+   - Intermedio:             EI1((⟳ Texto)):::intermedio
+   - Fin:                    E9((Texto)):::fin
+   - Tarea genérica:         A1["Texto"]:::tarea
+   - Tarea de usuario:       A1["Texto"]:::usuario
+   - Tarea de servicio:      A1["Texto"]:::servicio
+   - Evento/tarea mensaje:   A1["✉ Texto"]:::mensaje
+   - Temporizador:           A1["⏱ Texto"]:::timer
+   - Subproceso:             A1[["Texto"]]:::tarea
+   - Objeto de datos (E/S):  D1[/"Texto"/]:::datos
+   - Anotación (nota):       N1["Texto"]:::nota
+   - Compuerta:              G1{"× ¿Texto?"}:::gateway
+       · Exclusiva (XOR): ×     · Paralela (AND): +     · Inclusiva (OR): ○
+       · Basada en eventos: ◉     · Compleja: ✳
+       (coloca el símbolo como primer carácter de la etiqueta de la compuerta)
+4. Pools y carriles con subgraph:
+       subgraph ID["Nombre del carril o pool"]
+         ...nodos...
+       end
+   Pools distintos = subgraphs separados de primer nivel. Los carriles internos van anidados.
+5. Conectores:
+   - Secuencia:                 A --> B
+   - Condicional (etiquetado):  G1 -->|Sí| A2      y      G1 -->|No| A3
+   - Mensaje entre pools:       E1 -.->|Texto| G1   (línea discontinua)
+   - Asociación (dato/nota):    A5 -.- D1           (punteada, sin flecha; no altera el flujo)
+6. Saltos de línea dentro de una etiqueta: usa <br/>
+7. Toda etiqueta que contenga ¿ ? , ( ) : debe ir entre comillas dobles.
+8. Cumple las reglas BPMN: el inicio no recibe flechas; el fin no emite flechas; etiqueta cada
+   salida de compuerta; el flujo de mensaje solo entre pools distintos; los objetos de datos y
+   las anotaciones se vinculan con asociación (-.-), nunca con flujo de secuencia.
+9. Nombra las tareas como Verbo + Objeto (ej.: "Verificar presupuesto").
+10. No declares classDef; la herramienta los inyecta automáticamente.
+
+CRITERIO DE SÍNTESIS (diagrama conciso — OBLIGATORIO)
+Sin importar la extensión de la descripción, entrega un flujograma COMPACTO y legible, orientado a auditoría.
+No resumas ni omitas información del proceso descrito: sintetízalo en el diagrama aplicando estas reglas.
+S1. Modela solo las actividades sustantivas y los puntos de decisión o control relevantes; omite micro-pasos.
+S2. Consolida en una sola tarea (Verbo + Objeto) los pasos secuenciales que no generan bifurcación.
+S3. Encapsula los bloques de detalle en un subproceso en lugar de listar cada paso:  A1[["Texto"]]:::tarea
+S4. Incluye una compuerta solo donde el flujo se bifurca realmente; evita decisiones triviales o redundantes.
+S5. Rango objetivo: entre 8 y 14 nodos (sin contar pools ni carriles). Supéralo únicamente si el proceso lo exige.
+S6. Agrega eventos intermedios, temporizadores, objetos de datos o anotaciones solo cuando aporten control auditable.
+S7. Crea un pool por participante únicamente si hay dos entidades autónomas distintas; en caso contrario, usa un solo pool.
+
+FORMATO DE SALIDA
+Responde solo con el bloque de código, comenzando en la línea "flowchart LR".
+
+EJEMPLO DE REFERENCIA
+flowchart LR
+subgraph P1["Solicitante"]
+  E1((Radica solicitud)):::inicio
+end
+subgraph P2["Compras"]
+  G1{"× ¿Presupuesto aprobado?"}:::gateway
+  A1["Generar orden de compra"]:::servicio
+  E2((Proceso completado)):::fin
+end
+E1 -.->|Radicación| G1
+G1 -->|Sí| A1
+G1 -->|No| E2
+A1 --> E2
+
+DESCRIPCIÓN DEL PROCESO A MODELAR:
+[Pegue aquí, en prosa, el proceso que desea diagramar.]</script>
+
+<script>
+/* ========================================================================
+   LÓGICA DE LA APLICACIÓN
+   ======================================================================== */
+
+/* --- Referencias del DOM --- */
+const editor       = document.getElementById('editor');
+const lienzoInner  = document.getElementById('lienzoInner');
+const errorBox     = document.getElementById('errorBox');
+const estado       = document.getElementById('estado');
+const tituloProceso= document.getElementById('tituloProceso');
+
+/* --------------------------------------------------------------------
+   §3. classDef institucionales inyectables.
+   La herramienta los añade automáticamente si el texto no los declara,
+   respetando la codificación cromática de la §5 y de la Guía de Figuras.
+   -------------------------------------------------------------------- */
+const CLASSDEFS = {
+  inicio:     "classDef inicio fill:#E7F6EC,stroke:#2E9E5B,stroke-width:2px,color:#0F1F3D;",
+  intermedio: "classDef intermedio fill:#E1F3F4,stroke:#14919B,stroke-width:2px,color:#0F1F3D;",
+  fin:        "classDef fin fill:#FBE7E9,stroke:#D1343F,stroke-width:3px,color:#0F1F3D;",
+  tarea:      "classDef tarea fill:#EAF0FA,stroke:#1A3560,stroke-width:1.5px,color:#0F1F3D;",
+  usuario:    "classDef usuario fill:#E9EFFA,stroke:#1A3560,stroke-width:1.5px,color:#0F1F3D;",
+  servicio:   "classDef servicio fill:#E1F3F4,stroke:#0D7377,stroke-width:1.5px,color:#0F1F3D;",
+  mensaje:    "classDef mensaje fill:#EAF0FA,stroke:#1A3560,stroke-width:1.5px,color:#0F1F3D;",
+  timer:      "classDef timer fill:#FBF1D8,stroke:#C9981A,stroke-width:1.5px,color:#0F1F3D;",
+  gateway:    "classDef gateway fill:#FBF1D8,stroke:#B8962E,stroke-width:1.5px,color:#0F1F3D;",
+  datos:      "classDef datos fill:#EFF1F4,stroke:#8A94A6,stroke-width:1.5px,color:#0F1F3D;",
+  nota:       "classDef nota fill:#FBFBFC,stroke:#8A94A6,stroke-width:1px,stroke-dasharray:3 3,color:#0F1F3D;"
+};
+
+/* Inyecta únicamente los classDef que el texto no declara explícitamente. */
+function inyectarClassDefs(texto){
+  let extra = "";
+  for(const [nombre, def] of Object.entries(CLASSDEFS)){
+    const re = new RegExp("classDef\\s+" + nombre + "\\b");
+    if(!re.test(texto)) extra += "\n" + def;
+  }
+  return texto.replace(/\s+$/,"") + "\n" + extra + "\n";
+}
+
+/* --------------------------------------------------------------------
+   Inicialización de Mermaid (motor de render determinístico).
+   -------------------------------------------------------------------- */
+let mermaidListo = false;
+function iniciarMermaid(){
+  if(typeof mermaid === "undefined") return false;
+  mermaid.initialize({
+    startOnLoad:false,
+    securityLevel:"loose",   /* permite htmlLabels y <br/> en etiquetas */
+    theme:"base",
+    fontFamily:'Calibri, Arial, sans-serif',
+    flowchart:{ htmlLabels:true, curve:"basis", nodeSpacing:45, rankSpacing:60, padding:12 },
+    themeVariables:{
+      primaryColor:"#EAF0FA", primaryBorderColor:"#1A3560", primaryTextColor:"#0F1F3D",
+      lineColor:"#1A3560", fontSize:"14px", clusterBkg:"#F7F9FC", clusterBorder:"#C7D0DE"
+    }
+  });
+  mermaidListo = true;
+  return true;
+}
+
+/* --------------------------------------------------------------------
+   §4.1 Renderizado.
+   -------------------------------------------------------------------- */
+let idRender = 0;
+async function renderizar(){
+  if(!mermaidListo && !iniciarMermaid()){
+    mostrarError("No fue posible cargar el motor de render (Mermaid).",
+      "Verifique su conexión a Internet al abrir el archivo por primera vez y vuelva a intentarlo.");
+    return;
+  }
+  const fuente = editor.value.trim();
+  if(!fuente){
+    lienzoInner.innerHTML = "";
+    fijarEstado("Editor vacío", "");
+    ocultarError();
+    return;
+  }
+  const definicion = inyectarClassDefs(fuente);
+  try{
+    const { svg } = await mermaid.render("bpmn_"+(++idRender), definicion);
+    lienzoInner.innerHTML = svg;
+    ocultarError();
+    fijarEstado("Diagrama renderizado", "ok");
+    aplicarZoom();
+  }catch(err){
+    // §4.2 No bloquear la aplicación; mensaje claro en la voz de la interfaz.
+    const msg = (err && err.message ? err.message : String(err));
+    mostrarError("Revise la sintaxis del texto estructurado.", msg);
+    fijarEstado("Sintaxis por revisar", "err");
+  }
+}
+
+function fijarEstado(texto, clase){
+  estado.textContent = texto;
+  estado.className = "estado " + (clase||"");
+}
+function mostrarError(titulo, detalle){
+  errorBox.innerHTML = "<b>"+escapar(titulo)+"</b>"+
+    "Sugerencias: la primera línea debe ser <code>flowchart LR</code>; "+
+    "encierre entre comillas toda etiqueta con <code>¿ ? , ( ) :</code>; "+
+    "etiquete cada salida de compuerta.<br/><br/>"+
+    "<code>"+escapar(detalle||"")+"</code>";
+  errorBox.classList.add("visible");
+}
+function ocultarError(){ errorBox.classList.remove("visible"); errorBox.innerHTML=""; }
+function escapar(s){ return String(s).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c])); }
+
+/* --------------------------------------------------------------------
+   §4.1 Zoom (+ / − / restablecer).
+   -------------------------------------------------------------------- */
+let zoom = 1;
+function aplicarZoom(){
+  lienzoInner.style.transform = "scale("+zoom+")";
+  document.getElementById("zoomNivel").textContent = Math.round(zoom*100)+"%";
+}
+document.getElementById("zoomMas").onclick   = ()=>{ zoom=Math.min(zoom+0.15,3); aplicarZoom(); };
+document.getElementById("zoomMenos").onclick = ()=>{ zoom=Math.max(zoom-0.15,0.3); aplicarZoom(); };
+document.getElementById("zoomReset").onclick = ()=>{ zoom=1; aplicarZoom(); };
+
+/* --------------------------------------------------------------------
+   Utilidades de exportación: obtener el SVG y sus dimensiones intrínsecas.
+   -------------------------------------------------------------------- */
+function obtenerSVG(){
+  const svg = lienzoInner.querySelector("svg");
+  if(!svg){ alert("Primero renderice un diagrama."); return null; }
+  return svg;
+}
+function dimensionesIntrinsecas(svg){
+  let w=0, h=0;
+  if(svg.viewBox && svg.viewBox.baseVal && svg.viewBox.baseVal.width){
+    w = svg.viewBox.baseVal.width; h = svg.viewBox.baseVal.height;
+  }else{
+    const r = svg.getBoundingClientRect(); w=r.width/zoom; h=r.height/zoom;
+  }
+  return { w:Math.max(1,Math.round(w)), h:Math.max(1,Math.round(h)) };
+}
+function serializarSVG(svg, ancho, alto){
+  const clon = svg.cloneNode(true);
+  clon.setAttribute("width", ancho);
+  clon.setAttribute("height", alto);
+  clon.setAttribute("xmlns","http://www.w3.org/2000/svg");
+  clon.style.maxWidth = "none";
+  return new XMLSerializer().serializeToString(clon);
+}
+function descargar(nombre, blob){
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = nombre;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url), 1500);
+}
+function nombreArchivo(ext){
+  const base = (tituloProceso.value || "Flujograma_BPMN")
+      .replace(/[^\wáéíóúÁÉÍÓÚñÑ\s-]/g,"").replace(/\s+/g,"_").slice(0,80);
+  return "MDY_"+base+"."+ext;
+}
+
+/* --------------------------------------------------------------------
+   §4.3 Exportar SVG.
+   -------------------------------------------------------------------- */
+document.getElementById("btnSVG").onclick = ()=>{
+  const svg = obtenerSVG(); if(!svg) return;
+  const {w,h} = dimensionesIntrinsecas(svg);
+  const xml = serializarSVG(svg, w, h);
+  descargar(nombreArchivo("svg"), new Blob([xml], {type:"image/svg+xml;charset=utf-8"}));
+};
+
+/* --------------------------------------------------------------------
+   §4.3 Exportar PNG (alta resolución, fondo blanco).
+   -------------------------------------------------------------------- */
+async function generarPNGDataURL(escala){
+  const svg = obtenerSVG(); if(!svg) return null;
+  const {w,h} = dimensionesIntrinsecas(svg);
+  const xml = serializarSVG(svg, w, h);
+  const dataSVG = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(xml);
+  const img = new Image();
+  await new Promise((res,rej)=>{ img.onload=res; img.onerror=()=>rej(new Error("No se pudo rasterizar el SVG.")); img.src=dataSVG; });
+  const canvas = document.createElement("canvas");
+  canvas.width  = Math.ceil(w*escala);
+  canvas.height = Math.ceil(h*escala);
+  const ctx = canvas.getContext("2d");
+  ctx.fillStyle = "#FFFFFF";
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.drawImage(img,0,0,canvas.width,canvas.height);
+  return { dataURL:canvas.toDataURL("image/png"), w:canvas.width, h:canvas.height };
+}
+document.getElementById("btnPNG").onclick = async ()=>{
+  try{
+    const png = await generarPNGDataURL(2.5);
+    if(!png) return;
+    const blob = await (await fetch(png.dataURL)).blob();
+    descargar(nombreArchivo("png"), blob);
+  }catch(e){ alert("No fue posible exportar el PNG: "+e.message); }
+};
+
+/* --------------------------------------------------------------------
+   §4.3 Exportar PDF con encabezado y pie institucional.
+   -------------------------------------------------------------------- */
+document.getElementById("btnPDF").onclick = async ()=>{
+  try{
+    const png = await generarPNGDataURL(2.5);
+    if(!png) return;
+    if(!window.jspdf || !window.jspdf.jsPDF){ alert("No se pudo cargar jsPDF."); return; }
+    const { jsPDF } = window.jspdf;
+    const apaisado = png.w >= png.h;
+    const pdf = new jsPDF({ orientation: apaisado ? "landscape" : "portrait", unit:"mm", format:"a4" });
+    const pw = pdf.internal.pageSize.getWidth();
+    const ph = pdf.internal.pageSize.getHeight();
+
+    const MARINO=[15,31,61], TEAL=[13,115,119], DORADO=[201,152,26], GRIS=[90,102,120];
+    const titulo = tituloProceso.value || "Flujograma BPMN 2.0";
+    const fecha = new Date().toLocaleDateString("es-CO",{year:"numeric",month:"long",day:"numeric"});
+
+    /* Encabezado */
+    pdf.setFillColor(...MARINO); pdf.rect(0,0,pw,22,"F");
+    pdf.setFillColor(...DORADO); pdf.rect(0,22,pw,1.2,"F");
+    pdf.setTextColor(240,180,41); pdf.setFont("helvetica","bold"); pdf.setFontSize(8);
+    pdf.text("CORPORACIÓN MESA DE YEGUAS", 12, 8);
+    pdf.setTextColor(255,255,255); pdf.setFontSize(13);
+    pdf.text(titulo, 12, 15);
+    pdf.setFont("helvetica","normal"); pdf.setFontSize(7.5); pdf.setTextColor(198,210,230);
+    pdf.text("Dirección de Auditoría Interna, Riesgos, Calidad, Inocuidad y Ética", 12, 19.5);
+    pdf.setTextColor(240,180,41); pdf.setFont("helvetica","bold"); pdf.setFontSize(7.5);
+    pdf.text("ISO 9001:2015 compatible", pw-12, 12, {align:"right"});
+    pdf.setTextColor(198,210,230); pdf.setFont("helvetica","normal");
+    pdf.text("Notación BPMN 2.0 · OMG v2.0.2", pw-12, 16.5, {align:"right"});
+
+    /* Imagen del diagrama, ajustada al área útil */
+    const margen=12, topY=30, botY=16;
+    const areaW = pw - margen*2;
+    const areaH = ph - topY - botY;
+    const ratio = png.w/png.h;
+    let dw = areaW, dh = dw/ratio;
+    if(dh > areaH){ dh = areaH; dw = dh*ratio; }
+    const dx = (pw - dw)/2, dy = topY + (areaH - dh)/2;
+    pdf.addImage(png.dataURL, "PNG", dx, dy, dw, dh);
+
+    /* Pie institucional */
+    pdf.setDrawColor(...DORADO); pdf.setLineWidth(0.5); pdf.line(12, ph-11, pw-12, ph-11);
+    pdf.setFont("helvetica","bold"); pdf.setFontSize(7); pdf.setTextColor(...MARINO);
+    pdf.text("Corporación Mesa de Yeguas · Uso interno", 12, ph-6.5);
+    pdf.setFont("helvetica","normal"); pdf.setTextColor(...GRIS);
+    pdf.text("Fuente: OMG BPMN v2.0.2", pw/2, ph-6.5, {align:"center"});
+    pdf.text(fecha, pw-12, ph-6.5, {align:"right"});
+
+    pdf.save(nombreArchivo("pdf"));
+  }catch(e){ alert("No fue posible exportar el PDF: "+e.message); }
+};
+
+/* --------------------------------------------------------------------
+   §4.4 Guardar proyecto (.json con la fuente para round-trip).
+   -------------------------------------------------------------------- */
+document.getElementById("btnGuardar").onclick = ()=>{
+  const proyecto = {
+    aplicacion: "Modelador de Flujogramas BPMN 2.0 · MDY",
+    version: "2.1",
+    titulo: tituloProceso.value || "",
+    fuente: editor.value,
+    generado: new Date().toISOString()
+  };
+  const blob = new Blob([JSON.stringify(proyecto,null,2)], {type:"application/json"});
+  descargar(nombreArchivo("json"), blob);
+};
+
+/* --------------------------------------------------------------------
+   §4.5 Cargar proyecto (.json/.txt/.mmd) y reconstruir el diagrama.
+   -------------------------------------------------------------------- */
+document.getElementById("btnCargar").onclick = ()=> document.getElementById("inputCargar").click();
+document.getElementById("inputCargar").addEventListener("change", (ev)=>{
+  const archivo = ev.target.files[0];
+  if(!archivo) return;
+  const lector = new FileReader();
+  lector.onload = (e)=>{
+    const contenido = e.target.result;
+    const nombre = archivo.name.toLowerCase();
+    try{
+      if(nombre.endsWith(".json")){
+        const obj = JSON.parse(contenido);
+        editor.value = obj.fuente || "";
+        if(typeof obj.titulo === "string" && obj.titulo) tituloProceso.value = obj.titulo;
+      }else{ /* .txt / .mmd: el contenido es directamente el texto estructurado */
+        editor.value = contenido;
+      }
+      renderizar();
+    }catch(err){
+      mostrarError("El archivo no pudo interpretarse.", "Verifique que sea un proyecto .json válido o un .txt/.mmd con la sintaxis del modelador.");
+      fijarEstado("Carga con error","err");
+    }
+  };
+  lector.readAsText(archivo, "UTF-8");
+  ev.target.value = ""; /* permite recargar el mismo archivo */
+});
+
+/* --------------------------------------------------------------------
+   §4.6 / §4.8 Paneles laterales (guía e instrucción).
+   -------------------------------------------------------------------- */
+function abrirDrawer(nombre){
+  document.getElementById("overlay"+nombre).classList.add("abierto");
+  const d = document.getElementById("drawer"+nombre);
+  d.classList.add("abierto"); d.setAttribute("aria-hidden","false");
+}
+function cerrarDrawer(nombre){
+  document.getElementById("overlay"+nombre).classList.remove("abierto");
+  const d = document.getElementById("drawer"+nombre);
+  d.classList.remove("abierto"); d.setAttribute("aria-hidden","true");
+}
+document.getElementById("btnGuia").onclick  = ()=> abrirDrawer("Guia");
+document.getElementById("btnInstr").onclick = ()=> abrirDrawer("Instr");
+document.getElementById("overlayGuia").onclick  = ()=> cerrarDrawer("Guia");
+document.getElementById("overlayInstr").onclick = ()=> cerrarDrawer("Instr");
+document.querySelectorAll("[data-cerrar]").forEach(b=> b.onclick = ()=> cerrarDrawer(b.getAttribute("data-cerrar")) );
+
+/* --------------------------------------------------------------------
+   §4.8 Instrucción literal para IA + copia al portapapeles (sin alteraciones).
+   -------------------------------------------------------------------- */
+const TEXTO_INSTRUCCION = document.getElementById("instruccionIA").textContent.replace(/^\n/,"").replace(/\n\s*$/,"");
+document.getElementById("instruccionVisible").textContent = TEXTO_INSTRUCCION;
+
+document.getElementById("btnCopiarInstr").onclick = async ()=>{
+  const boton = document.getElementById("btnCopiarInstr");
+  const ok = ()=>{ const t=boton.innerHTML; boton.innerHTML='<span class="ic">&#10003;</span> Copiado'; setTimeout(()=>boton.innerHTML=t,1600); };
+  try{
+    if(navigator.clipboard && window.isSecureContext){
+      await navigator.clipboard.writeText(TEXTO_INSTRUCCION); ok();
+    }else{ throw new Error("sin-clipboard-api"); }
+  }catch(_){
+    /* Respaldo para apertura local (file://) donde la API puede no estar disponible */
+    const ta = document.createElement("textarea");
+    ta.value = TEXTO_INSTRUCCION; ta.style.position="fixed"; ta.style.opacity="0";
+    document.body.appendChild(ta); ta.select();
+    try{ document.execCommand("copy"); ok(); }
+    catch(e){ alert("Copie el texto manualmente desde el panel."); }
+    ta.remove();
+  }
+};
+
+/* --------------------------------------------------------------------
+   Atajos, ejemplo precargado (§7) y arranque.
+   -------------------------------------------------------------------- */
+document.getElementById("btnRenderizar").onclick = renderizar;
+editor.addEventListener("keydown",(e)=>{ if((e.ctrlKey||e.metaKey) && e.key==="Enter"){ e.preventDefault(); renderizar(); } });
+document.addEventListener("keydown",(e)=>{ if(e.key==="Escape"){ cerrarDrawer("Guia"); cerrarDrawer("Instr"); } });
+
+window.addEventListener("load", ()=>{
+  editor.value = document.getElementById("ejemploPrecargado").textContent.trim();
+  iniciarMermaid();
+  renderizar();
+});
+</script>
+</body>
+</html>
