@@ -158,6 +158,40 @@
   }
   .lienzo-inner{transform-origin:top left;transition:transform .08s linear;display:inline-block;min-width:100%}
   .lienzo svg{background:transparent}
+  .lienzo svg .node{cursor:pointer}
+  .lienzo svg .node:hover{filter:drop-shadow(0 0 4px rgba(20,145,155,.85))}
+  .panel-diagrama .cab .pista{font-weight:400;color:var(--texto-tenue);text-transform:none;letter-spacing:0;font-size:11px}
+
+  /* --------------------------- Edición visual de figuras (modal) --------------------------- */
+  .modal-overlay{
+    position:fixed;inset:0;background:rgba(15,31,61,.42);z-index:60;opacity:0;
+    visibility:hidden;transition:opacity .15s ease,visibility .15s ease;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .modal-overlay.abierto{opacity:1;visibility:visible}
+  .modal-nodo{
+    background:var(--blanco);border-radius:var(--radio);box-shadow:var(--sombra);
+    width:min(440px,92vw);transform:translateY(10px);transition:transform .15s ease;overflow:hidden;
+  }
+  .modal-overlay.abierto .modal-nodo{transform:translateY(0)}
+  .modal-nodo .cab{
+    background:var(--marino-900);color:#fff;padding:12px 16px;display:flex;
+    align-items:center;justify-content:space-between;border-bottom:3px solid var(--dorado-600);
+  }
+  .modal-nodo .cab .tipo{font-size:12px;text-transform:uppercase;letter-spacing:.06em;font-weight:700;color:var(--dorado-400)}
+  .modal-nodo .cab .cerrar{
+    background:transparent;border:1px solid rgba(255,255,255,.35);color:#fff;
+    width:26px;height:26px;border-radius:6px;cursor:pointer;font-size:14px;line-height:1;
+  }
+  .modal-nodo .cab .cerrar:hover{background:rgba(255,255,255,.14)}
+  .modal-nodo .cuerpo{padding:16px}
+  .modal-nodo label{display:block;font-size:12px;color:var(--texto-tenue);font-weight:600;margin-bottom:6px}
+  .modal-nodo textarea{
+    width:100%;border:1px solid var(--gris-borde);border-radius:8px;padding:9px 10px;
+    font-family:var(--fuente);font-size:13.5px;resize:vertical;min-height:76px;color:var(--texto);
+  }
+  .modal-nodo textarea:focus{outline:none;border-color:var(--teal-500);box-shadow:0 0 0 3px rgba(20,145,155,.18)}
+  .modal-nodo .acciones{display:flex;gap:8px;padding:12px 16px;border-top:1px solid var(--gris-borde);background:var(--gris-panel)}
 
   /* Mensaje de error (§4.2), sin bloquear la aplicación */
   .error-box{
@@ -300,7 +334,7 @@
   <!-- Diagrama renderizado -->
   <section class="panel-diagrama">
     <div class="cab">
-      <span>Diagrama BPMN 2.0</span>
+      <span>Diagrama BPMN 2.0 <span class="pista">· clic en una figura para editarla</span></span>
       <span class="estado ok" id="estado">Listo</span>
     </div>
     <div class="error-box" id="errorBox" role="alert"></div>
@@ -399,6 +433,28 @@
     <pre class="instruccion" id="instruccionVisible"></pre>
   </div>
 </aside>
+
+<!-- ============================ Modal: edición visual de una figura ============================ -->
+<div class="modal-overlay" id="overlayEditorNodo">
+  <div class="modal-nodo" role="dialog" aria-modal="true" aria-label="Editar figura del diagrama">
+    <div class="cab">
+      <span class="tipo" id="editorNodoTipo">Figura</span>
+      <button class="cerrar" id="btnCerrarEditorNodo" aria-label="Cerrar">&times;</button>
+    </div>
+    <div class="cuerpo">
+      <label for="editorNodoTexto">Texto de la figura</label>
+      <textarea id="editorNodoTexto" rows="3" spellcheck="true"></textarea>
+    </div>
+    <div class="acciones">
+      <button class="btn tenue" id="btnEliminarNodo" title="Eliminar figura y sus conexiones">
+        <span class="ic">&#128465;</span> Eliminar
+      </button>
+      <div style="flex:1"></div>
+      <button class="btn" id="btnCancelarNodo">Cancelar</button>
+      <button class="btn primario" id="btnGuardarNodo">Guardar</button>
+    </div>
+  </div>
+</div>
 
 <!-- ====================================================================== -->
 <!-- CONTENIDOS LITERALES (almacenados como texto plano para fidelidad exacta) -->
@@ -650,6 +706,116 @@ function aplicarZoom(){
 document.getElementById("zoomMas").onclick   = ()=>{ zoom=Math.min(zoom+0.15,3); aplicarZoom(); };
 document.getElementById("zoomMenos").onclick = ()=>{ zoom=Math.max(zoom-0.15,0.3); aplicarZoom(); };
 document.getElementById("zoomReset").onclick = ()=>{ zoom=1; aplicarZoom(); };
+
+/* --------------------------------------------------------------------
+   §4.9 Edición visual de figuras: clic sobre una figura del diagrama
+   renderizado para renombrarla o eliminarla, sin escribir sintaxis a mano.
+   El texto estructurado sigue siendo la única fuente de verdad: esta
+   edición solo reescribe la línea del nodo correspondiente y re-renderiza.
+   -------------------------------------------------------------------- */
+const PATRONES_NODO = [
+  { forma:"circulo",    apertura:"((", cierre:"))", re:/^(\s*)([A-Za-z_][\w]*)\(\(\s*([\s\S]*?)\s*\)\)(:::[\w-]+)?\s*$/ },
+  { forma:"subproceso", apertura:"[[", cierre:"]]", re:/^(\s*)([A-Za-z_][\w]*)\[\[\s*([\s\S]*?)\s*\]\](:::[\w-]+)?\s*$/ },
+  { forma:"datos",      apertura:"[/", cierre:"/]", re:/^(\s*)([A-Za-z_][\w]*)\[\/\s*([\s\S]*?)\s*\/\](:::[\w-]+)?\s*$/ },
+  { forma:"gateway",    apertura:"{",  cierre:"}",  re:/^(\s*)([A-Za-z_][\w]*)\{\s*([\s\S]*?)\s*\}(:::[\w-]+)?\s*$/ },
+  { forma:"tarea",      apertura:"[",  cierre:"]",  re:/^(\s*)([A-Za-z_][\w]*)\[\s*([\s\S]*?)\s*\](:::[\w-]+)?\s*$/ }
+];
+const TIPOS_LEGIBLES = {
+  inicio:"Evento de inicio", intermedio:"Evento intermedio", fin:"Evento de fin",
+  tarea:"Tarea", usuario:"Tarea de usuario", servicio:"Tarea de servicio",
+  mensaje:"Tarea de mensaje", timer:"Temporizador", gateway:"Compuerta",
+  datos:"Objeto de datos", nota:"Anotación"
+};
+
+function localizarNodo(id){
+  const lineas = editor.value.split("\n");
+  for(let idx=0; idx<lineas.length; idx++){
+    for(const patron of PATRONES_NODO){
+      const m = lineas[idx].match(patron.re);
+      if(m && m[2]===id){
+        return { idx, indent:m[1], id:m[2], labelCrudo:m[3], clase:(m[4]||"").replace(":::",""), patron };
+      }
+    }
+  }
+  return null;
+}
+function textoEditableDesdeLabel(labelCrudo){
+  let s = labelCrudo;
+  if(s.length>=2 && s[0]==='"' && s[s.length-1]==='"') s = s.slice(1,-1);
+  return s.replace(/<br\s*\/?>/gi, "\n");
+}
+function labelDesdeTextoEditable(texto){
+  let lineas = texto.split("\n").map(l=>l.trim());
+  while(lineas.length>1 && lineas[0]==="") lineas.shift();
+  while(lineas.length>1 && lineas[lineas.length-1]==="") lineas.pop();
+  const unido = lineas.join("<br/>");
+  const necesitaComillas = /[¿?,():]/.test(unido) || lineas.length>1;
+  return necesitaComillas ? '"'+unido.replace(/"/g,"'")+'"' : unido;
+}
+
+let nodoActual = null;
+const overlayEditorNodo = document.getElementById("overlayEditorNodo");
+const editorNodoTexto   = document.getElementById("editorNodoTexto");
+
+function abrirEditorNodo(id){
+  const info = localizarNodo(id);
+  if(!info) return;
+  nodoActual = info;
+  document.getElementById("editorNodoTipo").textContent =
+    (TIPOS_LEGIBLES[info.clase] || "Figura") + " · " + info.id;
+  editorNodoTexto.value = textoEditableDesdeLabel(info.labelCrudo);
+  overlayEditorNodo.classList.add("abierto");
+  editorNodoTexto.focus();
+  editorNodoTexto.select();
+}
+function cerrarEditorNodo(){
+  overlayEditorNodo.classList.remove("abierto");
+  nodoActual = null;
+}
+
+lienzoInner.addEventListener("click", (ev)=>{
+  const nodo = ev.target.closest(".node");
+  if(!nodo) return;
+  const m = (nodo.id || "").match(/^flowchart-(.+)-\d+$/);
+  if(!m) return;
+  abrirEditorNodo(m[1]);
+});
+
+document.getElementById("btnGuardarNodo").onclick = ()=>{
+  if(!nodoActual) return;
+  const texto = editorNodoTexto.value;
+  if(!texto.trim()){ alert("El texto de la figura no puede quedar vacío."); return; }
+  const label = labelDesdeTextoEditable(texto);
+  const claseSuffix = nodoActual.clase ? (":::"+nodoActual.clase) : "";
+  const { apertura, cierre } = nodoActual.patron;
+  const nuevaLinea = nodoActual.indent + nodoActual.id + apertura + label + cierre + claseSuffix;
+  const lineas = editor.value.split("\n");
+  lineas[nodoActual.idx] = nuevaLinea;
+  editor.value = lineas.join("\n");
+  cerrarEditorNodo();
+  renderizar();
+};
+document.getElementById("btnEliminarNodo").onclick = ()=>{
+  if(!nodoActual) return;
+  if(!confirm("¿Eliminar esta figura y sus conexiones del diagrama? Esta acción no se puede deshacer con Ctrl+Z.")) return;
+  const idRe = new RegExp("\\b"+nodoActual.id+"\\b");
+  const lineas = editor.value.split("\n");
+  const restantes = lineas.filter((linea, idx)=>{
+    if(idx === nodoActual.idx) return false;
+    if((linea.includes("-->") || linea.includes("-.-")) && idRe.test(linea)) return false;
+    return true;
+  });
+  editor.value = restantes.join("\n");
+  cerrarEditorNodo();
+  renderizar();
+};
+document.getElementById("btnCancelarNodo").onclick     = cerrarEditorNodo;
+document.getElementById("btnCerrarEditorNodo").onclick = cerrarEditorNodo;
+overlayEditorNodo.addEventListener("click",(ev)=>{ if(ev.target===overlayEditorNodo) cerrarEditorNodo(); });
+editorNodoTexto.addEventListener("keydown",(e)=>{
+  if((e.ctrlKey||e.metaKey) && e.key==="Enter"){ e.preventDefault(); document.getElementById("btnGuardarNodo").click(); }
+});
+document.addEventListener("keydown",(e)=>{ if(e.key==="Escape") cerrarEditorNodo(); });
 
 /* --------------------------------------------------------------------
    Utilidades de exportación: obtener el SVG y sus dimensiones intrínsecas.
