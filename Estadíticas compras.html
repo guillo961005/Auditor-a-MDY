@@ -1,0 +1,1704 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MDY | Reporte Bienes & Servicios (Club / Conjunto)</title>
+
+  <!-- SheetJS (XLSX) local -->
+  <script src="./xlsx.full.min.js"></script>
+
+  <style>
+    :root{
+      --bg:#0b1220;
+      --card:#111a2e;
+      --muted:#9fb0d0;
+      --text:#eaf0ff;
+      --line:rgba(255,255,255,.10);
+      --accent:#6aa6ff;
+      --good:#39d98a;
+      --warn:#ffcc66;
+      --bad:#ff6b6b;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Noto Sans", "Liberation Sans", sans-serif;
+    }
+    body{
+      margin:0;
+      font-family:var(--sans);
+      background: radial-gradient(1200px 600px at 10% 0%, rgba(106,166,255,.18), transparent 60%),
+                  radial-gradient(1000px 600px at 90% 10%, rgba(57,217,138,.10), transparent 55%),
+                  var(--bg);
+      color:var(--text);
+    }
+    .wrap{ max-width:1200px; margin:0 auto; padding:28px 18px 60px; }
+    header{ display:flex; gap:16px; align-items:flex-end; justify-content:space-between; flex-wrap:wrap; }
+    h1{ margin:0; font-size:20px; letter-spacing:.2px; }
+    .sub{ color:var(--muted); font-size:13px; margin-top:6px; }
+
+    .card{
+      background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
+      border:1px solid var(--line);
+      border-radius:16px;
+      padding:16px;
+      box-shadow: 0 10px 26px rgba(0,0,0,.35);
+    }
+    .grid{ display:grid; gap:14px; }
+    .grid.controls{ grid-template-columns: 1.2fr .6fr .6fr .6fr; }
+    @media (max-width: 980px){ .grid.controls{ grid-template-columns: 1fr; } }
+
+    label{ display:block; font-size:12px; color:var(--muted); margin-bottom:6px; }
+    input[type="file"], input[type="date"], button{
+      width:100%;
+      border-radius:12px;
+      border:1px solid var(--line);
+      background: rgba(0,0,0,.18);
+      color:var(--text);
+      padding:10px 12px;
+      font-size:14px;
+      outline:none;
+    }
+    button{
+      cursor:pointer;
+      background: linear-gradient(180deg, rgba(106,166,255,.35), rgba(106,166,255,.15));
+      border:1px solid rgba(106,166,255,.55);
+      font-weight:700;
+    }
+    button.secondary{
+      background: linear-gradient(180deg, rgba(255,255,255,.09), rgba(255,255,255,.04));
+      border:1px solid rgba(255,255,255,.18);
+      font-weight:600;
+    }
+    button:disabled{ cursor:not-allowed; opacity:.55; }
+
+    .btnrow{ display:flex; gap:10px; flex-wrap:wrap; }
+    .btnrow button{ width:auto; min-width:240px; }
+
+    .note{ font-size:13px; color:var(--muted); line-height:1.45; }
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:8px 10px;
+      border-radius:999px;
+      border:1px solid var(--line);
+      background: rgba(0,0,0,.15);
+      font-size:12px;
+      color:var(--muted);
+    }
+    .pill b{ color:var(--text); font-weight:800; }
+    .msg{ margin-top:10px; padding:10px 12px; border-radius:12px; border:1px solid var(--line); font-size:13px; white-space:pre-wrap; }
+    .msg.good{ border-color: rgba(57,217,138,.45); background: rgba(57,217,138,.10); }
+    .msg.warn{ border-color: rgba(255,204,102,.45); background: rgba(255,204,102,.10); }
+    .msg.bad{ border-color: rgba(255,107,107,.45); background: rgba(255,107,107,.08); }
+
+    h2{ font-size:16px; margin:0 0 12px; }
+    .section{ margin-top:16px; }
+
+    table{ width:100%; border-collapse:collapse; overflow:hidden; border-radius:14px; border:1px solid var(--line); }
+    thead th{
+      text-align:left;
+      padding:10px 10px;
+      font-size:12px;
+      color:var(--muted);
+      background: rgba(0,0,0,.25);
+      border-bottom:1px solid var(--line);
+      white-space:nowrap;
+    }
+    tbody td{
+      padding:10px 10px;
+      border-bottom:1px solid rgba(255,255,255,.06);
+      font-size:13px;
+      vertical-align:top;
+      white-space:nowrap;
+    }
+    tbody tr:hover td{ background: rgba(255,255,255,.03); }
+    .right{ text-align:right; }
+    .mono{ font-family:var(--mono); }
+    .small{ font-size:12px; color:var(--muted); }
+
+    .kpi{ display:flex; gap:10px; flex-wrap:wrap; margin-top:10px; }
+    .kpi .pill{ background: rgba(17,26,46,.55); }
+    .muted{ color:var(--muted); }
+    .hr{ height:1px; background: var(--line); margin:14px 0; }
+    .footer{ margin-top:20px; color:var(--muted); font-size:12px; }
+    .badge{ font-size:12px; padding:3px 8px; border-radius:999px; border:1px solid var(--line); }
+    .badge.good{ border-color: rgba(57,217,138,.45); color: var(--good); }
+    .badge.warn{ border-color: rgba(255,204,102,.45); color: var(--warn); }
+    .badge.bad{ border-color: rgba(255,107,107,.45); color: var(--bad); }
+
+    .top-actions{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+      justify-content:space-between;
+      margin-top:10px;
+    }
+
+    /* Alertas determinísticas */
+    .sev-alta{ font-weight:800; color:#ff6b6b; }
+    .sev-media{ font-weight:800; color:#ffcc66; }
+    .sev-baja{ font-weight:800; color:#39d98a; }
+    .wraptext{ white-space:normal !important; }
+
+    .visually-hidden{
+      position:absolute;
+      width:1px;
+      height:1px;
+      padding:0;
+      margin:-1px;
+      overflow:hidden;
+      clip:rect(0,0,0,0);
+      white-space:nowrap;
+      border:0;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <h1>Reporte automático | Bienes (C14) & Servicios (Gastos)</h1>
+        <div class="sub">Club / Conjunto · Año actual vs anterior · Filtro por período · Rangos de proveedores (NITTRA)</div>
+      </div>
+      <div class="pill"><b>Privacidad:</b> todo se procesa localmente en tu navegador</div>
+    </header>
+
+    <main>
+      <section class="section card" aria-labelledby="controls-title">
+        <h2 id="controls-title" class="visually-hidden">Controles de carga y filtrado</h2>
+        <div class="grid controls">
+          <div>
+            <label for="file">1) Cargar Excel (1 archivo con 8 hojas)</label>
+            <input id="file" type="file" accept=".xlsx,.xlsm,.xls" aria-describedby="file-help" />
+            <div class="small" id="file-help" style="margin-top:6px;">
+              Requiere hojas: <span class="mono">Club_Gastos_YYYY</span>, <span class="mono">Conjunto_Gastos_YYYY</span>,
+              <span class="mono">Club_C14_YYYY</span>, <span class="mono">Conjunto_C14_YYYY</span> para dos años.
+            </div>
+          </div>
+
+          <div>
+            <label for="d1">2) Fecha inicio</label>
+            <input id="d1" type="date" />
+          </div>
+
+          <div>
+            <label for="d2">3) Fecha fin</label>
+            <input id="d2" type="date" />
+          </div>
+
+          <div>
+            <label>4) Acciones</label>
+            <button id="run" type="button" disabled>Generar tablas</button>
+            <div class="small" style="margin-top:8px;">Luego podrás descargar.</div>
+          </div>
+        </div>
+
+        <div id="status" class="msg warn" style="display:none;" role="status" aria-live="polite"></div>
+
+        <div class="hr"></div>
+
+        <div class="btnrow">
+          <button id="downloadXlsStyled" type="button" disabled>Descargar Excel ejecutivo (XLS)</button>
+          <button id="downloadJson" class="secondary" type="button" disabled>Descargar JSON para IA</button>
+        </div>
+
+        <div class="footer">
+          Reglas aplicadas:
+          <span class="badge good">Servicios</span> por <span class="mono">CODICTA</span> (4 dígitos; excepción <span class="mono">612592</span> en Conjunto),
+          <span class="badge good">Bienes</span> por <span class="mono">IDFUENTE</span> (IE, EI, RE, DI, CC, CP, FC, DC),
+          valor registro = <span class="mono">DEBITOS + CREDITOS</span>.
+        </div>
+      </section>
+
+      <section id="out" class="section" style="display:none;" aria-live="polite">
+        <section class="card">
+          <h2>Indicadores rápidos</h2>
+          <div id="kpis" class="kpi"></div>
+          <div id="warnings" style="margin-top:12px;" role="status" aria-live="polite"></div>
+        </section>
+
+        <section class="section card">
+          <div class="top-actions">
+            <h2 style="margin:0;">Tabla 1 · Comparativo Bienes/Servicios (Club y Conjunto)</h2>
+            <div class="pill"><span class="muted">Salida:</span> <b>Excel ejecutivo</b></div>
+          </div>
+          <div id="t1"></div>
+        </section>
+
+        <section class="section card">
+          <div class="top-actions">
+            <h2 style="margin:0;">Tabla 2 · Consolidado año actual (Distribución Club vs Conjunto)</h2>
+            <div class="pill"><span class="muted">Salida:</span> <b>Excel ejecutivo</b></div>
+          </div>
+          <div id="t2"></div>
+        </section>
+
+        <section class="section card">
+          <div class="top-actions">
+            <h2 style="margin:0;">Tabla 3 · Rangos de proveedores (año actual, por NITTRA)</h2>
+            <div class="pill"><span class="muted">Salida:</span> <b>Excel ejecutivo</b></div>
+          </div>
+          <div class="note" style="margin:6px 0 0;">
+            Se agrupa por <b>NITTRA</b>. El monto por proveedor es la suma de registros filtrados en el período (Bienes + Servicios del año actual).
+          </div>
+          <div id="t3"></div>
+        </section>
+
+        <section class="section card">
+          <div class="top-actions">
+            <h2 style="margin:0;">Alertas determinísticas (año actual)</h2>
+            <div class="pill"><span class="muted">Casos:</span> <b id="alertsCount">0</b></div>
+          </div>
+          <div id="tAlerts"></div>
+        </section>
+      </section>
+    </main>
+  </div>
+
+<script>
+(() => {
+  // =========================
+  // Configuración de negocio
+  // =========================
+  const C14_SOURCES = new Set(["IE","EI","RE","DI","CC","CP","FC","DC"]);
+
+  const CLUB_SERV_4 = new Set(["5110","5120","5135","5145","5150","5210","5220","5235","5245","5250"]);
+  const CONJ_SERV_4 = new Set(["5110","5120","5135","5145","5150"]);
+  const CONJ_612592 = "612592";
+
+  // ✅ NITs a excluir de TODOS los cálculos
+  const EXCLUDED_NITS = new Set(["808001692", "808000785"]);
+  function cleanNit(v){
+    return String(v ?? "").replace(/\D/g, ""); // deja solo dígitos
+  }
+
+  const RANGES = [
+    { key: ">500M",        min: 500_000_000, max: Infinity },
+    { key: ">100M<500M",   min: 100_000_000, max: 500_000_000 },
+    { key: ">50M<100M",    min: 50_000_000,  max: 100_000_000 },
+    { key: ">10M<50M",     min: 10_000_000,  max: 50_000_000 },
+    { key: ">1M<10M",      min: 1_000_000,   max: 10_000_000 },
+    { key: ">0<1M",        min: 0,           max: 1_000_000 },
+  ];
+
+  // =========================
+  // Utilidades
+  // =========================
+  const $ = (id) => document.getElementById(id);
+
+  function showStatus(text, kind="warn"){
+    const el = $("status");
+    el.style.display = "block";
+    el.className = `msg ${kind}`;
+    el.textContent = text;
+  }
+  function clearStatus(){
+    const el = $("status");
+    el.style.display = "none";
+    el.textContent = "";
+  }
+
+  function asNumber(v){
+    if (v === null || v === undefined || v === "") return 0;
+    if (typeof v === "number") return isFinite(v) ? v : 0;
+
+    const s = String(v).trim()
+      .replace(/\s/g, "")
+      .replace(/\./g, "")
+      .replace(/,/g, ".");
+
+    const n = Number(s);
+    return isFinite(n) ? n : 0;
+  }
+
+  function parseExcelDate(v){
+    if (!v && v !== 0) return null;
+    if (v instanceof Date && !isNaN(v)) return v;
+
+    if (typeof v === "number"){
+      const d = XLSX.SSF.parse_date_code(v);
+      if (!d) return null;
+      return new Date(d.y, d.m - 1, d.d);
+    }
+
+    const s0 = String(v).trim();
+    const s = s0
+      .replace(/\s*a\.\s*m\.\s*/i, " AM ")
+      .replace(/\s*p\.\s*m\.\s*/i, " PM ")
+      .replace(/\s+/g, " ")
+      .trim();
+
+    const iso = new Date(s);
+    if (!isNaN(iso)) return iso;
+
+    const m = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/);
+    if (m){
+      const dd = Number(m[1]);
+      const mm = Number(m[2]);
+      let yy = Number(m[3]);
+      if (yy < 100) yy += 2000;
+      const dt = new Date(yy, mm-1, dd);
+      return isNaN(dt) ? null : dt;
+    }
+    return null;
+  }
+
+  function ymd(d){
+    const pad = (n)=> String(n).padStart(2,"0");
+    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+  }
+
+  function alignRangeToYear(start, end, targetYear){
+    const s = new Date(start);
+    const e = new Date(end);
+    const s2 = new Date(targetYear, s.getMonth(), s.getDate(), 0, 0, 0);
+    const e2 = new Date(targetYear, e.getMonth(), e.getDate(), 23, 59, 59);
+    return { start: s2, end: e2 };
+  }
+
+  function formatCOP(n){
+    const v = Math.round(n || 0);
+    return v.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  }
+
+  function pct(a,b){ if (!b) return 0; return (a / b) * 100; }
+
+  function varPct(curr, prev){
+    if (!prev) return curr === 0 ? 0 : 100;
+    return ((curr - prev) / prev) * 100;
+  }
+
+  function safeKey(v){
+    if (v === null || v === undefined) return "";
+    return String(v).trim();
+  }
+
+  function normalizeHeader(key){
+    return String(key).trim().toUpperCase().replace(/\s+/g, " ");
+  }
+
+  function detectYears(sheetNames){
+    const years = new Set();
+    for (const name of sheetNames){
+      const m = name.match(/_(\d{4})$/);
+      if (m) years.add(Number(m[1]));
+    }
+    const arr = [...years].sort((a,b)=>a-b);
+    if (arr.length < 2) return null;
+    return { prev: arr[arr.length-2], curr: arr[arr.length-1] };
+  }
+
+  function requiredSheetNames(currYear, prevYear){
+    return [
+      `Club_Gastos_${currYear}`, `Club_Gastos_${prevYear}`,
+      `Conjunto_Gastos_${currYear}`, `Conjunto_Gastos_${prevYear}`,
+      `Club_C14_${currYear}`, `Club_C14_${prevYear}`,
+      `Conjunto_C14_${currYear}`, `Conjunto_C14_${prevYear}`,
+    ];
+  }
+
+  function tableHTML(headers, rows, caption){
+    let h = `<table>`;
+    if (caption){
+      h += `<caption class="visually-hidden">${caption}</caption>`;
+    }
+    h += `<thead><tr>` + headers.map(x=>`<th>${x}</th>`).join("") + `</tr></thead><tbody>`;
+    for (const r of rows){
+      h += "<tr>" + r.map((c)=>{
+        const cls = (typeof c === "object" && c && c.cls) ? c.cls : "";
+        const val = (typeof c === "object" && c && "val" in c) ? c.val : c;
+        return `<td class="${cls}">${val}</td>`;
+      }).join("") + "</tr>";
+    }
+    h += "</tbody></table>";
+    return h;
+  }
+
+  function normalizeRowKeys(row){
+    const out = {};
+    for (const k of Object.keys(row)){
+      const nk = String(k).trim().toUpperCase().replace(/\s+/g," ");
+      out[nk] = row[k];
+    }
+    return out;
+  }
+
+  function hasAnyColumn(headers, options){
+    return options.some(opt => headers.includes(opt));
+  }
+
+  function getSheetHeaders(wb, sheetName){
+    const ws = wb.Sheets[sheetName];
+    if (!ws) return [];
+    const rows = XLSX.utils.sheet_to_json(ws, { header: 1, blankrows: false });
+    const headerRow = rows[0] || [];
+    return headerRow.map(normalizeHeader);
+  }
+
+  function validateSheetColumns(wb, sheetName, kindLabel){
+    const headers = getSheetHeaders(wb, sheetName);
+    if (!headers.length){
+      return { ok: false, missing: ["(encabezados vacíos)"] };
+    }
+
+    const dateColumns = ["FECHATRA", "FECHA TRA", "FECHA", "FECHA_TRA"];
+    const debitColumns = ["DEBITOS", "DEBITO", "DÉBITOS", "DÉBITO"];
+    const creditColumns = ["CREDITOS", "CREDITO", "CRÉDITOS", "CRÉDITO"];
+
+    const missing = [];
+
+    if (!hasAnyColumn(headers, dateColumns)) missing.push("FECHA");
+
+    if (kindLabel === "SERV"){
+      if (!headers.includes("CODICTA")) missing.push("CODICTA");
+    }
+    if (kindLabel === "C14"){
+      if (!headers.includes("IDFUENTE")) missing.push("IDFUENTE");
+    }
+
+    const hasDebit = hasAnyColumn(headers, debitColumns);
+    const hasCredit = hasAnyColumn(headers, creditColumns);
+    if (!hasDebit && !hasCredit) missing.push("DEBITOS/CREDITOS");
+
+    return { ok: missing.length === 0, missing };
+  }
+
+  function filterServicios(entity, row){
+    const cod = safeKey(row.CODICTA).replace(/\D/g, "");
+    if (!cod) return false;
+    if (entity === "Conjunto"){
+      if (cod.startsWith("612592")) return cod.slice(0,6) === CONJ_612592;
+      if (cod.startsWith("5") && cod.length >= 4) return CONJ_SERV_4.has(cod.slice(0,4));
+      return false;
+    }
+    if (cod.length < 4) return false;
+    return CLUB_SERV_4.has(cod.slice(0,4));
+  }
+
+  // =========================
+  // Estado global del script
+  // =========================
+  let workbook = null;
+  let lastResult = null;
+  let lastMeta = null;
+  const sheetCache = new Map();
+
+  // =========================
+  // Lectura del archivo
+  // =========================
+  $("file").addEventListener("change", async (ev) => {
+    lastResult = null;
+    lastMeta = null;
+    sheetCache.clear();
+
+    $("run").disabled = true;
+    $("downloadXlsStyled").disabled = true;
+    $("downloadJson").disabled = true;
+
+    $("out").style.display = "none";
+    clearStatus();
+
+    const file = ev.target.files?.[0];
+    if (!file) return;
+
+    showStatus("Leyendo archivo... " + file.name, "warn");
+
+    try{
+      const ext = (file.name.split(".").pop() || "").toLowerCase();
+      if (!["xlsx","xlsm","xls"].includes(ext)){
+        showStatus(`Extensión no soportada: .${ext}. Usa .xlsx/.xlsm/.xls`, "bad");
+        return;
+      }
+
+      const data = await file.arrayBuffer();
+
+      try{
+        workbook = XLSX.read(data, {
+          type: "array",
+          cellDates: true,
+          cellNF: true,
+          cellText: true,
+          WTF: false,
+        });
+      }catch(e1){
+        console.warn("Primer intento falló, probando modo tolerante:", e1);
+        workbook = XLSX.read(data, {
+          type: "array",
+          raw: false,
+          cellDates: true,
+          cellNF: true,
+          cellText: true,
+          WTF: false,
+        });
+      }
+
+      if (!workbook || !workbook.SheetNames || workbook.SheetNames.length === 0){
+        showStatus("El archivo se abrió, pero no trae hojas detectables. Posible corrupción o formato no estándar.", "bad");
+        return;
+      }
+
+      const years = detectYears(workbook.SheetNames);
+      const sheetList = workbook.SheetNames.join(", ");
+
+      if (!years){
+        showStatus(`Se leyó el archivo y detecté hojas: ${sheetList}\n\nPero NO pude detectar dos años con sufijo _YYYY.`, "bad");
+        return;
+      }
+
+      const need = requiredSheetNames(years.curr, years.prev);
+      const missing = need.filter(n => !workbook.SheetNames.includes(n));
+      if (missing.length){
+        showStatus(`Se leyó el archivo y detecté hojas: ${sheetList}\n\nFaltan hojas obligatorias: ${missing.join(", ")}`, "bad");
+        return;
+      }
+
+      const invalidSheets = [];
+      for (const name of need){
+        const kind = name.includes("_C14_") ? "C14" : "SERV";
+        const { ok, missing: missingCols } = validateSheetColumns(workbook, name, kind);
+        if (!ok){
+          invalidSheets.push(`${name} (faltan: ${missingCols.join(", ")})`);
+        }
+      }
+      if (invalidSheets.length){
+        showStatus(`El archivo tiene hojas válidas, pero faltan columnas clave en:\n- ${invalidSheets.join("\n- ")}`, "bad");
+        return;
+      }
+
+      const d1 = $("d1"), d2 = $("d2");
+      if (!d1.value || !d2.value){
+        const start = new Date(years.curr, 3, 1);
+        const end = new Date(years.curr, 7, 31);
+        d1.value = ymd(start);
+        d2.value = ymd(end);
+      }
+
+      showStatus(`Archivo leído correctamente (${file.name}).\nAños detectados: ${years.prev} (anterior) y ${years.curr} (actual).`, "good");
+      $("run").disabled = false;
+
+    }catch(err){
+      console.error(err);
+      showStatus(`Error leyendo el archivo: ${err?.message || err}`, "bad");
+    }
+  });
+
+  // =========================
+  // Procesamiento
+  // =========================
+  function readSheetRows(wb, sheetName){
+    if (sheetCache.has(sheetName)) return sheetCache.get(sheetName);
+    const ws = wb.Sheets[sheetName];
+    const rows = XLSX.utils.sheet_to_json(ws, { defval: null, raw: true });
+    const normalized = rows.map(normalizeRowKeys);
+    sheetCache.set(sheetName, normalized);
+    return normalized;
+  }
+
+  function inDateRange(dt, start, end){
+    if (!dt) return false;
+    const t = dt.getTime();
+    return t >= start.getTime() && t <= end.getTime();
+  }
+
+  function filterC14(row){
+    const f = safeKey(row.IDFUENTE).toUpperCase().replace(/\s+/g, "");
+    return C14_SOURCES.has(f);
+  }
+
+  function getRowValue(row){
+    const deb = row.DEBITOS ?? row.DEBITO ?? row["DÉBITOS"] ?? row["DÉBITO"];
+    const cre = row.CREDITOS ?? row.CREDITO ?? row["CRÉDITOS"] ?? row["CRÉDITO"];
+    return asNumber(deb) + asNumber(cre);
+  }
+
+  // Valor neto robusto: soporta CREDITOS negativos (ya con signo) o positivos (convención Deb - Cred)
+  function getNetValue(row){
+    const deb = row.DEBITOS ?? row.DEBITO ?? row["DÉBITOS"] ?? row["DÉBITO"];
+    const cre = row.CREDITOS ?? row.CREDITO ?? row["CRÉDITOS"] ?? row["CRÉDITO"];
+    const d = asNumber(deb);
+    const c = asNumber(cre);
+    // Si ambos son positivos, asumimos convención contable Deb - Cred.
+    // Si créditos ya vienen negativos, Deb + Cred produce el neto correcto.
+    if (d >= 0 && c >= 0) return d - c;
+    return d + c;
+  }
+
+  function percentile(arr, p){
+    if (!arr.length) return 0;
+    const a = [...arr].sort((x,y)=>x-y);
+    const idx = (a.length - 1) * p;
+    const lo = Math.floor(idx);
+    const hi = Math.ceil(idx);
+    if (lo === hi) return a[lo];
+    const w = idx - lo;
+    return a[lo] * (1 - w) + a[hi] * w;
+  }
+
+  const KEY_SEP = "§";
+  const k = (...parts) => parts.map(x => String(x ?? "")).join(KEY_SEP);
+
+  class AlertCollector{
+    constructor(){
+      this.third = new Map(); // id -> info
+      this.docDates = new Map(); // docKey(third, fuente, numdoc) -> Set(yyyy-mm-dd)
+      this.docToThird = new Map(); // (fuente,numdoc) -> Set(third)
+      this.docLines = new Map(); // docUniqueKey(third, fuente, numdoc|consec) -> count lines
+      this.dayDocSeen = new Set(); // (docUniqueKey + date) para dedupe de docs por día
+      this.docSeen = new Set(); // docUniqueKey para dedupe de doc global
+    }
+
+    _getThirdInfo(id, name){
+      const cur = this.third.get(id);
+      if (cur) {
+        if (!cur.nombre && name) cur.nombre = name;
+        return cur;
+      }
+      const obj = {
+        id,
+        nombre: name || "",
+        docs: 0,
+        lines: 0,
+        scopes: new Set(), // Club-SERV, Conjunto-C14, etc
+        // conteos por día (docs) para max diario
+        dayCounts: new Map(), // yyyy-mm-dd -> count docs
+        maxDaily: 0,
+        maxDailyDate: "",
+        // documentos para burst (48h)
+        docTimes: [], // {t:number, docKey:string}
+        // muestras
+        sampleDocs: [], // {fuente,numdoc,consec,fecha,scope}
+        maxLinesPerDoc: 0,
+        maxLinesDocKey: ""
+      };
+      this.third.set(id, obj);
+      return obj;
+    }
+
+    collect(r, dt, kind, entity){
+      // Excluir NITs (compatibilidad con cálculos actuales)
+      const nitClean = cleanNit(r.NITTRA);
+      if (nitClean && EXCLUDED_NITS.has(nitClean)) return;
+
+      const id = cleanNit(r.IDTERCERO) || nitClean;
+      if (!id) return;
+
+      const nombre = safeKey(r.NOMBRETER);
+      const info = this._getThirdInfo(id, nombre);
+      const scope = `${entity}-${kind}`;
+      info.scopes.add(scope);
+
+      info.lines += 1;
+
+      const idfuente = safeKey(r.IDFUENTE);
+      const numdoc = safeKey(r.NUMDOCTRA);
+      const consec = safeKey(r.CONSECUTRA);
+
+      // Doc base (para conteo real de documentos)
+      const docId = numdoc ? numdoc : (consec || "(sin-doc)");
+      const docUniqueKey = k(id, idfuente, docId); // tercero + fuente + doc
+      const date = ymd(dt);
+
+      // Conteo de líneas por doc
+      const curLines = (this.docLines.get(docUniqueKey) || 0) + 1;
+      this.docLines.set(docUniqueKey, curLines);
+      if (curLines > info.maxLinesPerDoc){
+        info.maxLinesPerDoc = curLines;
+        info.maxLinesDocKey = docUniqueKey;
+      }
+
+      // Conteo de documentos (deduplicado por docUniqueKey)
+      if (!this.docSeen.has(docUniqueKey)){
+        this.docSeen.add(docUniqueKey);
+        info.docs += 1;
+
+        // Timeline para burst
+        info.docTimes.push({ t: dt.getTime(), docKey: docUniqueKey });
+
+        // Muestras
+        if (info.sampleDocs.length < 12){
+          info.sampleDocs.push({ fuente: idfuente, numdoc, consec, fecha: date, scope });
+        }
+      }
+
+      // Conteo doc por día (dedupe)
+      const dayDocKey = k(docUniqueKey, date);
+      if (!this.dayDocSeen.has(dayDocKey)){
+        this.dayDocSeen.add(dayDocKey);
+        const c = (info.dayCounts.get(date) || 0) + 1;
+        info.dayCounts.set(date, c);
+        if (c > info.maxDaily){
+          info.maxDaily = c;
+          info.maxDailyDate = date;
+        }
+      }
+
+      // C1: mismo doc (tercero+fuente+numdoc) en varias fechas
+      if (numdoc){
+        const docKey = k(id, idfuente, numdoc);
+        const set = this.docDates.get(docKey) || new Set();
+        set.add(date);
+        this.docDates.set(docKey, set);
+
+        // C2: mismo (fuente+numdoc) en varios terceros
+        const docNoThird = k(idfuente, numdoc);
+        const st = this.docToThird.get(docNoThird) || new Set();
+        st.add(id);
+        this.docToThird.set(docNoThird, st);
+      }
+    }
+
+    finalize(){
+      const thirdList = [...this.third.values()];
+
+      const docsCounts = thirdList.map(x=>x.docs);
+      const maxDailyCounts = thirdList.map(x=>x.maxDaily);
+      const linesAvg = thirdList.map(x => x.docs ? (x.lines / x.docs) : 0);
+
+      const U1 = Math.max(20, Math.round(percentile(docsCounts, 0.95)));
+      const U1H = Math.max(40, Math.round(percentile(docsCounts, 0.99)));
+
+      const U2 = Math.max(3, Math.round(percentile(maxDailyCounts, 0.99)));
+      const U2H = Math.max(5, Math.round(percentile(maxDailyCounts, 0.995)));
+
+      const U6 = Math.max(6, Math.round(percentile(linesAvg, 0.95)));
+      const U6H = Math.max(10, Math.round(percentile(linesAvg, 0.99)));
+
+      const alerts = [];
+
+      const sevWeight = (s)=> s==="alta" ? 3 : (s==="media" ? 2 : 1);
+
+      // A1, A2, A4, B1
+      const windowMs = 48 * 60 * 60 * 1000;
+
+      for (const info of thirdList){
+        const avgLines = info.docs ? (info.lines / info.docs) : 0;
+
+        // A1: frecuencia periodo
+        if (info.docs >= U1){
+          const sev = info.docs >= U1H ? "alta" : "media";
+          alerts.push({
+            code: "A1",
+            type: "alta_frecuencia_periodo",
+            severity: sev,
+            tercero: { id: info.id, nombre: info.nombre },
+            metrics: { docs_periodo: info.docs, umbral: sev==="alta" ? U1H : U1 },
+            scope: [...info.scopes],
+            evidence: { sample_docs: info.sampleDocs.slice(0,8) }
+          });
+        }
+
+        // A2: pico diario
+        if (info.maxDaily >= U2){
+          const sev = info.maxDaily >= U2H ? "alta" : "media";
+          // top 3 días
+          const topDays = [...info.dayCounts.entries()]
+            .sort((a,b)=>b[1]-a[1]).slice(0,3)
+            .map(([d,c])=>({ date:d, docs:c }));
+          alerts.push({
+            code: "A2",
+            type: "pico_diario_documentos",
+            severity: sev,
+            tercero: { id: info.id, nombre: info.nombre },
+            metrics: { max_docs_dia: info.maxDaily, fecha_pico: info.maxDailyDate, umbral: sev==="alta" ? U2H : U2 },
+            scope: [...info.scopes],
+            evidence: { top_days: topDays, sample_docs: info.sampleDocs.filter(x=>x.fecha===info.maxDailyDate).slice(0,8) }
+          });
+        }
+
+        // A4: burst 48h
+        if (info.docTimes.length >= 6){
+          const arr = [...info.docTimes].sort((a,b)=>a.t-b.t);
+          let best = { n:1, i:0, j:0 };
+          let i=0;
+          for (let j=0;j<arr.length;j++){
+            while (arr[j].t - arr[i].t > windowMs) i++;
+            const n = j - i + 1;
+            if (n > best.n) best = { n, i, j };
+          }
+          if (best.n >= 6){
+            const sev = best.n >= 10 ? "alta" : "media";
+            const slice = arr.slice(best.i, best.j+1).slice(0,10).map(x=>{
+              const parts = x.docKey.split(KEY_SEP);
+              const dt = new Date(x.t);
+              return { fuente: parts[1] || "", numdoc: parts[2] || "", fecha: ymd(dt) };
+            });
+            alerts.push({
+              code: "A4",
+              type: "rafaga_48h",
+              severity: sev,
+              tercero: { id: info.id, nombre: info.nombre },
+              metrics: { max_docs_48h: best.n, ventana_horas: 48 },
+              scope: [...info.scopes],
+              evidence: { sample_docs: slice }
+            });
+          }
+        }
+
+        // B1: fragmentación (líneas/doc)
+        if (avgLines >= U6 && info.docs >= 3){
+          const sev = avgLines >= U6H ? "alta" : "media";
+          alerts.push({
+            code: "B1",
+            type: "fragmentacion_lineas_por_documento",
+            severity: sev,
+            tercero: { id: info.id, nombre: info.nombre },
+            metrics: { lineas: info.lines, documentos: info.docs, lineas_por_doc: Number(avgLines.toFixed(2)), umbral: sev==="alta" ? U6H : U6, max_lineas_doc: info.maxLinesPerDoc },
+            scope: [...info.scopes],
+            evidence: { doc_mas_fragmentado: info.maxLinesDocKey, sample_docs: info.sampleDocs.slice(0,8) }
+          });
+        }
+      }
+
+      // C1: mismo doc (tercero+fuente+numdoc) en varias fechas
+      for (const [docKey, datesSet] of this.docDates.entries()){
+        if (datesSet.size > 1){
+          const [id, fuente, numdoc] = docKey.split(KEY_SEP);
+          const info = this.third.get(id);
+          const dates = [...datesSet].sort();
+          const sev = dates.length >= 3 ? "alta" : "media";
+          alerts.push({
+            code: "C1",
+            type: "mismo_documento_en_varias_fechas",
+            severity: sev,
+            tercero: { id, nombre: info?.nombre || "" },
+            metrics: { fuente, numdoc, fechas: dates },
+            scope: info ? [...info.scopes] : [],
+            evidence: { nota: "Revisar posible re-causación / reverso / cargue duplicado." }
+          });
+        }
+      }
+
+      // C2: mismo (fuente+numdoc) en varios terceros
+      for (const [kDoc, tercSet] of this.docToThird.entries()){
+        if (tercSet.size > 1){
+          const [fuente, numdoc] = kDoc.split(KEY_SEP);
+          const terceros = [...tercSet].map(id => ({ id, nombre: this.third.get(id)?.nombre || "" }));
+          const sev = terceros.length >= 3 ? "alta" : "media";
+          alerts.push({
+            code: "C2",
+            type: "documento_asociado_a_varios_terceros",
+            severity: sev,
+            tercero: null,
+            metrics: { fuente, numdoc, terceros: terceros.map(t=>t.id) },
+            scope: [],
+            evidence: { terceros }
+          });
+        }
+      }
+
+      // Ordenar por severidad y “tamaño”
+      const score = (a)=>{
+        const w = sevWeight(a.severity);
+        const m = a.metrics || {};
+        const mag = m.docs_periodo || m.max_docs_dia || m.max_docs_48h || m.max_lineas_doc || 0;
+        return w*1e6 + mag;
+      };
+      alerts.sort((a,b)=>score(b)-score(a));
+
+      const summary = {
+        thresholds: { A1_media: U1, A1_alta: U1H, A2_media: U2, A2_alta: U2H, B1_media: U6, B1_alta: U6H, A4_media: 6, A4_alta: 10 },
+        totals: {
+          terceros_con_mov: thirdList.length,
+          docs_distintos: [...this.docSeen].length,
+          alertas: alerts.length
+        }
+      };
+
+      return { summary, alerts };
+    }
+  }
+
+
+  // ✅ Aquí se aplica la exclusión por NIT a TODO cálculo
+  function processSheet({ rows, start, end, kind, entity, collector }){
+    let minDt = null, maxDt = null;
+    let kept = 0, keptInRange = 0;
+    let sum = 0;
+
+    const perProvider = new Map(); // nit -> { nit, nombre, sum }
+
+    for (const r of rows){
+      const dt = parseExcelDate(r.FECHATRA ?? r["FECHA TRA"] ?? r.FECHA ?? r.FECHA_TRA);
+
+      if (dt){
+        if (!minDt || dt < minDt) minDt = dt;
+        if (!maxDt || dt > maxDt) maxDt = dt;
+      }
+
+      const passFilter = (kind === "C14")
+        ? filterC14(r)
+        : filterServicios(entity, r);
+
+      if (!passFilter) continue;
+
+      // 1) Excluir NITs antes de conteo/sumas
+      const nitClean = cleanNit(r.NITTRA);
+      if (nitClean && EXCLUDED_NITS.has(nitClean)) continue;
+
+      kept++;
+
+      if (!inDateRange(dt, start, end)) continue;
+      keptInRange++;
+
+      if (collector) collector.collect(r, dt, kind, entity);
+
+      const v = getRowValue(r);
+      sum += v;
+
+      if (nitClean){
+        const cur = perProvider.get(nitClean) || { nit: nitClean, nombre: safeKey(r.NOMBRETER), sum: 0 };
+        cur.sum += v;
+        if (!cur.nombre && r.NOMBRETER) cur.nombre = safeKey(r.NOMBRETER);
+        perProvider.set(nitClean, cur);
+      }
+    }
+
+    return { minDt, maxDt, kept, keptInRange, sum, perProvider };
+  }
+
+  function processAll(wb, meta){
+    const { years, start, end } = meta;
+
+    // Alertas determinísticas (solo año actual)
+    const alertsCollector = new AlertCollector();
+
+
+    const S = {};
+    for (const y of [years.prev, years.curr]){
+      S[y] = { Club: {}, Conjunto: {} };
+
+      const { start: yrStart, end: yrEnd } = alignRangeToYear(start, end, y);
+
+      S[y].Club.SERV = processSheet({
+        rows: readSheetRows(wb, `Club_Gastos_${y}`),
+        start: yrStart, end: yrEnd, kind:"SERV", entity:"Club",
+        collector: (y === years.curr ? alertsCollector : null)
+      });
+      S[y].Conjunto.SERV = processSheet({
+        rows: readSheetRows(wb, `Conjunto_Gastos_${y}`),
+        start: yrStart, end: yrEnd, kind:"SERV", entity:"Conjunto",
+        collector: (y === years.curr ? alertsCollector : null)
+      });
+
+      S[y].Club.C14 = processSheet({
+        rows: readSheetRows(wb, `Club_C14_${y}`),
+        start: yrStart, end: yrEnd, kind:"C14", entity:"Club",
+        collector: (y === years.curr ? alertsCollector : null)
+      });
+      S[y].Conjunto.C14 = processSheet({
+        rows: readSheetRows(wb, `Conjunto_C14_${y}`),
+        start: yrStart, end: yrEnd, kind:"C14", entity:"Conjunto",
+        collector: (y === years.curr ? alertsCollector : null)
+      });
+    }
+
+    const totals = {};
+    for (const y of [years.prev, years.curr]){
+      totals[y] = { Club:{}, Conjunto:{} };
+      for (const e of ["Club","Conjunto"]){
+        const bienes = S[y][e].C14.sum;
+        const servicios = S[y][e].SERV.sum;
+        totals[y][e] = { bienes, servicios, total: bienes + servicios };
+      }
+    }
+
+    // Proveedores por año (para YoY)
+    const buildProviderMapForYear = (y) => {
+      const m = new Map(); // nit -> { nit, nombre, sum }
+      for (const e of ["Club","Conjunto"]){
+        for (const k of ["C14","SERV"]){
+          for (const [nit, obj] of S[y][e][k].perProvider.entries()){
+            const cur = m.get(nit) || { nit, nombre: obj.nombre || "", sum: 0 };
+            cur.sum += obj.sum;
+            if (!cur.nombre && obj.nombre) cur.nombre = obj.nombre;
+            m.set(nit, cur);
+          }
+        }
+      }
+      return m;
+    };
+
+    const providerMapCurr = buildProviderMapForYear(years.curr);
+    const providerMapPrev = buildProviderMapForYear(years.prev);
+
+    // Proveedores año actual (para tabla de proveedores / rangos)
+
+    const providers = [...providerMapCurr.values()].sort((a,b)=>b.sum - a.sum);
+
+    const rangeStats = RANGES.map(r => ({ range: r.key, providers: 0, amount: 0 }));
+    for (const p of providers){
+      const amt = p.sum;
+      const idx = RANGES.findIndex(r => amt >= r.min && amt < r.max);
+      if (idx >= 0){
+        rangeStats[idx].providers += 1;
+        rangeStats[idx].amount += amt;
+      }
+    }
+    const totalProv = providers.length;
+    const totalAmt = providers.reduce((s,p)=>s+p.sum,0);
+
+
+    const alertsOut = alertsCollector.finalize();
+
+    // =========================
+    // D1: Incremento YoY por proveedor (tercero)
+    // =========================
+    const scopesForNit = (y, nit) => {
+      const arr = [];
+      for (const e of ["Club","Conjunto"]){
+        for (const k of ["C14","SERV"]){
+          if (S[y][e][k].perProvider.has(nit)) arr.push(`${e}_${k}`);
+        }
+      }
+      return arr;
+    };
+
+    const breakdownForNit = (y, nit) => {
+      const b = {};
+      for (const e of ["Club","Conjunto"]){
+        for (const k of ["C14","SERV"]){
+          const p = S[y][e][k].perProvider.get(nit);
+          if (p) b[`${e}_${k}`] = Math.round(p.sum);
+        }
+      }
+      return b;
+    };
+
+    const MIN_BASE_PREV = 5_000_000;      // evita % absurdos con bases minúsculas
+    const MIN_CURR_TO_CARE = 20_000_000;  // evita alertas por montos irrelevantes
+
+    // Construir candidatos YoY (solo si hay valor en ambos años y crece)
+    const yoy = [];
+    const allNits = new Set([...providerMapCurr.keys(), ...providerMapPrev.keys()]);
+
+    for (const nit of allNits){
+      const curr = providerMapCurr.get(nit)?.sum || 0;
+      const prev = providerMapPrev.get(nit)?.sum || 0;
+
+      if (curr <= 0 || prev <= 0) continue;
+      if (curr < MIN_CURR_TO_CARE) continue;
+
+      const delta = curr - prev;
+      if (delta <= 0) continue;
+
+      const pct = prev > 0 ? (delta / prev) : null;
+
+      yoy.push({
+        nit,
+        nombre: providerMapCurr.get(nit)?.nombre || providerMapPrev.get(nit)?.nombre || "",
+        prev,
+        curr,
+        delta,
+        pct
+      });
+    }
+
+    // Umbrales determinísticos (percentiles + mínimos)
+    const deltas = yoy.map(x => x.delta);
+    const pcts = yoy.filter(x => x.prev >= MIN_BASE_PREV && x.pct != null).map(x => x.pct);
+
+    // Defaults si hay poca data
+    let Udelta  = 100_000_000;  // 100M
+    let UdeltaH = 200_000_000;  // 200M
+    let Upct    = 0.80;         // 80%
+    let UpctH   = 1.50;         // 150%
+
+    if (deltas.length){
+      Udelta  = Math.max(Udelta,  Math.round(percentile(deltas, 0.95)));
+      UdeltaH = Math.max(UdeltaH, Math.round(percentile(deltas, 0.99)));
+    }
+    if (pcts.length){
+      Upct  = Math.max(Upct,  percentile(pcts, 0.95));
+      UpctH = Math.max(UpctH, percentile(pcts, 0.99));
+    }
+
+    // Generar alertas D1
+    const yoyAlerts = [];
+    for (const x of yoy){
+      // si la base es muy baja, exige evidencia fuerte por delta (para no “gritar” por porcentajes)
+      const pctOK = (x.prev >= MIN_BASE_PREV) ? (x.pct >= Upct) : true;
+      const pass = (x.delta >= Udelta) && pctOK;
+
+      if (!pass) continue;
+
+      const sev = (x.delta >= UdeltaH) || (x.prev >= MIN_BASE_PREV && x.pct >= UpctH) ? "alta" : "media";
+
+      const scopes = [...new Set([...scopesForNit(years.prev, x.nit), ...scopesForNit(years.curr, x.nit)])];
+
+      yoyAlerts.push({
+        code: "D1",
+        type: "incremento_yoy_proveedor",
+        severity: sev,
+        tercero: { id: x.nit, nombre: x.nombre },
+        metrics: {
+          prev: Math.round(x.prev),
+          curr: Math.round(x.curr),
+          delta: Math.round(x.delta),
+          pct: x.pct != null ? Number((x.pct * 100).toFixed(1)) : null,
+          umbral_delta: sev === "alta" ? UdeltaH : Udelta,
+          umbral_pct: sev === "alta" ? Number((UpctH * 100).toFixed(1)) : Number((Upct * 100).toFixed(1))
+        },
+        scope: scopes,
+        evidence: {
+          breakdown_prev: breakdownForNit(years.prev, x.nit),
+          breakdown_curr: breakdownForNit(years.curr, x.nit),
+          nota: "Comparación YoY sobre el mismo rango alineado por año. Revisar soportes, contratos, OC y cambios de alcance."
+        }
+      });
+    }
+
+    // Unir + reordenar (para que D1 no quede enterrada)
+    const sevW = (s)=> s==="alta" ? 3 : (s==="media" ? 2 : 1);
+    const alertScore = (a)=>{
+      const w = sevW(a.severity);
+      const m = a.metrics || {};
+      const mag =
+        m.delta || m.curr ||
+        m.docs_periodo || m.max_docs_dia || m.max_docs_48h || m.max_lineas_doc || 0;
+      return w*1e12 + mag;
+    };
+
+    alertsOut.alerts = [...(alertsOut.alerts || []), ...yoyAlerts].sort((a,b)=>alertScore(b)-alertScore(a));
+
+    // Actualizar summary (umbrales y total)
+    if (alertsOut.summary){
+      alertsOut.summary.thresholds = alertsOut.summary.thresholds || {};
+      alertsOut.summary.thresholds.D1_delta_media = Udelta;
+      alertsOut.summary.thresholds.D1_delta_alta  = UdeltaH;
+      alertsOut.summary.thresholds.D1_pct_media   = Number((Upct * 100).toFixed(1));
+      alertsOut.summary.thresholds.D1_pct_alta    = Number((UpctH * 100).toFixed(1));
+
+      alertsOut.summary.totals = alertsOut.summary.totals || {};
+      alertsOut.summary.totals.alertas = (alertsOut.alerts || []).length;
+    }
+
+    return { S, totals, providers, rangeStats, totalProv, totalAmt, alerts: alertsOut.alerts, alertsSummary: alertsOut.summary };
+  }
+
+  // =========================
+  // Render
+  // =========================
+  function renderAll(res, meta){
+    $("out").style.display = "block";
+    $("warnings").innerHTML = "";
+    $("kpis").innerHTML = "";
+
+    const { years, start, end } = meta;
+    const { totals, rangeStats, totalProv, totalAmt } = res;
+
+    const warns = [];
+    for (const y of [years.prev, years.curr]){
+      for (const e of ["Club","Conjunto"]){
+        for (const k of ["SERV","C14"]){
+          const obj = res.S[y][e][k];
+          const label = `${e} · ${k==="SERV"?"Servicios":"Bienes"} · ${y}`;
+          if (obj.kept === 0){
+            warns.push({ kind:"bad", text:`${label}: 0 registros pasan filtro (revisa CODICTA/IDFUENTE).` });
+          } else if (obj.keptInRange === 0){
+            warns.push({ kind:"warn", text:`${label}: hay registros filtrados, pero 0 dentro del período seleccionado.` });
+          }
+          if (obj.minDt && obj.maxDt){
+            const min = ymd(obj.minDt), max = ymd(obj.maxDt);
+            const { start: yrStart, end: yrEnd } = alignRangeToYear(start, end, y);
+            if (yrStart < obj.minDt || yrEnd > obj.maxDt){
+              warns.push({ kind:"warn", text:`${label}: fechas disponibles aprox. ${min} a ${max}.` });
+            }
+          }
+        }
+      }
+    }
+
+    const clubCurr = totals[years.curr].Club.total;
+    const conjCurr = totals[years.curr].Conjunto.total;
+    const allCurr = clubCurr + conjCurr;
+
+    const kpis = [
+      { t:`Período`, v:`${ymd(start)} → ${ymd(end)}` },
+      { t:`Año actual`, v:`${years.curr}` },
+      { t:`Año anterior`, v:`${years.prev}` },
+      { t:`Total año actual (Club+Conjunto)`, v:`$ ${formatCOP(allCurr)}` },
+      { t:`Proveedores año actual (únicos)`, v:`${totalProv}` },
+      { t:`Monto proveedores (año actual)`, v:`$ ${formatCOP(totalAmt)}` },
+      { t:`NIT excluidos`, v:`${[...EXCLUDED_NITS].join(", ")}` },
+    ];
+    for (const k of kpis){
+      const el = document.createElement("div");
+      el.className = "pill";
+      el.innerHTML = `<span class="muted">${k.t}:</span> <b>${k.v}</b>`;
+      $("kpis").appendChild(el);
+    }
+
+    if (warns.length){
+      $("warnings").innerHTML = warns.map(w => `<div class="msg ${w.kind}">${w.text}</div>`).join("");
+    } else {
+      $("warnings").innerHTML = `<div class="msg good">Validación OK: hay datos en el período para las categorías principales.</div>`;
+    }
+
+    const t1Headers = [
+      "Entidad", "Tipo",
+      `${years.prev} Valor`, `${years.prev} % Entidad`,
+      `${years.curr} Valor`, `${years.curr} % Entidad`,
+      "Variación $", "Variación %"
+    ];
+    const t1Rows = [];
+    for (const e of ["Club","Conjunto"]){
+      for (const tipo of ["Bienes","Servicios"]){
+        const prevVal = (tipo==="Bienes") ? totals[years.prev][e].bienes : totals[years.prev][e].servicios;
+        const currVal = (tipo==="Bienes") ? totals[years.curr][e].bienes : totals[years.curr][e].servicios;
+        const prevTot = totals[years.prev][e].total;
+        const currTot = totals[years.curr][e].total;
+        const vAbs = currVal - prevVal;
+        const vPct = varPct(currVal, prevVal);
+
+        t1Rows.push([
+          e,
+          tipo,
+          { val: `$ ${formatCOP(prevVal)}`, cls:"right mono" },
+          { val: `${pct(prevVal, prevTot).toFixed(2)}%`, cls:"right mono" },
+          { val: `$ ${formatCOP(currVal)}`, cls:"right mono" },
+          { val: `${pct(currVal, currTot).toFixed(2)}%`, cls:"right mono" },
+          { val: `$ ${formatCOP(vAbs)}`, cls:"right mono" },
+          { val: `${vPct.toFixed(2)}%`, cls:"right mono" },
+        ]);
+      }
+    }
+    $("t1").innerHTML = tableHTML(t1Headers, t1Rows, "Tabla comparativa de bienes y servicios por entidad");
+
+    const t2Headers = [
+      "Entidad", "Bienes", "% Bienes", "Servicios", "% Servicios", "Total Entidad", "% sobre Total Global"
+    ];
+    const t2Rows = [];
+    for (const e of ["Club","Conjunto"]){
+      const bienes = totals[years.curr][e].bienes;
+      const serv = totals[years.curr][e].servicios;
+      const tot = totals[years.curr][e].total;
+      t2Rows.push([
+        e,
+        { val:`$ ${formatCOP(bienes)}`, cls:"right mono" },
+        { val:`${pct(bienes, tot).toFixed(2)}%`, cls:"right mono" },
+        { val:`$ ${formatCOP(serv)}`, cls:"right mono" },
+        { val:`${pct(serv, tot).toFixed(2)}%`, cls:"right mono" },
+        { val:`$ ${formatCOP(tot)}`, cls:"right mono" },
+        { val:`${pct(tot, allCurr).toFixed(2)}%`, cls:"right mono" },
+      ]);
+    }
+    $("t2").innerHTML = tableHTML(t2Headers, t2Rows, "Consolidado del año actual por entidad");
+
+    const t3Headers = ["Rango", "Cantidad proveedores", "% proveedores", "Monto comprado", "% monto"];
+    const t3Rows = [];
+    for (const r of rangeStats){
+      t3Rows.push([
+        r.range,
+        { val: `${r.providers}`, cls:"right mono" },
+        { val: `${pct(r.providers, totalProv).toFixed(2)}%`, cls:"right mono" },
+        { val: `$ ${formatCOP(r.amount)}`, cls:"right mono" },
+        { val: `${pct(r.amount, totalAmt).toFixed(2)}%`, cls:"right mono" },
+      ]);
+    }
+    t3Rows.push([
+      "<b>Total</b>",
+      { val:`<b>${totalProv}</b>`, cls:"right mono" },
+      { val:`<b>100.00%</b>`, cls:"right mono" },
+      { val:`<b>$ ${formatCOP(totalAmt)}</b>`, cls:"right mono" },
+      { val:`<b>100.00%</b>`, cls:"right mono" },
+    ]);
+    $("t3").innerHTML = tableHTML(t3Headers, t3Rows, "Distribución de proveedores por rango de compra");
+
+    // =========================
+    // Alertas determinísticas (año actual)
+    // =========================
+    const alerts = res.alerts || [];
+    $("alertsCount").textContent = String(alerts.length);
+
+    if (!alerts.length){
+      $("tAlerts").innerHTML = `<div class="small">Sin alertas determinísticas con los umbrales actuales.</div>`;
+    } else {
+      const typeLabel = (t) => ({
+        alta_frecuencia_periodo: "Alta frecuencia (período)",
+        pico_diario_documentos: "Pico diario de documentos",
+        rafaga_48h: "Ráfaga (48h)",
+        fragmentacion_lineas_por_documento: "Fragmentación (líneas/doc)",
+        mismo_documento_en_varias_fechas: "Mismo documento en varias fechas",
+        documento_asociado_a_varios_terceros: "Documento con varios terceros",
+      }[t] || t);
+
+      const sevCell = (s) => {
+        if (s === "alta") return { val:"ALTA", cls:"sev-alta" };
+        if (s === "media") return { val:"MEDIA", cls:"sev-media" };
+        return { val:"BAJA", cls:"sev-baja" };
+      };
+
+      const rows = [];
+      for (const a of alerts.slice(0, 50)){
+        const terceroId = a.tercero?.id || "";
+        const terceroNm = a.tercero?.nombre || "";
+        let met = "";
+        if (a.code === "A1") met = `docs=${a.metrics.docs_periodo} (≥${a.metrics.umbral})`;
+        else if (a.code === "A2") met = `max/día=${a.metrics.max_docs_dia} (${a.metrics.fecha_pico})`;
+        else if (a.code === "A4") met = `max 48h=${a.metrics.max_docs_48h}`;
+        else if (a.code === "B1") met = `líneas/doc=${a.metrics.lineas_por_doc} (max doc=${a.metrics.max_lineas_doc})`;
+        else if (a.code === "C1") met = `fechas=${(a.metrics.fechas||[]).join(", ")}`;
+        else if (a.code === "C2") met = `terceros=${(a.evidence?.terceros||[]).map(x=>x.id).join(", ")}`;
+
+        const ev = (() => {
+          if (a.code === "C2"){
+            const t = (a.evidence?.terceros||[]).map(x=>`${x.id}${x.nombre?` (${x.nombre})`:""}`).join("<br>");
+            return `<span class="wraptext">${t}</span>`;
+          }
+          const sdocs = a.evidence?.sample_docs || [];
+          if (!sdocs.length) return "";
+          const t = sdocs.slice(0,5).map(d => `• ${d.fuente || ""} ${d.numdoc || d.consec || ""} (${d.fecha || ""})`).join("<br>");
+          return `<span class="wraptext">${t}</span>`;
+        })();
+
+        rows.push([
+          sevCell(a.severity),
+          { val: a.code, cls:"mono" },
+          typeLabel(a.type),
+          { val: terceroId, cls:"mono" },
+          terceroNm,
+          { val: met, cls:"mono" },
+          ev
+        ]);
+      }
+
+      $("tAlerts").innerHTML = tableHTML(
+        ["Severidad","Código","Tipo","IDTERCERO","Nombre","Métrica","Evidencia (muestra)"],
+        rows,
+        "Alertas determinísticas para el año actual"
+      );
+    }
+
+  }
+
+  // =========================
+  // Run
+  // =========================
+  $("run").addEventListener("click", () => {
+    if (!workbook) return;
+
+    const d1s = $("d1").value;
+    const d2s = $("d2").value;
+    if (!d1s || !d2s){
+      showStatus("Selecciona fecha inicio y fin.", "warn");
+      return;
+    }
+
+    const start = new Date(d1s + "T00:00:00");
+    const end = new Date(d2s + "T23:59:59");
+    if (end < start){
+      showStatus("La fecha fin no puede ser anterior a la fecha inicio.", "bad");
+      return;
+    }
+
+    try{
+      const years = detectYears(workbook.SheetNames);
+      const meta = { years, start, end };
+
+      lastResult = processAll(workbook, meta);
+      lastMeta = meta;
+
+      renderAll(lastResult, lastMeta);
+
+      $("downloadXlsStyled").disabled = false;
+      $("downloadJson").disabled = false;
+
+      showStatus("Tablas generadas. Puedes descargar Excel/JSON.", "good");
+    }catch(err){
+      console.error(err);
+      showStatus("Error procesando: " + (err?.message || err), "bad");
+    }
+  });
+
+  // =========================
+  // Descargar Excel ejecutivo (XLS via HTML)
+  // =========================
+  $("downloadXlsStyled").addEventListener("click", () => {
+    if (!lastResult || !lastMeta) return;
+
+    const { years, start, end } = lastMeta;
+
+    const t1 = document.getElementById("t1")?.innerHTML || "";
+    const t2 = document.getElementById("t2")?.innerHTML || "";
+    const t3 = document.getElementById("t3")?.innerHTML || "";
+
+    const title = `MDY | Reporte Bienes & Servicios`;
+    const subtitle = `Período (año actual): ${ymd(start)} a ${ymd(end)} · Comparativo: ${years.prev} vs ${years.curr} · Excluye NIT: ${[...EXCLUDED_NITS].join(", ")}`;
+
+    const css = `
+      body{font-family:Calibri, Arial, sans-serif; color:#111; margin:18px;}
+      .headbar{
+        background:#0f172a; color:#fff; padding:14px 16px; border-radius:10px;
+      }
+      .headbar h1{margin:0; font-size:16pt; font-weight:700;}
+      .headbar .sub{margin-top:6px; font-size:10.5pt; opacity:.9;}
+      h2{font-size:12pt; margin:18px 0 8px; color:#0f172a;}
+      .note{font-size:10pt; color:#334155; margin:0 0 10px;}
+      table{border-collapse:collapse; width:100%;}
+      th{
+        background:#0f172a; color:#fff; font-weight:700; font-size:10pt;
+        padding:7px 8px; border:1px solid #CBD5E1;
+      }
+      td{
+        font-size:10pt; padding:7px 8px; border:1px solid #E2E8F0;
+      }
+      .right{text-align:right;}
+      .mono{font-family:Consolas, monospace;}
+      tr td b{font-weight:700;}
+    `;
+
+    const html = `
+      <html>
+        <head>
+          <meta charset="utf-8" />
+          <style>${css}</style>
+        </head>
+        <body>
+          <div class="headbar">
+            <h1>${title}</h1>
+            <div class="sub">${subtitle}</div>
+          </div>
+
+          <h2>Tabla 1 · Comparativo Bienes/Servicios (Club y Conjunto)</h2>
+          ${t1}
+
+          <h2>Tabla 2 · Consolidado año actual (Distribución Club vs Conjunto)</h2>
+          ${t2}
+
+          <h2>Tabla 3 · Rangos de proveedores (año actual, por NITTRA)</h2>
+          <div class="note">Agrupación por NITTRA. Monto por proveedor = suma de (DEBITOS + CREDITOS) en el período. (Excluye NIT: ${[...EXCLUDED_NITS].join(", ")}).</div>
+          ${t3}
+
+          <div class="note" style="margin-top:18px;">
+            Método: Servicios por CODICTA (Club: 5110,5120,5135,5145,5150,5210,5220,5235,5245,5250; Conjunto: 5110,5120,5135,5145,5150 y 612592).
+            Bienes por IDFUENTE (IE, EI, RE, DI, CC, CP, FC, DC).
+          </div>
+        </body>
+      </html>
+    `.trim();
+
+    const blob = new Blob([html], { type: "application/vnd.ms-excel;charset=utf-8" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `MDY_Reporte_${years.curr}_vs_${years.prev}_EJECUTIVO.xls`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 500);
+
+    showStatus("Descargado XLS ejecutivo. Ábrelo en Excel y queda listo para presentación.", "good");
+  });
+
+  // =========================
+  // Descargar JSON para IA (compacto y trazable)
+  // =========================
+  function buildIAJson(){
+    if (!lastResult || !lastMeta) return null;
+
+    const { years, start, end } = lastMeta;
+    const { totals, rangeStats, totalProv, totalAmt, providers, alerts, alertsSummary } = lastResult;
+
+    const providersTop = (providers || []).slice(0, 200).map(p => ({
+      idtercero: p.nit,
+      nombre: p.nombre || "",
+      monto: Math.round(p.sum)
+    }));
+
+    return {
+      metadata: {
+        generated_at: new Date().toISOString(),
+        periodo: { inicio: ymd(start), fin: ymd(end) },
+        years: years,
+        excluded_nits: [...EXCLUDED_NITS],
+        definicion_documento: "Documento = (IDTERCERO, IDFUENTE, NUMDOCTRA) (si NUMDOCTRA vacío: CONSECUTRA)",
+        valor_linea: "Neto robusto para alertas = DEBITOS - CREDITOS (o DEBITOS + CREDITOS si créditos vienen negativos). Para totales se usa la misma lógica actual del reporte."
+      },
+      kpis: {
+        total_actual_club_conjunto: totals?.[years.curr]?.All?.total ?? null,
+        total_proveedores_actual: totalProv,
+        monto_proveedores_actual: Math.round(totalAmt)
+      },
+      tablas: {
+        totals,
+        rangos_proveedores: rangeStats?.map(r => ({
+          range: r.range,
+          proveedores: r.providers,
+          monto: Math.round(r.amount)
+        })) || []
+      },
+      providers_top: providersTop,
+      alerts: {
+        summary: alertsSummary || null,
+        items: (alerts || []).slice(0, 500) // tope de seguridad
+      },
+      movimientos: extractMovimientosParaIA(workbook, lastMeta, {
+        maxRowsPerSheet: 20000,     // súbelo si quieres “todo”
+        includePrevYear: true       // true = exporta ambos años
+      }),
+
+      prompt_sugerido: [
+        "Actúa como auditor interno. Analiza el JSON: identifica patrones de riesgo, prioriza alertas por severidad e impacto,",
+        "propón procedimientos de auditoría/validación para cada tipo de alerta (A1,A2,A4,B1,C1,C2,D1), y sugiere un plan de seguimiento.",
+        "Entrega: (1) Resumen ejecutivo, (2) Top 10 casos con justificación, (3) Pruebas recomendadas por caso, (4) Preguntas a proceso/contabilidad."
+      ].join(" ")
+    };
+  }
+
+  function downloadJson(obj, filename){
+    const txt = JSON.stringify(obj, null, 2);
+    const blob = new Blob([txt], { type: "application/json;charset=utf-8" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 500);
+  }
+  // =========================
+  // Export detalle de movimientos para IA
+  // =========================
+  const IA_MOV_COLUMNS = [
+    "NITTRA","IDTERCERO","NOMBRETER",
+    "CODICTA","DESCCTA",
+    "IDCENCO","DESCENCO",
+    "IDFUENTE","NUMDOCTRA","CONSECUTRA",
+    "FECHATRA","DESCRITRA",
+    "DEBITOS","CREDITOS"
+  ];
+
+  // Deb/Cre robusto (mismo criterio de lectura que getRowValue)
+  function getDebCre(row){
+    const deb = row.DEBITOS ?? row.DEBITO ?? row["DÉBITOS"] ?? row["DÉBITO"];
+    const cre = row.CREDITOS ?? row.CREDITO ?? row["CRÉDITOS"] ?? row["CRÉDITO"];
+    return { deb: asNumber(deb), cre: asNumber(cre) };
+  }
+
+  function pickMovimientoIA(r, dt, ctx){
+    const { deb, cre } = getDebCre(r);
+
+    // Nota: algunos Excel vienen con DESCRITRE (sin A). Guardamos ambos por seguridad.
+    const descri = safeKey(r.DESCRITRA ?? r.DESCRITRE ?? r["DESCRI TRA"] ?? r["DESCRI. TRA"]);
+
+    return {
+      sheet_name: ctx.sheet_name,
+      year: ctx.year,
+      entity: ctx.entity,
+      kind: ctx.kind, // SERV o C14
+
+      // Identificación tercero
+      nittra: cleanNit(r.NITTRA),
+      idtercero: safeKey(r.IDTERCERO) || cleanNit(r.NITTRA) || "",
+      nombreter: safeKey(r.NOMBRETER),
+
+      // Cuenta / centro / documento
+      codicta: safeKey(r.CODICTA),
+      desccta: safeKey(r.DESCCTA),
+      idcenco: safeKey(r.IDCENCO ?? r.IDCENCO), // por si viene raro
+      descenco: safeKey(r.DESCENCO),
+      idfuente: safeKey(r.IDFUENTE),
+      numdoctra: safeKey(r.NUMDOCTRA),
+      consecutra: safeKey(r.CONSECUTRA),
+
+      // Fecha / descripción
+      fechatra: dt ? ymd(dt) : null,
+      descritra: descri,
+
+      // Valores
+      debitos: deb,
+      creditos: cre,
+      valor_reporte: Math.round(getRowValue(r)),  // consistente con el total del reporte
+      valor_neto: Math.round(deb - cre)           // útil para analítica/contable (débitos - créditos)
+    };
+  }
+
+  function extractMovimientosParaIA(wb, meta, opts = {}){
+    const maxRowsPerSheet = Number.isFinite(opts.maxRowsPerSheet) ? opts.maxRowsPerSheet : 20000; // ajusta a gusto
+    const includePrevYear = (opts.includePrevYear !== false);
+
+    const { years, start, end } = meta;
+
+    const outSheets = [];
+
+    const buildDefsForYear = (y) => ([
+      { sheet_name: `Club_Gastos_${y}`,     entity:"Club",     kind:"SERV" },
+      { sheet_name: `Conjunto_Gastos_${y}`, entity:"Conjunto", kind:"SERV" },
+      { sheet_name: `Club_C14_${y}`,        entity:"Club",     kind:"C14"  },
+      { sheet_name: `Conjunto_C14_${y}`,    entity:"Conjunto", kind:"C14"  },
+    ]);
+
+    const yearsToExport = includePrevYear ? [years.prev, years.curr] : [years.curr];
+
+    for (const y of yearsToExport){
+      const { start: yrStart, end: yrEnd } = alignRangeToYear(start, end, y);
+      const defs = buildDefsForYear(y);
+
+      for (const d of defs){
+        const rows = readSheetRows(wb, d.sheet_name);
+
+        let rowsInRange = 0;
+        const picked = [];
+
+        for (const r of rows){
+          const dt = parseExcelDate(r.FECHATRA ?? r["FECHA TRA"] ?? r.FECHA ?? r.FECHA_TRA);
+
+          const passFilter = (d.kind === "C14")
+            ? filterC14(r)
+            : filterServicios(d.entity, r);
+
+          if (!passFilter) continue;
+
+          // Exclusión NIT antes de exportar (misma regla del cálculo)
+          const nitClean = cleanNit(r.NITTRA);
+          if (nitClean && EXCLUDED_NITS.has(nitClean)) continue;
+
+          if (!inDateRange(dt, yrStart, yrEnd)) continue;
+          rowsInRange++;
+
+          if (picked.length < maxRowsPerSheet){
+            picked.push(pickMovimientoIA(r, dt, { ...d, year:y }));
+          }
+        }
+
+        outSheets.push({
+          sheet_name: d.sheet_name,
+          year: y,
+          entity: d.entity,
+          kind: d.kind,
+          periodo_aplicado: { inicio: ymd(yrStart), fin: ymd(yrEnd) },
+          rows_total_in_range: rowsInRange,
+          rows_included: picked.length,
+          truncated: picked.length < rowsInRange,
+          rows: picked
+        });
+      }
+    }
+
+    return {
+      columns: IA_MOV_COLUMNS,
+      notes: {
+        maxRowsPerSheet,
+        includePrevYear,
+        criterio_filtro: "Mismas reglas del reporte: Servicios por CODICTA (y excepción 612592 en Conjunto); Bienes por IDFUENTE; exclusión EXCLUDED_NITS; rango por FECHATRA."
+      },
+      sheets: outSheets
+    };
+  }
+
+  $("downloadJson").addEventListener("click", () => {
+    const data = buildIAJson();
+    if (!data){
+      showStatus("No hay datos aún. Primero genera las tablas.", "warn");
+      return;
+    }
+    const y = lastMeta?.years?.curr || "ACTUAL";
+    downloadJson(data, `MDY_IA_${y}_${data.metadata.periodo.inicio}_${data.metadata.periodo.fin}.json`);
+    showStatus("JSON generado. Súbelo a tu IA para análisis y seguimiento.", "good");
+  });
+
+})();
+</script>
+</body>
+</html>
