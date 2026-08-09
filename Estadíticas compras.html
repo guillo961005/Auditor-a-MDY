@@ -327,7 +327,7 @@
     D1: { nombre: "Incremento anual del proveedor",
           objetivo: "Proveedores cuyo monto crece de forma atípica frente al año anterior en el mismo período. Revisar soportes, contratos, OC y cambios de alcance." },
     E1: { nombre: "Posible pago duplicado",
-          objetivo: "Mismo tercero y mismo valor exacto en documentos distintos con pocos días de diferencia. Cruzar contra factura, orden de compra y recibido para descartar doble causación o doble pago." },
+          objetivo: "Mismo tercero y mismo valor exacto en documentos distintos con pocos días de diferencia. Cruzar contra factura, orden de compra y recibido para descartar doble causación o doble pago. Si existe un documento con el valor negativo equivalente (contrapartida), se descuenta: eso indica reverso/reclasificación contable y no doble pago." },
     E2: { nombre: "Tercero con varios nombres",
           objetivo: "Un mismo NIT/ID registrado con nombres distintos en el maestro de terceros. Parte la concentración real del proveedor, distorsiona los rankings y debilita los controles por tercero." },
     E3: { nombre: "Montos siempre redondos",
@@ -1008,28 +1008,43 @@
         const totalTercero = arr.reduce((s,x)=>s+x.val,0);
 
         // E1: posible pago duplicado (mismo valor exacto, docs distintos, pocos días)
+        // Un doc del mismo tercero con el valor NEGATIVO equivalente es una contrapartida
+        // (reverso/reclasificación contable) y cancela una de las repeticiones.
         const byVal = new Map();
+        const negByVal = new Map(); // |valor| -> [docs con valor negativo]
         for (const dv of arr){
           const vKey = Math.round(dv.val);
-          if (vKey < E1_VALOR_MIN) continue;
-          const l = byVal.get(vKey) || [];
-          l.push(dv);
-          byVal.set(vKey, l);
+          if (vKey >= E1_VALOR_MIN){
+            const l = byVal.get(vKey) || [];
+            l.push(dv);
+            byVal.set(vKey, l);
+          } else if (vKey <= -E1_VALOR_MIN){
+            const a = Math.abs(vKey);
+            const l = negByVal.get(a) || [];
+            l.push(dv);
+            negByVal.set(a, l);
+          }
         }
         for (const [val, l] of byVal.entries()){
           if (l.length < 2) continue;
           const ts = l.map(x=>x.t);
           const spanDays = Math.round((Math.max(...ts) - Math.min(...ts)) / 86400000);
           if (spanDays > E1_DIAS_MAX) continue;
+
+          const negs = negByVal.get(val) || [];
+          const contrapartidas = Math.min(negs.length, l.length);
+          const efectivas = l.length - contrapartidas;
+          if (efectivas < 2) continue; // cubierto por reversos: reclasificación, no doble pago
+
           const sev = (spanDays === 0 || val >= 5_000_000) ? "alta" : "media";
           alerts.push({
             code: "E1",
             type: "posible_pago_duplicado",
             severity: sev,
             tercero: { id, nombre },
-            metrics: { valor: val, repeticiones: l.length, dias_entre: spanDays, monto_en_riesgo: val * (l.length - 1) },
+            metrics: { valor: val, repeticiones: l.length, contrapartidas, repeticiones_netas: efectivas, dias_entre: spanDays, monto_en_riesgo: val * (efectivas - 1) },
             scope,
-            evidence: { docs: docEv(l), nota: ALERT_CATALOG.E1.objetivo }
+            evidence: { docs: docEv(l).concat(docEv(negs)), nota: ALERT_CATALOG.E1.objetivo }
           });
         }
 
@@ -1881,7 +1896,7 @@
         else if (a.code === "C1") met = `fechas=${(a.metrics.fechas||[]).join(", ")}`;
         else if (a.code === "C2") met = `terceros=${(a.evidence?.terceros||[]).map(x=>x.id).join(", ")}`;
         else if (a.code === "D1") met = `$ ${formatCOP(a.metrics.prev)} → $ ${formatCOP(a.metrics.curr)} (+${a.metrics.pct}%)`;
-        else if (a.code === "E1") met = `$ ${formatCOP(a.metrics.valor)} ×${a.metrics.repeticiones} en ${a.metrics.dias_entre} día(s)`;
+        else if (a.code === "E1") met = `$ ${formatCOP(a.metrics.valor)} ×${a.metrics.repeticiones} en ${a.metrics.dias_entre} día(s)` + (a.metrics.contrapartidas ? ` · ${a.metrics.contrapartidas} contrapartida(s)` : "");
         else if (a.code === "E2") met = `${(a.metrics.nombres||[]).length} nombres · $ ${formatCOP(a.metrics.monto_total)}`;
         else if (a.code === "E3") met = `${a.metrics.docs_redondos}/${a.metrics.docs} redondos (${a.metrics.pct_redondos}%)`;
         else if (a.code === "E4") met = `${a.metrics.docs_en_banda} docs bajo $ ${formatCOP(a.metrics.umbral)}`;
