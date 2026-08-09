@@ -465,6 +465,44 @@
     return { ok: missing.length === 0, missing };
   }
 
+  // Valida que las fechas (FECHATRA) de cada hoja correspondan al año del
+  // nombre de la hoja. Una hoja "..._2025" cuyo contenido trae fechas de otro
+  // año quedaría en $0 al alinear el período, sin explicación visible.
+  function validateSheetYears(wb, sheetNames){
+    const issues = [];
+    for (const name of sheetNames){
+      const m = name.match(/_(\d{4})$/);
+      if (!m) continue;
+      const namedYear = Number(m[1]);
+
+      const rows = readSheetRows(wb, name);
+      const counts = new Map(); // año -> filas
+      let dated = 0;
+      for (const r of rows){
+        const dt = parseExcelDate(r.FECHATRA ?? r["FECHA TRA"] ?? r.FECHA ?? r.FECHA_TRA);
+        if (!dt) continue;
+        dated++;
+        const y = dt.getFullYear();
+        counts.set(y, (counts.get(y) || 0) + 1);
+      }
+
+      if (!dated){
+        issues.push(`${name}: ninguna fila tiene fecha legible en FECHATRA.`);
+        continue;
+      }
+
+      const inYear = counts.get(namedYear) || 0;
+      if (inYear / dated < 0.5){
+        const dist = [...counts.entries()]
+          .sort((a,b)=>b[1]-a[1])
+          .map(([y,c])=>`${y}: ${c.toLocaleString("es-CO")} filas`)
+          .join(" · ");
+        issues.push(`${name}: el nombre indica ${namedYear}, pero su contenido tiene fechas de → ${dist}. Sus cifras NO entrarán al cálculo de ${namedYear} y ese bloque quedará en $0.`);
+      }
+    }
+    return issues;
+  }
+
   function filterServicios(entity, row){
     const cod = safeKey(row.CODICTA).replace(/\D/g, "");
     if (!cod) return false;
@@ -575,7 +613,23 @@
         d2.value = ymd(end);
       }
 
-      showStatus(`Archivo leído correctamente (${file.name}).\nAños detectados: ${years.prev} (anterior) y ${years.curr} (actual).`, "good");
+      showStatus("Validando coherencia de fechas por hoja...", "warn");
+      await new Promise(res => setTimeout(res, 0)); // deja repintar el estado antes del escaneo
+
+      const yearIssues = validateSheetYears(workbook, need);
+      if (yearIssues.length){
+        showStatus(
+          `Archivo leído (${file.name}). Años detectados: ${years.prev} (anterior) y ${years.curr} (actual).\n\n` +
+          `⚠ INCONSISTENCIA ENTRE NOMBRE DE HOJA Y CONTENIDO:\n- ${yearIssues.join("\n- ")}\n\n` +
+          `Corrige el archivo (exporta de nuevo la(s) hoja(s) con los datos del año correcto) y vuelve a cargarlo. ` +
+          `Puedes generar tablas igualmente, pero las cifras de esas hojas saldrán en $0.`,
+          "bad"
+        );
+        $("run").disabled = false;
+        return;
+      }
+
+      showStatus(`Archivo leído correctamente (${file.name}).\nAños detectados: ${years.prev} (anterior) y ${years.curr} (actual).\nCoherencia de fechas por hoja: OK.`, "good");
       $("run").disabled = false;
 
     }catch(err){
