@@ -309,6 +309,45 @@
     { key: ">0<1M",        min: 0,           max: 1_000_000 },
   ];
 
+  // Catálogo de alertas: nombre y objetivo/fin de auditoría de cada una.
+  // Se muestra en pantalla (tooltip de la tabla), en el Excel ejecutivo y en el JSON.
+  const ALERT_CATALOG = {
+    A1: { nombre: "Alta frecuencia (período)",
+          objetivo: "Terceros con un número inusual de documentos en el período. Puede indicar fraccionamiento de compras o alta dependencia operativa de un proveedor." },
+    A2: { nombre: "Pico diario de documentos",
+          objetivo: "Muchos documentos del mismo tercero en un solo día. Revisar si corresponde a cargues masivos justificados o a división artificial de una compra." },
+    A4: { nombre: "Ráfaga (48h)",
+          objetivo: "Concentración de documentos del mismo tercero en una ventana de 48 horas. Señal de compras urgentes sin planeación o de fraccionamiento." },
+    B1: { nombre: "Fragmentación (líneas/doc)",
+          objetivo: "Documentos con un número atípico de líneas contables. Revisar la calidad del registro y posibles distribuciones para diluir montos entre cuentas." },
+    C1: { nombre: "Mismo documento en varias fechas",
+          objetivo: "El mismo número de documento del mismo tercero aparece causado en fechas distintas. Verificar re-causación, reversos o cargue duplicado." },
+    C2: { nombre: "Documento con varios terceros",
+          objetivo: "Un mismo número de documento asociado a más de un tercero. Verificar errores de digitación del NIT o suplantación de proveedor." },
+    D1: { nombre: "Incremento anual del proveedor",
+          objetivo: "Proveedores cuyo monto crece de forma atípica frente al año anterior en el mismo período. Revisar soportes, contratos, OC y cambios de alcance." },
+    E1: { nombre: "Posible pago duplicado",
+          objetivo: "Mismo tercero y mismo valor exacto en documentos distintos con pocos días de diferencia. Cruzar contra factura, orden de compra y recibido para descartar doble causación o doble pago." },
+    E2: { nombre: "Tercero con varios nombres",
+          objetivo: "Un mismo NIT/ID registrado con nombres distintos en el maestro de terceros. Parte la concentración real del proveedor, distorsiona los rankings y debilita los controles por tercero." },
+    E3: { nombre: "Montos siempre redondos",
+          objetivo: "Proveedores cuyos documentos son casi todos múltiplos exactos de $100.000. Típico de servicios sin soporte de cotización o medida; revisar contrato, soportes y retenciones." },
+    E4: { nombre: "Posible fraccionamiento bajo umbral",
+          objetivo: "Varios documentos del mismo tercero justo debajo de un umbral redondo de aprobación ($5M, $10M, $20M, $50M). Puede indicar división de compras para evadir niveles de autorización; confrontar con los topes del manual de compras." },
+    E5: { nombre: "Actividad en fin de semana",
+          objetivo: "Documentos registrados en sábado o domingo por montos relevantes. Verificar quién registró, con qué autorización y si la operación justifica trabajo en fin de semana." },
+  };
+
+  // Umbrales de las alertas E (deterministas, fijos)
+  const E1_VALOR_MIN = 500_000;        // valor mínimo del doc para evaluar duplicado
+  const E1_DIAS_MAX  = 20;             // ventana máxima entre repeticiones
+  const E3_DOCS_MIN  = 8;              // mínimo de docs para evaluar redondez
+  const E3_PCT_MIN   = 0.70;           // proporción mínima de docs redondos
+  const E4_UMBRALES  = [5_000_000, 10_000_000, 20_000_000, 50_000_000];
+  const E4_DOCS_MIN  = 3;              // docs en la banda [90%..100%) del umbral
+  const E5_DOCS_MIN  = 2;              // docs en fin de semana
+  const E5_MONTO_MIN = 10_000_000;     // monto mínimo en fin de semana
+
   // =========================
   // Utilidades
   // =========================
@@ -727,6 +766,7 @@
       this.docLines = new Map(); // docUniqueKey(third, fuente, numdoc|consec) -> count lines
       this.dayDocSeen = new Set(); // (docUniqueKey + date) para dedupe de docs por día
       this.docSeen = new Set(); // docUniqueKey para dedupe de doc global
+      this.docVal = new Map(); // docUniqueKey -> { id, fuente, doc, val, t, date } (valor acumulado por documento)
     }
 
     _getThirdInfo(id, name){
@@ -750,7 +790,9 @@
         // muestras
         sampleDocs: [], // {fuente,numdoc,consec,fecha,scope}
         maxLinesPerDoc: 0,
-        maxLinesDocKey: ""
+        maxLinesDocKey: "",
+        // variantes de nombre del tercero (clave normalizada -> nombre original)
+        nameKeys: new Map()
       };
       this.third.set(id, obj);
       return obj;
@@ -771,6 +813,12 @@
 
       info.lines += 1;
 
+      // E2: variantes de nombre (mismo ID con nombres distintos en el maestro)
+      if (nombre){
+        const nk = nombre.replace(/\s+/g, " ").trim().toUpperCase();
+        if (nk && !info.nameKeys.has(nk)) info.nameKeys.set(nk, nombre);
+      }
+
       const idfuente = safeKey(r.IDFUENTE);
       const numdoc = safeKey(r.NUMDOCTRA);
       const consec = safeKey(r.CONSECUTRA);
@@ -779,6 +827,16 @@
       const docId = numdoc ? numdoc : (consec || "(sin-doc)");
       const docUniqueKey = k(id, idfuente, docId); // tercero + fuente + doc
       const date = ymd(dt);
+
+      // Valor y fecha por documento (para alertas E1/E3/E4/E5)
+      const rowVal = getRowValue(r);
+      let dv = this.docVal.get(docUniqueKey);
+      if (!dv){
+        dv = { id, fuente: idfuente, doc: docId, val: 0, t: dt.getTime(), date };
+        this.docVal.set(docUniqueKey, dv);
+      }
+      dv.val += rowVal;
+      if (dt.getTime() < dv.t){ dv.t = dt.getTime(); dv.date = date; }
 
       // Conteo de líneas por doc
       const curLines = (this.docLines.get(docUniqueKey) || 0) + 1;
@@ -931,6 +989,117 @@
         }
       }
 
+      // =========================
+      // Alertas E1..E5 (a nivel de documento)
+      // =========================
+      const docsByThird = new Map(); // id -> [docVal]
+      for (const dv of this.docVal.values()){
+        const arr = docsByThird.get(dv.id) || [];
+        arr.push(dv);
+        docsByThird.set(dv.id, arr);
+      }
+
+      const docEv = (l) => l.slice(0,6).map(x => ({ fuente: x.fuente, numdoc: x.doc, fecha: x.date, valor: Math.round(x.val) }));
+
+      for (const [id, arr] of docsByThird.entries()){
+        const info = this.third.get(id);
+        const nombre = info?.nombre || "";
+        const scope = info ? [...info.scopes] : [];
+        const totalTercero = arr.reduce((s,x)=>s+x.val,0);
+
+        // E1: posible pago duplicado (mismo valor exacto, docs distintos, pocos días)
+        const byVal = new Map();
+        for (const dv of arr){
+          const vKey = Math.round(dv.val);
+          if (vKey < E1_VALOR_MIN) continue;
+          const l = byVal.get(vKey) || [];
+          l.push(dv);
+          byVal.set(vKey, l);
+        }
+        for (const [val, l] of byVal.entries()){
+          if (l.length < 2) continue;
+          const ts = l.map(x=>x.t);
+          const spanDays = Math.round((Math.max(...ts) - Math.min(...ts)) / 86400000);
+          if (spanDays > E1_DIAS_MAX) continue;
+          const sev = (spanDays === 0 || val >= 5_000_000) ? "alta" : "media";
+          alerts.push({
+            code: "E1",
+            type: "posible_pago_duplicado",
+            severity: sev,
+            tercero: { id, nombre },
+            metrics: { valor: val, repeticiones: l.length, dias_entre: spanDays, monto_en_riesgo: val * (l.length - 1) },
+            scope,
+            evidence: { docs: docEv(l), nota: ALERT_CATALOG.E1.objetivo }
+          });
+        }
+
+        // E3: montos siempre redondos (múltiplos exactos de $100.000)
+        if (arr.length >= E3_DOCS_MIN){
+          const redondos = arr.filter(x => x.val > 0 && Math.round(x.val) % 100000 === 0);
+          const pr = redondos.length / arr.length;
+          if (pr >= E3_PCT_MIN){
+            const sev = (pr >= 0.999 && totalTercero >= 20_000_000) ? "alta" : "media";
+            alerts.push({
+              code: "E3",
+              type: "montos_redondos",
+              severity: sev,
+              tercero: { id, nombre },
+              metrics: { docs: arr.length, docs_redondos: redondos.length, pct_redondos: Number((pr*100).toFixed(0)), monto_total: Math.round(totalTercero) },
+              scope,
+              evidence: { docs: docEv(redondos), nota: ALERT_CATALOG.E3.objetivo }
+            });
+          }
+        }
+
+        // E4: posible fraccionamiento bajo umbral (banda 90%..100% del umbral)
+        for (const U of E4_UMBRALES){
+          const band = arr.filter(x => x.val >= U*0.9 && x.val < U);
+          if (band.length >= E4_DOCS_MIN){
+            const sev = band.length >= 5 ? "alta" : "media";
+            alerts.push({
+              code: "E4",
+              type: "fraccionamiento_bajo_umbral",
+              severity: sev,
+              tercero: { id, nombre },
+              metrics: { umbral: U, docs_en_banda: band.length, monto_banda: Math.round(band.reduce((s,x)=>s+x.val,0)) },
+              scope,
+              evidence: { docs: docEv(band), nota: ALERT_CATALOG.E4.objetivo }
+            });
+            break; // reporta solo el umbral más bajo alcanzado para no duplicar el caso
+          }
+        }
+
+        // E5: actividad en fin de semana
+        const finde = arr.filter(x => { const dow = new Date(x.t).getDay(); return dow === 0 || dow === 6; });
+        const findeAmt = finde.reduce((s,x)=>s+x.val,0);
+        if (finde.length >= E5_DOCS_MIN && findeAmt >= E5_MONTO_MIN){
+          const sev = (finde.length >= 5 || findeAmt >= 50_000_000) ? "alta" : "media";
+          alerts.push({
+            code: "E5",
+            type: "actividad_fin_de_semana",
+            severity: sev,
+            tercero: { id, nombre },
+            metrics: { docs_finde: finde.length, monto_finde: Math.round(findeAmt) },
+            scope,
+            evidence: { docs: docEv(finde.sort((a,b)=>b.val-a.val)), nota: ALERT_CATALOG.E5.objetivo }
+          });
+        }
+
+        // E2: mismo NIT/ID con varios nombres en el maestro
+        if (info && info.nameKeys.size > 1){
+          const sev = totalTercero >= 50_000_000 ? "alta" : "media";
+          alerts.push({
+            code: "E2",
+            type: "tercero_con_varios_nombres",
+            severity: sev,
+            tercero: { id, nombre },
+            metrics: { nombres: [...info.nameKeys.values()].slice(0,4), monto_total: Math.round(totalTercero) },
+            scope,
+            evidence: { nota: ALERT_CATALOG.E2.objetivo }
+          });
+        }
+      }
+
       // C1: mismo doc (tercero+fuente+numdoc) en varias fechas
       for (const [docKey, datesSet] of this.docDates.entries()){
         if (datesSet.size > 1){
@@ -972,13 +1141,20 @@
       const score = (a)=>{
         const w = sevWeight(a.severity);
         const m = a.metrics || {};
-        const mag = m.docs_periodo || m.max_docs_dia || m.max_docs_48h || m.max_lineas_doc || 0;
-        return w*1e6 + mag;
+        const mag = m.monto_en_riesgo || m.monto_banda || m.monto_finde || m.monto_total ||
+                    m.docs_periodo || m.max_docs_dia || m.max_docs_48h || m.max_lineas_doc || 0;
+        return w*1e12 + mag;
       };
       alerts.sort((a,b)=>score(b)-score(a));
 
       const summary = {
-        thresholds: { A1_media: U1, A1_alta: U1H, A2_media: U2, A2_alta: U2H, B1_media: U6, B1_alta: U6H, A4_media: 6, A4_alta: 10 },
+        thresholds: {
+          A1_media: U1, A1_alta: U1H, A2_media: U2, A2_alta: U2H, B1_media: U6, B1_alta: U6H, A4_media: 6, A4_alta: 10,
+          E1_valor_min: E1_VALOR_MIN, E1_dias_max: E1_DIAS_MAX,
+          E3_docs_min: E3_DOCS_MIN, E3_pct_min: Number((E3_PCT_MIN*100).toFixed(0)),
+          E4_umbrales: E4_UMBRALES, E4_docs_min: E4_DOCS_MIN,
+          E5_docs_min: E5_DOCS_MIN, E5_monto_min: E5_MONTO_MIN
+        },
         totals: {
           terceros_con_mov: thirdList.length,
           docs_distintos: [...this.docSeen].length,
@@ -1236,6 +1412,7 @@
       const m = a.metrics || {};
       const mag =
         m.delta || m.curr ||
+        m.monto_en_riesgo || m.monto_banda || m.monto_finde || m.monto_total ||
         m.docs_periodo || m.max_docs_dia || m.max_docs_48h || m.max_lineas_doc || 0;
       return w*1e12 + mag;
     };
@@ -1684,14 +1861,7 @@
     if (!alerts.length){
       $("tAlerts").innerHTML = `<div class="small">Sin alertas determinísticas con los umbrales actuales.</div>`;
     } else {
-      const typeLabel = (t) => ({
-        alta_frecuencia_periodo: "Alta frecuencia (período)",
-        pico_diario_documentos: "Pico diario de documentos",
-        rafaga_48h: "Ráfaga (48h)",
-        fragmentacion_lineas_por_documento: "Fragmentación (líneas/doc)",
-        mismo_documento_en_varias_fechas: "Mismo documento en varias fechas",
-        documento_asociado_a_varios_terceros: "Documento con varios terceros",
-      }[t] || t);
+      const typeLabel = (a) => ALERT_CATALOG[a.code]?.nombre || a.type;
 
       const sevCell = (s) => {
         if (s === "alta") return { val:"ALTA", cls:"sev-alta" };
@@ -1710,10 +1880,25 @@
         else if (a.code === "B1") met = `líneas/doc=${a.metrics.lineas_por_doc} (max doc=${a.metrics.max_lineas_doc})`;
         else if (a.code === "C1") met = `fechas=${(a.metrics.fechas||[]).join(", ")}`;
         else if (a.code === "C2") met = `terceros=${(a.evidence?.terceros||[]).map(x=>x.id).join(", ")}`;
+        else if (a.code === "D1") met = `$ ${formatCOP(a.metrics.prev)} → $ ${formatCOP(a.metrics.curr)} (+${a.metrics.pct}%)`;
+        else if (a.code === "E1") met = `$ ${formatCOP(a.metrics.valor)} ×${a.metrics.repeticiones} en ${a.metrics.dias_entre} día(s)`;
+        else if (a.code === "E2") met = `${(a.metrics.nombres||[]).length} nombres · $ ${formatCOP(a.metrics.monto_total)}`;
+        else if (a.code === "E3") met = `${a.metrics.docs_redondos}/${a.metrics.docs} redondos (${a.metrics.pct_redondos}%)`;
+        else if (a.code === "E4") met = `${a.metrics.docs_en_banda} docs bajo $ ${formatCOP(a.metrics.umbral)}`;
+        else if (a.code === "E5") met = `${a.metrics.docs_finde} docs · $ ${formatCOP(a.metrics.monto_finde)}`;
 
         const ev = (() => {
           if (a.code === "C2"){
             const t = (a.evidence?.terceros||[]).map(x=>`${x.id}${x.nombre?` (${x.nombre})`:""}`).join("<br>");
+            return `<span class="wraptext">${t}</span>`;
+          }
+          if (a.code === "E2"){
+            const t = (a.metrics.nombres||[]).map(n=>`• ${n}`).join("<br>");
+            return `<span class="wraptext">${t}</span>`;
+          }
+          const vdocs = a.evidence?.docs || [];
+          if (vdocs.length){
+            const t = vdocs.slice(0,5).map(d => `• ${d.fuente || ""} ${d.numdoc || ""} (${d.fecha || ""}) $ ${formatCOP(d.valor)}`).join("<br>");
             return `<span class="wraptext">${t}</span>`;
           }
           const sdocs = a.evidence?.sample_docs || [];
@@ -1725,7 +1910,7 @@
         rows.push([
           sevCell(a.severity),
           { val: a.code, cls:"mono" },
-          typeLabel(a.type),
+          `<span title="${escXml(ALERT_CATALOG[a.code]?.objetivo || "")}">${typeLabel(a)}</span>`,
           { val: terceroId, cls:"mono" },
           terceroNm,
           { val: met, cls:"mono" },
@@ -1733,11 +1918,18 @@
         ]);
       }
 
-      $("tAlerts").innerHTML = tableHTML(
-        ["Severidad","Código","Tipo","IDTERCERO","Nombre","Métrica","Evidencia (muestra)"],
-        rows,
-        "Alertas determinísticas para el año actual"
-      );
+      const catalogRows = Object.entries(ALERT_CATALOG).map(([c, x]) =>
+        [{ val: c, cls:"mono" }, x.nombre, { val: x.objetivo, cls:"wraptext" }]);
+
+      $("tAlerts").innerHTML =
+        tableHTML(
+          ["Severidad","Código","Alerta","IDTERCERO","Nombre","Métrica","Evidencia (muestra)"],
+          rows,
+          "Alertas determinísticas para el año actual"
+        ) +
+        `<details class="small" style="margin-top:10px;"><summary>Catálogo: qué busca cada alerta</summary>` +
+        tableHTML(["Código","Alerta","Objetivo / qué revisar"], catalogRows, "Catálogo de alertas y su objetivo de auditoría") +
+        `</details>`;
     }
 
   }
@@ -1792,6 +1984,12 @@
     const t1 = document.getElementById("t1")?.innerHTML || "";
     const t2 = document.getElementById("t2")?.innerHTML || "";
     const t3 = document.getElementById("t3")?.innerHTML || "";
+    const tAlertsTable = document.querySelector("#tAlerts > table")?.outerHTML || "";
+    const catalogHtml =
+      `<table><thead><tr><th>Código</th><th>Alerta</th><th>Objetivo / qué revisar</th></tr></thead><tbody>` +
+      Object.entries(ALERT_CATALOG).map(([c, x]) =>
+        `<tr><td class="mono">${c}</td><td>${x.nombre}</td><td class="wraptext">${x.objetivo}</td></tr>`).join("") +
+      `</tbody></table>`;
 
     const title = `MDY | Reporte Bienes & Servicios`;
     const subtitle = `Período (año actual): ${ymd(start)} a ${ymd(end)} · Comparativo: ${years.prev} vs ${years.curr} · Excluye NIT: ${[...EXCLUDED_NITS].join(", ")}`;
@@ -1816,6 +2014,10 @@
       .right{text-align:right;}
       .mono{font-family:Consolas, monospace;}
       tr td b{font-weight:700;}
+      .sev-alta{color:#B91C1C; font-weight:700;}
+      .sev-media{color:#B45309; font-weight:700;}
+      .sev-baja{color:#15803D; font-weight:700;}
+      .wraptext{white-space:normal;}
     `;
 
     const html = `
@@ -1839,6 +2041,13 @@
           <h2>Tabla 3 · Rangos de proveedores (año actual, por NITTRA)</h2>
           <div class="note">Agrupación por NITTRA. Monto por proveedor = suma de (DEBITOS + CREDITOS) en el período. (Excluye NIT: ${[...EXCLUDED_NITS].join(", ")}).</div>
           ${t3}
+
+          <h2>Tabla 4 · Alertas determinísticas (año actual) · ${(lastResult.alerts || []).length} casos</h2>
+          <div class="note">Alertas generadas automáticamente sobre los movimientos del período del año actual. Cada caso requiere verificación de soportes antes de concluir una irregularidad.</div>
+          ${tAlertsTable || `<div class="note">Sin alertas determinísticas con los umbrales actuales.</div>`}
+
+          <h2>Tabla 5 · Catálogo de alertas: objetivo de cada una</h2>
+          ${catalogHtml}
 
           <div class="note" style="margin-top:18px;">
             Método: Servicios por CODICTA (Club: 5110,5120,5135,5145,5150,5210,5220,5235,5245,5250; Conjunto: 5110,5120,5135,5145,5150 y 612592).
@@ -1899,6 +2108,7 @@
       },
       providers_top: providersTop,
       alerts: {
+        catalogo: ALERT_CATALOG, // código -> { nombre, objetivo } de cada tipo de alerta
         summary: alertsSummary || null,
         items: (alerts || []).slice(0, 500) // tope de seguridad
       },
@@ -1909,7 +2119,8 @@
 
       prompt_sugerido: [
         "Actúa como auditor interno. Analiza el JSON: identifica patrones de riesgo, prioriza alertas por severidad e impacto,",
-        "propón procedimientos de auditoría/validación para cada tipo de alerta (A1,A2,A4,B1,C1,C2,D1), y sugiere un plan de seguimiento.",
+        "propón procedimientos de auditoría/validación para cada tipo de alerta (A1,A2,A4,B1,C1,C2,D1,E1,E2,E3,E4,E5 — ver alerts.catalogo para el objetivo de cada una),",
+        "y sugiere un plan de seguimiento.",
         "Entrega: (1) Resumen ejecutivo, (2) Top 10 casos con justificación, (3) Pruebas recomendadas por caso, (4) Preguntas a proceso/contabilidad."
       ].join(" ")
     };
