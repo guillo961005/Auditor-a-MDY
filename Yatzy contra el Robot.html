@@ -1,9 +1,10 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style><title>Yatzy contra el Robot</title></head><body>
+<!doctype html><html lang="es"><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style><title>Yatzy contra el Robot</title></head><body>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zilla+Slab:wght@500;700&family=Source+Sans+3:wght@400;600;700&family=JetBrains+Mono:wght@500;700&display=swap">
 <style>
-/* Layout: mesa de fieltro (dados y controles) a la izquierda, planilla de papel a la derecha; se apilan en móvil. */
+/* Layout: tres columnas en una sola pantalla (mesa + verificación | planilla | registro); se apilan en pantallas angostas. */
+*,*::before,*::after{box-sizing:border-box}
 :root{
   --bg:#e9ece5; --paper:#fbfbf6; --ink:#1d2420; --muted:#66706a; --line:#d6dbd2;
   --felt:#1f5a48; --felt-2:#16463a; --felt-ink:#e8f1ec;
@@ -23,44 +24,53 @@
   --felt:#173f33; --felt-2:#10302a; --felt-ink:#dceae3;
   --die:#f3efe4; --pip:#1d2420; --accent:#e5664f; --accent-soft:#4a2620;
   --good:#5cc08a; --warn:#e0a548; color-scheme:dark;}
-body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.45}
-.wrap{max-width:1180px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 40px;display:grid;gap:18px}
-header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px}
-h1{font-family:var(--f-display);font-weight:700;font-size:clamp(28px,4vw,40px);margin:0;letter-spacing:-.01em;text-wrap:balance}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:14px;line-height:1.4}
+.wrap{max-width:1400px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:12px;display:grid;gap:12px;grid-template-rows:auto minmax(0,1fr)}
+header{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px}
+h1{font-family:var(--f-display);font-weight:700;font-size:clamp(24px,3vw,32px);margin:0;letter-spacing:-.01em;line-height:1.1}
 h1 span{color:var(--accent)}
-.sub{color:var(--muted);margin:2px 0 0;max-width:60ch}
-.opts{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
-.opts label{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);display:flex;flex-direction:column;gap:4px}
+.sub{color:var(--muted);margin:2px 0 0;font-size:13px}
+.opts{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end}
+.opts label{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);display:flex;flex-direction:column;gap:3px}
 select,button{font:inherit}
-select{background:var(--paper);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:6px 8px;font-size:14px;text-transform:none;letter-spacing:0}
-.btn{border:1px solid var(--line);background:var(--paper);color:var(--ink);border-radius:8px;padding:8px 14px;font-weight:600;cursor:pointer}
+select{background:var(--paper);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:5px 8px;font-size:13px;text-transform:none;letter-spacing:0}
+.btn{border:1px solid var(--line);background:var(--paper);color:var(--ink);border-radius:8px;padding:6px 14px;font-weight:600;cursor:pointer}
 .btn:hover{border-color:var(--muted)}
 .btn:focus-visible,.die:focus-visible,td.pick:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
-.grid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:18px;align-items:start}
-@media (max-width:860px){.grid{grid-template-columns:1fr}}
+
+.main{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr) minmax(0,.8fr);gap:12px;align-items:stretch;min-height:0}
+.col{display:grid;gap:12px;grid-template-rows:auto minmax(0,1fr);min-height:0}
+/* En escritorio todo cabe en la ventana; los paneles largos se desplazan por dentro. */
+@media (min-width:1100px) and (min-height:640px){
+  .wrap{height:100vh;height:100dvh}
+  .main>*{min-height:0;overflow:auto}
+}
+@media (max-width:1099px){.main{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.main .logpanel{grid-column:1/-1}}
+@media (max-width:700px){.main{grid-template-columns:1fr}}
 
 /* Mesa */
-.table{background:radial-gradient(120% 90% at 50% 20%,var(--felt),var(--felt-2));color:var(--felt-ink);border-radius:14px;padding:18px;display:grid;gap:16px;box-shadow:inset 0 0 0 6px rgba(0,0,0,.12)}
+.table{background:radial-gradient(120% 90% at 50% 20%,var(--felt),var(--felt-2));color:var(--felt-ink);border-radius:14px;padding:14px 16px;display:grid;gap:10px;box-shadow:inset 0 0 0 6px rgba(0,0,0,.12)}
 .status{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;align-items:baseline}
-.who{font-family:var(--f-display);font-size:22px;font-weight:700}
+.who{font-family:var(--f-display);font-size:21px;font-weight:700}
 .meta{font-family:var(--f-num);font-size:13px;opacity:.85}
-.tray{display:flex;justify-content:center;gap:clamp(8px,2vw,16px);flex-wrap:wrap;padding-block:14px}
-.die{--s:clamp(52px,12vw,72px);position:relative;flex:0 0 auto;width:var(--s);height:var(--s);min-width:0;margin:0;padding:0;background:var(--die);border-radius:14px;border:0;cursor:pointer;box-shadow:0 4px 0 rgba(0,0,0,.25),0 8px 14px rgba(0,0,0,.25);transition:transform .15s ease,box-shadow .15s ease;-webkit-appearance:none;appearance:none}
+.tray{display:flex;justify-content:center;gap:clamp(8px,1.4vw,14px);flex-wrap:wrap;padding-top:10px}
+.die{--s:clamp(48px,5.2vw,66px);position:relative;flex:0 0 auto;width:var(--s);height:var(--s);min-width:0;margin:0;padding:0;background:var(--die);border-radius:13px;border:0;cursor:pointer;box-shadow:0 4px 0 rgba(0,0,0,.25),0 8px 14px rgba(0,0,0,.25);transition:transform .15s ease,box-shadow .15s ease;-webkit-appearance:none;appearance:none}
+@media (max-width:1099px){.die{--s:clamp(48px,11vw,66px)}}
 .die:disabled{cursor:default;opacity:1;color:inherit}
 .die .face{position:absolute;top:14%;left:14%;right:14%;bottom:14%;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);pointer-events:none}
 .die .p{width:calc(var(--s) * .17);height:calc(var(--s) * .17);border-radius:50%;background:var(--pip);align-self:center;justify-self:center;visibility:hidden}
 .die .p.on{visibility:visible}
 .die.blank .p{visibility:hidden}
-.die.held{transform:translateY(-8px);box-shadow:0 0 0 3px var(--accent),0 10px 16px rgba(0,0,0,.3)}
-.die.held::after{content:""}
+.die.held{transform:translateY(-6px);box-shadow:0 0 0 3px var(--accent),0 10px 16px rgba(0,0,0,.3)}
 .die.rolling{animation:shake .32s linear}
 @keyframes shake{0%{transform:rotate(0)}25%{transform:rotate(-14deg)}50%{transform:rotate(10deg)}75%{transform:rotate(-6deg)}100%{transform:rotate(0)}}
 @media (prefers-reduced-motion:reduce){.die.rolling{animation:none}.die{transition:none}}
-.heldtags{display:flex;justify-content:center;gap:clamp(8px,2vw,16px);flex-wrap:wrap;margin-top:-6px}
-.heldtags span{width:clamp(52px,12vw,72px);text-align:center;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--felt-ink);opacity:0}
+.heldtags{display:flex;justify-content:center;gap:clamp(8px,1.4vw,14px);flex-wrap:wrap}
+.heldtags span{width:var(--s,clamp(48px,5.2vw,66px));text-align:center;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--felt-ink);opacity:0}
+@media (max-width:1099px){.heldtags span{width:clamp(48px,11vw,66px)}}
 .heldtags span.on{opacity:.9}
 .controls{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;align-items:center}
-.roll{background:var(--accent);color:#fff;border:0;border-radius:10px;padding:12px 26px;font-size:17px;font-weight:700;cursor:pointer;box-shadow:0 3px 0 rgba(0,0,0,.25)}
+.roll{background:var(--accent);color:#fff;border:0;border-radius:10px;padding:10px 24px;font-size:16px;font-weight:700;cursor:pointer;box-shadow:0 3px 0 rgba(0,0,0,.25)}
 .roll:disabled{opacity:.45;cursor:not-allowed}
 .hint{font-size:13px;opacity:.85;text-align:center;min-height:1.4em}
 .pips{display:inline-flex;gap:5px;vertical-align:middle}
@@ -68,50 +78,54 @@ select{background:var(--paper);color:var(--ink);border:1px solid var(--line);bor
 .pips i.full{background:var(--felt-ink)}
 
 /* Paneles */
-.panel{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:16px;min-width:0}
-.panel h2{font-family:var(--f-display);font-size:19px;margin:0 0 10px;font-weight:700}
-.panel h2 small{font-family:var(--f-body);font-weight:400;font-size:13px;color:var(--muted);margin-left:6px}
+.panel{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:12px 14px;min-width:0}
+.panel h2{font-family:var(--f-display);font-size:18px;margin:0 0 6px;font-weight:700}
+.panel h2 small{font-family:var(--f-body);font-weight:400;font-size:12px;color:var(--muted);margin-left:6px}
 
 /* Planilla */
-.sheet{width:100%;border-collapse:collapse;font-size:14px}
-.sheet th,.sheet td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:left}
-.sheet thead th{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);font-weight:600}
-.sheet td.n,.sheet th.n{text-align:center;font-family:var(--f-num);font-variant-numeric:tabular-nums;width:70px}
+.sheet{width:100%;border-collapse:collapse;font-size:13.5px}
+.sheet th,.sheet td{padding:3px 8px;border-bottom:1px solid var(--line);text-align:left}
+.sheet thead th{font-size:10.5px;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);font-weight:600}
+.sheet td.n,.sheet th.n{text-align:center;font-family:var(--f-num);font-variant-numeric:tabular-nums;width:62px}
 .sheet .cat b{font-weight:600}
-.sheet .cat small{display:block;color:var(--muted);font-size:12px}
+.sheet .cat small{color:var(--muted);font-size:11.5px;margin-left:6px}
 .sheet tr.sum td{background:color-mix(in srgb,var(--line) 45%,transparent);font-weight:700}
-.sheet tr.total td{font-family:var(--f-display);font-size:18px;border-bottom:0}
+.sheet tr.total td{font-family:var(--f-display);font-size:17px;border-bottom:0}
 td.pick{cursor:pointer;color:var(--muted);background:var(--accent-soft);border-radius:4px}
 td.pick:hover{color:var(--ink);outline:2px solid var(--accent);outline-offset:-2px}
 td.pick.zero{color:var(--muted);background:transparent;outline:1px dashed var(--line);outline-offset:-3px}
 td.just{color:var(--accent);font-weight:700}
-.bonusnote{font-size:12px;color:var(--muted);margin-top:8px}
+.bonusnote{font-size:12px;color:var(--muted);margin:6px 0 0}
 
-.lower{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px}
-@media (max-width:860px){.lower{grid-template-columns:1fr}}
-.log{list-style:none;margin:0;padding:0;max-height:300px;overflow:auto;font-size:13px;display:grid;gap:4px}
-.log li{display:grid;grid-template-columns:auto 1fr;gap:8px;padding:4px 0;border-bottom:1px dotted var(--line)}
+/* Registro */
+.logpanel{display:flex;flex-direction:column;min-height:0}
+.log{list-style:none;margin:0;padding:0;overflow:auto;font-size:12.5px;display:grid;gap:2px;align-content:start;flex:1 1 auto;min-height:0;max-height:none}
+@media (max-width:1099px){.log{max-height:260px}}
+.log li{display:grid;grid-template-columns:auto 1fr;gap:8px;padding:3px 0;border-bottom:1px dotted var(--line)}
 .log .tag{font-family:var(--f-num);font-size:11px;color:var(--muted);white-space:nowrap}
 .log .r{color:var(--accent);font-weight:600}
-.log code{font-family:var(--f-num);font-size:12.5px}
+.log code{font-family:var(--f-num);font-size:12px}
 
-.fair{display:grid;gap:14px}
-.fairgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
-@media (max-width:420px){.fairgrid{grid-template-columns:1fr}}
-.fair h3{font-size:12px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin:0 0 6px;font-weight:600}
-.bars{display:grid;gap:4px}
-.bar{display:grid;grid-template-columns:14px 1fr 64px;gap:6px;align-items:center;font-family:var(--f-num);font-size:12px;font-variant-numeric:tabular-nums}
-.bar .t{height:10px;background:color-mix(in srgb,var(--line) 70%,transparent);border-radius:3px;position:relative;overflow:hidden}
+/* Verificación */
+.fair{display:grid;gap:8px;align-content:start;align-self:start}
+.sheetpanel{align-self:start}
+.fairgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.fair h3{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin:0 0 4px;font-weight:600}
+.bars{display:grid;gap:2px}
+.bar{display:grid;grid-template-columns:12px minmax(40px,1fr) auto;gap:6px;align-items:center;font-family:var(--f-num);font-size:11.5px;font-variant-numeric:tabular-nums}
+.bar .t{height:9px;background:color-mix(in srgb,var(--line) 70%,transparent);border-radius:3px;position:relative;overflow:hidden}
 .bar .t b{position:absolute;inset:0 auto 0 0;background:var(--felt);border-radius:3px}
 .bar .t .exp{position:absolute;top:-2px;bottom:-2px;width:2px;background:var(--accent)}
-.bar span:last-child{text-align:right;color:var(--muted)}
-.verdict{font-size:13px;padding:8px 10px;border-radius:8px;background:color-mix(in srgb,var(--line) 40%,transparent)}
+.bar span:last-child{text-align:right;color:var(--muted);white-space:nowrap}
+.verdict{font-size:12px;padding:6px 8px;border-radius:8px;background:color-mix(in srgb,var(--line) 40%,transparent);display:grid;gap:3px}
 .verdict b{font-family:var(--f-num)}
-.chip{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:2px 8px;border-radius:99px;margin-right:6px}
+.chip{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:1px 7px;border-radius:99px;margin-right:6px}
 .chip.ok{background:color-mix(in srgb,var(--good) 18%,transparent);color:var(--good)}
 .chip.wait{background:color-mix(in srgb,var(--warn) 18%,transparent);color:var(--warn)}
 .chip.dev{background:var(--accent-soft);color:var(--accent)}
-.method{font-size:12.5px;color:var(--muted);margin:0}
+details.method{font-size:12px;color:var(--muted)}
+details.method summary{cursor:pointer;font-weight:600}
+details.method p{margin:4px 0 0}
 
 .overlay{position:fixed;inset:0;background:rgba(10,14,12,.55);display:grid;place-items:center;padding:20px;z-index:10}
 .card{background:var(--paper);color:var(--ink);border-radius:14px;padding:26px;max-width:420px;width:100%;text-align:center;display:grid;gap:10px}
@@ -123,7 +137,7 @@ td.just{color:var(--accent);font-weight:700}
   <header>
     <div>
       <h1>Yatzy <span>vs.</span> Robot</h1>
-      <p class="sub">Reglas escandinavas: 15 casillas, tres tiradas por turno, bono de 50 puntos con 63 o más en la sección superior. Los dados de ambos jugadores salen del mismo generador criptográfico.</p>
+      <p class="sub">Reglas clásicas: 13 casillas, tres tiradas por turno y bono de 35 puntos con 63 o más en la sección superior.</p>
     </div>
     <div class="opts">
       <label for="mode">Estilo del robot
@@ -143,43 +157,44 @@ td.just{color:var(--accent);font-weight:700}
     </div>
   </header>
 
-  <div class="grid">
-    <section class="table" aria-label="Mesa de juego">
-      <div class="status">
-        <div class="who" id="who">Tu turno</div>
-        <div class="meta" id="meta">Ronda 1 de 15</div>
-      </div>
-      <div class="tray" id="tray"></div>
-      <div class="heldtags" id="heldtags"></div>
-      <div class="controls">
-        <button class="roll" id="rollBtn" type="button">Lanzar dados</button>
-        <span class="pips" id="rollPips" aria-label="Tiradas restantes"></span>
-      </div>
-      <div class="hint" id="hint">Lanza los dados para empezar.</div>
-    </section>
+  <div class="main">
+    <div class="col">
+      <section class="table" aria-label="Mesa de juego">
+        <div class="status">
+          <div class="who" id="who">Tu turno</div>
+          <div class="meta" id="meta">Ronda 1 de 13</div>
+        </div>
+        <div class="tray" id="tray"></div>
+        <div class="heldtags" id="heldtags"></div>
+        <div class="controls">
+          <button class="roll" id="rollBtn" type="button">Lanzar dados</button>
+          <span class="pips" id="rollPips" aria-label="Tiradas restantes"></span>
+        </div>
+        <div class="hint" id="hint">Lanza los dados para empezar.</div>
+      </section>
 
-    <section class="panel" aria-label="Planilla de puntuación">
+      <section class="panel fair" aria-label="Verificación de los dados">
+        <h2>Verificación de los dados <small>acumulado de la sesión</small></h2>
+        <div class="fairgrid">
+          <div><h3>Tus dados</h3><div class="bars" id="barsP"></div></div>
+          <div><h3>Dados del robot</h3><div class="bars" id="barsR"></div></div>
+        </div>
+        <div class="verdict" id="verdict"></div>
+        <details class="method"><summary>Método</summary>
+          <p>Cada cara se obtiene con <code>crypto.getRandomValues</code> y muestreo por rechazo (se descartan los bytes 252–255) para que las seis caras tengan probabilidad exacta de 1/6. La marca roja indica la frecuencia esperada. La prueba χ² (5 grados de libertad, valor crítico 11,07 con α = 0,05) compara lo observado contra lo esperado. El robot nunca ve dados futuros ni influye en los tuyos.</p>
+        </details>
+      </section>
+    </div>
+
+    <section class="panel sheetpanel" aria-label="Planilla de puntuación">
       <h2>Planilla <small>pulsa una casilla de tu columna para anotar</small></h2>
-      <div style="overflow-x:auto">
-        <table class="sheet" id="sheet"></table>
-      </div>
+      <table class="sheet" id="sheet"></table>
       <p class="bonusnote" id="bonusnote"></p>
     </section>
-  </div>
 
-  <div class="lower">
-    <section class="panel" aria-label="Registro de tiradas">
-      <h2>Registro de tiradas <small>cada lanzamiento queda anotado</small></h2>
+    <section class="panel logpanel" aria-label="Registro de tiradas">
+      <h2>Registro de tiradas</h2>
       <ul class="log" id="log"></ul>
-    </section>
-    <section class="panel fair" aria-label="Verificación de los dados">
-      <h2>Verificación de los dados <small>acumulado de la sesión</small></h2>
-      <div class="fairgrid">
-        <div><h3>Tus dados</h3><div class="bars" id="barsP"></div></div>
-        <div><h3>Dados del robot</h3><div class="bars" id="barsR"></div></div>
-      </div>
-      <div class="verdict" id="verdict"></div>
-      <p class="method">Método: cada cara se obtiene con <code>crypto.getRandomValues</code> y muestreo por rechazo (se descartan los bytes 252–255) para que las seis caras tengan probabilidad exacta de 1/6. La marca roja indica la frecuencia esperada. La prueba χ² (5 grados de libertad, valor crítico 11,07 con α = 0,05) compara lo observado contra lo esperado. El robot nunca ve dados futuros ni influye en los tuyos.</p>
     </section>
   </div>
 </div>
@@ -197,7 +212,7 @@ td.just{color:var(--accent);font-weight:700}
 // ---------- Azar verificable ----------
 function d6(){ const a=new Uint8Array(1); do{ crypto.getRandomValues(a); }while(a[0]>=252); return (a[0]%6)+1; }
 
-// ---------- Reglas ----------
+// ---------- Reglas (Yatzy clásico) ----------
 const CATS=[
  {id:'ones',name:'Unos',face:1,hint:'Suma de los 1'},
  {id:'twos',name:'Doses',face:2,hint:'Suma de los 2'},
@@ -205,37 +220,35 @@ const CATS=[
  {id:'fours',name:'Cuatros',face:4,hint:'Suma de los 4'},
  {id:'fives',name:'Cincos',face:5,hint:'Suma de los 5'},
  {id:'sixes',name:'Seises',face:6,hint:'Suma de los 6'},
- {id:'pair',name:'Un par',hint:'Par más alto'},
- {id:'twopairs',name:'Dos pares',hint:'Dos pares distintos'},
- {id:'three',name:'Trío',hint:'Tres iguales'},
- {id:'four',name:'Póker',hint:'Cuatro iguales'},
- {id:'small',name:'Escalera menor',hint:'1-2-3-4-5 · 15'},
- {id:'large',name:'Escalera mayor',hint:'2-3-4-5-6 · 20'},
- {id:'full',name:'Full',hint:'Trío + par · suma'},
- {id:'chance',name:'Chance',hint:'Suma de los cinco'},
- {id:'yatzy',name:'Yatzy',hint:'Cinco iguales · 50'}
+ {id:'three',name:'Trío',hint:'3 iguales · suma de los 5 dados'},
+ {id:'four',name:'Póker',hint:'4 iguales · suma de los 5 dados'},
+ {id:'full',name:'Full',hint:'Trío + par · 25'},
+ {id:'small',name:'Escalera menor',hint:'4 seguidos · 30'},
+ {id:'large',name:'Escalera mayor',hint:'5 seguidos · 40'},
+ {id:'yatzy',name:'Yatzy',hint:'5 iguales · 50'},
+ {id:'chance',name:'Chance',hint:'Suma de los 5 dados'}
 ];
+const ROUNDS=CATS.length, BONUS=35;
 const UPPER=CATS.slice(0,6).map(c=>c.id);
 function counts(d){const c=[0,0,0,0,0,0,0];d.forEach(v=>c[v]++);return c;}
+function hasRun(c,run){return run.every(v=>c[v]>0);}
 function score(id,d){
   const c=counts(d), sum=d.reduce((a,b)=>a+b,0);
   const cat=CATS.find(x=>x.id===id);
   if(cat.face) return cat.face*c[cat.face];
   switch(id){
-    case 'pair': for(let v=6;v>=1;v--) if(c[v]>=2) return 2*v; return 0;
-    case 'twopairs': {const p=[];for(let v=6;v>=1;v--) if(c[v]>=2) p.push(v); return p.length>=2?2*(p[0]+p[1]):0;}
-    case 'three': for(let v=6;v>=1;v--) if(c[v]>=3) return 3*v; return 0;
-    case 'four': for(let v=6;v>=1;v--) if(c[v]>=4) return 4*v; return 0;
-    case 'small': return [1,2,3,4,5].every(v=>c[v]===1)?15:0;
-    case 'large': return [2,3,4,5,6].every(v=>c[v]===1)?20:0;
-    case 'full': {let t=0,p=0;for(let v=1;v<=6;v++){if(c[v]===3)t=v;if(c[v]===2)p=v;} return t&&p?sum:0;}
-    case 'chance': return sum;
+    case 'three': return c.some(x=>x>=3)?sum:0;
+    case 'four': return c.some(x=>x>=4)?sum:0;
+    case 'full': return c.includes(3)&&c.includes(2)?25:0;
+    case 'small': return [[1,2,3,4],[2,3,4,5],[3,4,5,6]].some(r=>hasRun(c,r))?30:0;
+    case 'large': return [[1,2,3,4,5],[2,3,4,5,6]].some(r=>hasRun(c,r))?40:0;
     case 'yatzy': return c.some(x=>x===5)?50:0;
+    case 'chance': return sum;
   }
   return 0;
 }
 function upperSum(s){return UPPER.reduce((a,k)=>a+(s[k]??0),0);}
-function bonus(s){return upperSum(s)>=63?50:0;}
+function bonus(s){return upperSum(s)>=63?BONUS:0;}
 function total(s){return Object.values(s).reduce((a,b)=>a+b,0)+bonus(s);}
 
 // ---------- Estado ----------
@@ -319,47 +332,50 @@ function playerScore(id){
 }
 
 // ---------- Robot ----------
+function longestRun(c){
+  let best=[],cur=[];
+  for(let v=1;v<=6;v++){ if(c[v]>0){cur.push(v); if(cur.length>best.length) best=[...cur];} else cur=[]; }
+  return best;
+}
 function robotHolds(d,open,mode){
   if(mode==='random') return d.map(()=>{const a=new Uint8Array(1);crypto.getRandomValues(a);return a[0]<128;});
-  const c=counts(d), uniq=[...new Set(d)].sort((a,b)=>a-b);
-  const straightOpen=open.includes('small')||open.includes('large');
-  if(straightOpen){
-    for(const run of [[2,3,4,5,6],[1,2,3,4,5]]){
-      const have=run.filter(v=>c[v]>0);
-      if(have.length>=4 && ((run[0]===2&&open.includes('large'))||(run[0]===1&&open.includes('small')))){
-        const used=new Set(); return d.map(v=>{ if(run.includes(v)&&!used.has(v)){used.add(v);return true;} return false; });
-      }
-    }
-  }
-  // valor más repetido, desempate por el mayor
+  const c=counts(d);
   let best=0,bv=0; for(let v=6;v>=1;v--) if(c[v]>best){best=c[v];bv=v;}
+  // escaleras: conservar la secuencia más larga si sirve para una escalera abierta
+  const run=longestRun(c);
+  const straightOpen=open.includes('small')||open.includes('large');
+  if(straightOpen && (run.length>=4 || (run.length===3 && best<3))){
+    const used=new Set(); return d.map(v=>{ if(run.includes(v)&&!used.has(v)){used.add(v);return true;} return false; });
+  }
   if(best>=2){
-    // si hay full abierto y ya hay trío + par, retener todo
+    // full abierto y ya hay trío + par: retener todo
     if(open.includes('full') && score('full',d)>0) return d.map(()=>true);
-    if(open.includes('twopairs') && best===2){
+    // dos pares con full abierto: retener ambos pares
+    if(open.includes('full') && best===2){
       const pairs=[];for(let v=6;v>=1;v--) if(c[v]>=2) pairs.push(v);
       if(pairs.length>=2) return d.map(v=>v===pairs[0]||v===pairs[1]);
     }
     return d.map(v=>v===bv);
   }
-  // sin repeticiones: conservar 5 y 6 para sumas altas
+  // sin repeticiones ni escalera: conservar 5 y 6 para sumas altas
   return d.map(v=>v>=5);
 }
 function robotChoose(d,open,mode){
-  if(mode==='random'){ const a=new Uint8Array(1); let k; do{crypto.getRandomValues(a);}while(a[0]>=Math.floor(256/open.length)*open.length); k=a[0]%open.length; return open[k]; }
+  if(mode==='random'){ const a=new Uint8Array(1); do{crypto.getRandomValues(a);}while(a[0]>=Math.floor(256/open.length)*open.length); return open[a[0]%open.length]; }
   const c=counts(d); let bestId=null,bestVal=-Infinity;
-  const ups=upperSum(S.scores.robot);
+  const ups=upperSum(S.scores.robot), sum=d.reduce((a,b)=>a+b,0);
   for(const id of open){
     const s=score(id,d); let val=s;
     const cat=CATS.find(x=>x.id===id);
-    if(cat.face){ val += (c[cat.face]-3)*cat.face*0.9; if(ups<63 && ups+s>=63) val+=30; }
+    if(cat.face){ val += (c[cat.face]-3)*cat.face*0.9; if(ups<63 && ups+s>=63) val+=BONUS; }
+    if(id==='three'||id==='four') val -= (24-sum)*0.8;
     if(id==='chance') val-=12;
     if(id==='yatzy'&&s) val+=40;
     if(s===0) val=-1;
     if(val>bestVal){bestVal=val;bestId=id;}
   }
   if(bestVal<=0){
-    const scrap=['ones','yatzy','twos','four','large','small','twopairs','threes','full','three','pair','fours','chance','fives','sixes'];
+    const scrap=['ones','yatzy','twos','four','large','threes','small','full','three','fours','chance','fives','sixes'];
     for(const id of scrap) if(open.includes(id)) return id;
   }
   return bestId;
@@ -377,12 +393,13 @@ async function startRobot(){
     log('<b>Robot</b> · tirada '+r+': <code>'+diceStr(S.dice,heldBefore)+'</code>');
     renderAll(); await wait(); if(myGame!==gameId) return;
     if(r===3) break;
+    const o=open();
     if(mode==='random'){ const a=new Uint8Array(1);crypto.getRandomValues(a); if(a[0]<64) break; }
-    else if(score('yatzy',S.dice)&&open().includes('yatzy')) break;
-    else if(score('large',S.dice)&&open().includes('large')) break;
-    else if(score('small',S.dice)&&open().includes('small')) break;
-    else if(score('full',S.dice)&&open().includes('full')) break;
-    S.held=robotHolds(S.dice,open(),mode);
+    else if(score('yatzy',S.dice)&&o.includes('yatzy')) break;
+    else if(score('large',S.dice)&&o.includes('large')) break;
+    else if(score('small',S.dice)&&o.includes('small')&&!o.includes('large')) break;
+    else if(score('full',S.dice)&&o.includes('full')) break;
+    S.held=robotHolds(S.dice,o,mode);
     if(S.held.every(Boolean)) break;
     renderAll(); await wait(); if(myGame!==gameId) return;
   }
@@ -391,7 +408,7 @@ async function startRobot(){
   S.scores.robot[id]=pts; lastScored={who:'robot',id};
   log('<b>Robot</b> anota <span class="r">'+pts+'</span> en '+CATS.find(c=>c.id===id).name);
   renderAll(); await wait(); if(myGame!==gameId) return;
-  if(S.round>=15){ S.turn='over'; busy=false; renderAll(); showEnd(); return; }
+  if(S.round>=ROUNDS){ S.turn='over'; busy=false; renderAll(); showEnd(); return; }
   S.round++; S.turn='player'; S.held=[false,false,false,false,false]; S.rollsLeft=3; S.rolled=false; S.dice=[0,0,0,0,0];
   busy=false; renderAll();
 }
@@ -411,7 +428,7 @@ function renderSheet(){
   };
   CATS.slice(0,6).forEach(c=>h+=row(c));
   h+='<tr class="sum"><td>Subtotal superior</td><td class="n">'+upperSum(P)+'</td><td class="n">'+upperSum(R)+'</td></tr>';
-  h+='<tr class="sum"><td>Bono (≥ 63)</td><td class="n">'+bonus(P)+'</td><td class="n">'+bonus(R)+'</td></tr>';
+  h+='<tr class="sum"><td>Bono (≥ 63 → 35)</td><td class="n">'+bonus(P)+'</td><td class="n">'+bonus(R)+'</td></tr>';
   CATS.slice(6).forEach(c=>h+=row(c));
   h+='<tr class="total"><td>Total</td><td class="n">'+total(P)+'</td><td class="n">'+total(R)+'</td></tr></tbody>';
   t.innerHTML=h;
@@ -420,7 +437,7 @@ function renderSheet(){
     td.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();playerScore(td.dataset.id);}});
   });
   const need=63-upperSum(P);
-  $('bonusnote').textContent= need>0 ? ('Te faltan '+need+' puntos en la sección superior para el bono de 50.') : 'Bono superior asegurado.';
+  $('bonusnote').textContent= need>0 ? ('Te faltan '+need+' puntos en la sección superior para el bono de '+BONUS+'.') : 'Bono superior asegurado.';
 }
 
 // ---------- Verificación ----------
@@ -437,7 +454,7 @@ function renderFair(){
   renderBars($('barsP'),stats.player); renderBars($('barsR'),stats.robot);
   const a=chi(stats.player), b=chi(stats.robot);
   const line=(name,r)=>{
-    if(r.n<60) return '<div><span class="chip wait">Muestra corta</span>'+name+': '+r.n+' dados lanzados. Se requieren al menos 60 para una lectura estable.</div>';
+    if(r.n<60) return '<div><span class="chip wait">Muestra corta</span>'+name+': '+r.n+' dados lanzados (se requieren 60).</div>';
     const ok=r.x<11.07;
     return '<div><span class="chip '+(ok?'ok':'dev')+'">'+(ok?'Dentro de lo esperado':'Desviación')+'</span>'+name+': n = <b>'+r.n+'</b>, χ² = <b>'+r.x.toFixed(2)+'</b>'+(ok?'':' (con α = 0,05, 1 de cada 20 muestras justas supera el umbral por azar)')+'</div>';
   };
@@ -447,7 +464,7 @@ function renderFair(){
 // ---------- Render general ----------
 function renderAll(){
   renderDice(); renderSheet(); renderFair();
-  $('meta').textContent= S.turn==='over' ? 'Partida terminada' : ('Ronda '+S.round+' de 15');
+  $('meta').textContent= S.turn==='over' ? 'Partida terminada' : ('Ronda '+S.round+' de '+ROUNDS);
   $('who').textContent= S.turn==='robot' ? 'Turno del robot' : S.turn==='over' ? 'Fin' : 'Tu turno';
   const rb=$('rollBtn'); rb.disabled= S.turn!=='player'||S.rollsLeft===0||busy;
   rb.textContent= S.rolled ? 'Volver a lanzar' : 'Lanzar dados';
