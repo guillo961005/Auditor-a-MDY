@@ -10,6 +10,7 @@
   --felt:#1f5a48; --felt-2:#16463a; --felt-ink:#e8f1ec;
   --die:#fffdf6; --pip:#1d2420; --accent:#c2412d; --accent-soft:#f6ddd7;
   --good:#2f7a4f; --warn:#a86a12;
+  --score-bg:#d3ecdb; --score-ink:#1d5c38; --pend-bg:#fbedc9; --pend-ink:#7a4d0a;
   --f-display:"Zilla Slab", Georgia, "Times New Roman", serif;
   --f-body:"Source Sans 3", system-ui, -apple-system, "Segoe UI", sans-serif;
   --f-num:"JetBrains Mono", ui-monospace, Consolas, monospace;
@@ -18,12 +19,12 @@
   --bg:#111513; --paper:#1a1f1c; --ink:#e4eae6; --muted:#97a39c; --line:#2c3430;
   --felt:#173f33; --felt-2:#10302a; --felt-ink:#dceae3;
   --die:#f3efe4; --pip:#1d2420; --accent:#e5664f; --accent-soft:#4a2620;
-  --good:#5cc08a; --warn:#e0a548; color-scheme:dark;}}
+  --good:#5cc08a; --warn:#e0a548; --score-bg:#1f4a33; --score-ink:#a8e6c1; --pend-bg:#4a3a17; --pend-ink:#f0cd85; color-scheme:dark;}}
 :root[data-theme="dark"]{
   --bg:#111513; --paper:#1a1f1c; --ink:#e4eae6; --muted:#97a39c; --line:#2c3430;
   --felt:#173f33; --felt-2:#10302a; --felt-ink:#dceae3;
   --die:#f3efe4; --pip:#1d2420; --accent:#e5664f; --accent-soft:#4a2620;
-  --good:#5cc08a; --warn:#e0a548; color-scheme:dark;}
+  --good:#5cc08a; --warn:#e0a548; --score-bg:#1f4a33; --score-ink:#a8e6c1; --pend-bg:#4a3a17; --pend-ink:#f0cd85; color-scheme:dark;}
 body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:14px;line-height:1.4}
 .wrap{max-width:1400px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:12px;display:grid;gap:12px;grid-template-rows:auto minmax(0,1fr)}
 header{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px}
@@ -91,9 +92,17 @@ select{background:var(--paper);color:var(--ink);border:1px solid var(--line);bor
 .sheet .cat small{color:var(--muted);font-size:11.5px;margin-left:6px}
 .sheet tr.sum td{background:color-mix(in srgb,var(--line) 45%,transparent);font-weight:700}
 .sheet tr.total td{font-family:var(--f-display);font-size:17px;border-bottom:0}
-td.pick{cursor:pointer;color:var(--muted);background:var(--accent-soft);border-radius:4px}
-td.pick:hover{color:var(--ink);outline:2px solid var(--accent);outline-offset:-2px}
-td.pick.zero{color:var(--muted);background:transparent;outline:1px dashed var(--line);outline-offset:-3px}
+/* Verde: casilla libre que da puntos con los dados actuales. Ámbar: casilla libre pendiente (hoy daría 0). */
+td.pick{cursor:pointer;border-radius:4px}
+td.pick.scores{color:var(--score-ink);background:var(--score-bg);font-weight:700}
+td.pick.zero,td.pend{color:var(--pend-ink);background:var(--pend-bg)}
+td.pick:hover{outline:2px solid var(--accent);outline-offset:-2px}
+.sheet tr.can td.cat{box-shadow:inset 3px 0 0 var(--score-ink)}
+.legend{display:flex;flex-wrap:wrap;gap:12px;font-size:12px;color:var(--muted);margin:6px 0 0}
+.legend span{display:inline-flex;align-items:center;gap:5px}
+.legend i{width:12px;height:12px;border-radius:3px;display:inline-block}
+.legend i.s{background:var(--score-bg);box-shadow:inset 0 0 0 1px var(--score-ink)}
+.legend i.z{background:var(--pend-bg);box-shadow:inset 0 0 0 1px var(--pend-ink)}
 td.just{color:var(--accent);font-weight:700}
 .bonusnote{font-size:12px;color:var(--muted);margin:6px 0 0}
 
@@ -189,6 +198,7 @@ details.method p{margin:4px 0 0}
     <section class="panel sheetpanel" aria-label="Planilla de puntuación">
       <h2>Planilla <small>pulsa una casilla de tu columna para anotar</small></h2>
       <table class="sheet" id="sheet"></table>
+      <p class="legend"><span><i class="s"></i>Da puntos con tus dados</span><span><i class="z"></i>Pendiente por asignar</span></p>
       <p class="bonusnote" id="bonusnote"></p>
     </section>
 
@@ -419,12 +429,12 @@ function renderSheet(){
   const canPick=S.turn==='player'&&S.rolled&&!busy;
   let h='<thead><tr><th>Casilla</th><th class="n">Tú</th><th class="n">Robot</th></tr></thead><tbody>';
   const row=c=>{
-    let pc;
+    let pc, can=false;
     if(P[c.id]!==undefined) pc='<td class="n'+(lastScored&&lastScored.who==='player'&&lastScored.id===c.id?' just':'')+'">'+P[c.id]+'</td>';
-    else if(canPick){const s=score(c.id,S.dice); pc='<td class="n pick'+(s===0?' zero':'')+'" tabindex="0" role="button" data-id="'+c.id+'" aria-label="Anotar '+s+' en '+c.name+'">'+s+'</td>';}
-    else pc='<td class="n"></td>';
+    else if(canPick){const s=score(c.id,S.dice); can=s>0; pc='<td class="n pick '+(can?'scores':'zero')+'" tabindex="0" role="button" data-id="'+c.id+'" aria-label="Anotar '+s+' en '+c.name+'">'+s+'</td>';}
+    else pc='<td class="n pend" aria-label="Pendiente"></td>';
     const rc='<td class="n'+(lastScored&&lastScored.who==='robot'&&lastScored.id===c.id?' just':'')+'">'+(R[c.id]??'')+'</td>';
-    return '<tr><td class="cat"><b>'+c.name+'</b><small>'+c.hint+'</small></td>'+pc+rc+'</tr>';
+    return '<tr'+(can?' class="can"':'')+'><td class="cat"><b>'+c.name+'</b><small>'+c.hint+'</small></td>'+pc+rc+'</tr>';
   };
   CATS.slice(0,6).forEach(c=>h+=row(c));
   h+='<tr class="sum"><td>Subtotal superior</td><td class="n">'+upperSum(P)+'</td><td class="n">'+upperSum(R)+'</td></tr>';
