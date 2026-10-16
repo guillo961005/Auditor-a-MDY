@@ -66,6 +66,10 @@ select{background:var(--paper);color:var(--ink);border:1px solid var(--line);bor
 .die.rolling{animation:shake .32s linear}
 @keyframes shake{0%{transform:rotate(0)}25%{transform:rotate(-14deg)}50%{transform:rotate(10deg)}75%{transform:rotate(-6deg)}100%{transform:rotate(0)}}
 @media (prefers-reduced-motion:reduce){.die.rolling{animation:none}.die{transition:none}}
+.draw{display:flex;justify-content:center;gap:clamp(24px,5vw,48px);padding-top:10px}
+.draw figure{margin:0;display:grid;justify-items:center;gap:8px}
+.draw figcaption{font-size:12px;letter-spacing:.1em;text-transform:uppercase;opacity:.9}
+.draw .die.win{box-shadow:0 0 0 3px var(--accent),0 10px 16px rgba(0,0,0,.3);transform:translateY(-6px)}
 .heldtags{display:flex;justify-content:center;gap:clamp(8px,1.4vw,14px);flex-wrap:wrap}
 .heldtags span{width:var(--s,clamp(48px,5.2vw,66px));text-align:center;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--felt-ink);opacity:0}
 @media (max-width:1099px){.heldtags span{width:clamp(48px,11vw,66px)}}
@@ -146,7 +150,7 @@ details.method p{margin:4px 0 0}
   <header>
     <div>
       <h1>Yatzy <span>vs.</span> Robot</h1>
-      <p class="sub">Reglas clásicas: 13 casillas, tres tiradas por turno y bono de 35 puntos con 63 o más en la sección superior.</p>
+      <p class="sub">Reglas clásicas: 13 casillas, tres tiradas por turno y bono de 35 puntos con 63 o más en la sección superior. Un dado de sorteo define quién inicia.</p>
     </div>
     <div class="opts">
       <label for="mode">Estilo del robot
@@ -172,6 +176,10 @@ details.method p{margin:4px 0 0}
         <div class="status">
           <div class="who" id="who">Tu turno</div>
           <div class="meta" id="meta">Ronda 1 de 13</div>
+        </div>
+        <div class="draw" id="draw" hidden>
+          <figure><button class="die" id="drawP" type="button" disabled aria-label="Tu dado de inicio"></button><figcaption>Tú</figcaption></figure>
+          <figure><button class="die" id="drawR" type="button" disabled aria-label="Dado de inicio del robot"></button><figcaption>Robot</figcaption></figure>
         </div>
         <div class="tray" id="tray"></div>
         <div class="heldtags" id="heldtags"></div>
@@ -265,28 +273,34 @@ function total(s){return Object.values(s).reduce((a,b)=>a+b,0)+bonus(s);}
 const $=id=>document.getElementById(id);
 let S, stats={player:[0,0,0,0,0,0,0],robot:[0,0,0,0,0,0,0]}, busy=false, lastScored=null, gameId=0;
 function fresh(){
-  S={round:1,turn:'player',dice:[0,0,0,0,0],held:[false,false,false,false,false],rollsLeft:3,rolled:false,
+  S={round:1,turn:'draw',first:null,dice:[0,0,0,0,0],held:[false,false,false,false,false],rollsLeft:3,rolled:false,
      scores:{player:{},robot:{}}};
   lastScored=null;
 }
 
 // ---------- Dados ----------
 const PIPS={1:[4],2:[0,8],3:[0,4,8],4:[0,2,6,8],5:[0,2,4,6,8],6:[0,2,3,5,6,8]};
+function addFace(b){
+  const f=document.createElement('span'); f.className='face'; b.appendChild(f);
+  for(let k=0;k<9;k++){const p=document.createElement('span');p.className='p';f.appendChild(p);}
+}
+function paintFace(b,v){
+  const on=PIPS[v]||[]; b.classList.toggle('blank',!v);
+  [...b.querySelector('.face').children].forEach((p,k)=>p.classList.toggle('on',on.includes(k)));
+}
 function buildTray(){
+  ['drawP','drawR'].forEach(id=>{const b=$(id); b.innerHTML=''; addFace(b);});
   const tray=$('tray'), tags=$('heldtags'); tray.innerHTML=''; tags.innerHTML='';
   for(let i=0;i<5;i++){
     const b=document.createElement('button'); b.type='button'; b.className='die'; b.id='die'+i;
-    const f=document.createElement('span'); f.className='face'; b.appendChild(f);
-    for(let k=0;k<9;k++){const p=document.createElement('span');p.className='p';f.appendChild(p);}
+    addFace(b);
     b.addEventListener('click',()=>toggleHold(i));
     tray.appendChild(b);
     const t=document.createElement('span'); t.textContent='Retenido'; tags.appendChild(t);
   }
 }
 function paintDie(i,v){
-  const b=$('die'+i); const on=PIPS[v]||[];
-  b.classList.toggle('blank',!v);
-  [...b.querySelector('.face').children].forEach((p,k)=>p.classList.toggle('on',on.includes(k)));
+  const b=$('die'+i); paintFace(b,v);
   b.setAttribute('aria-label', v?('Dado '+(i+1)+': '+v+(S.held[i]?', retenido':'')):'Dado sin lanzar');
 }
 function renderDice(){
@@ -324,7 +338,44 @@ function log(html){
 function diceStr(d,held){return d.map((v,i)=>held&&held[i]?'['+v+']':String(v)).join(' ');}
 
 // ---------- Turno del jugador ----------
+// ---------- Sorteo de inicio: cada uno lanza un dado; el mayor empieza ----------
+const WHO={player:'Tú',robot:'Robot'};
+async function drawStart(){
+  if(S.turn!=='draw'||busy) return;
+  busy=true; renderAll();
+  const myGame=gameId, p=d6(), r=d6(); stats.player[p]++; stats.robot[r]++;
+  const bP=$('drawP'), bR=$('drawR'); bP.classList.remove('win'); bR.classList.remove('win');
+  if(!matchMedia('(prefers-reduced-motion: reduce)').matches){
+    [bP,bR].forEach(b=>b.classList.add('rolling'));
+    for(let f=0;f<5;f++){ paintFace(bP,d6()); paintFace(bR,d6()); await sleep(70); }
+    [bP,bR].forEach(b=>b.classList.remove('rolling'));
+  }
+  if(myGame!==gameId) return;
+  paintFace(bP,p); paintFace(bR,r);
+  log('<b>Sorteo de inicio</b> · Tú <code>'+p+'</code> · Robot <code>'+r+'</code>');
+  if(p===r){ S.drawMsg='Empate a '+p+'. Lanza de nuevo para desempatar.'; log('Empate: se repite el sorteo.'); busy=false; renderAll(); return; }
+  S.first= p>r?'player':'robot';
+  (S.first==='player'?bP:bR).classList.add('win');
+  S.drawMsg=(S.first==='player'?'Sacaste el número más alto: inicias tú.':'El robot sacó el número más alto: inicia el robot.');
+  log('Inicia: <b>'+WHO[S.first]+'</b>.');
+  renderAll(); await sleep(1400); if(myGame!==gameId) return;
+  busy=false;
+  if(S.first==='player'){ S.turn='player'; renderAll(); } else startRobot();
+}
+// Pasa el turno respetando el orden del sorteo; la ronda cierra cuando juega el segundo.
+function endTurn(who){
+  let next;
+  if(who===S.first) next= who==='player'?'robot':'player';
+  else{
+    if(S.round>=ROUNDS){ S.turn='over'; busy=false; renderAll(); showEnd(); return; }
+    S.round++; next=S.first;
+  }
+  if(next==='robot') startRobot();
+  else{ S.turn='player'; S.held=[false,false,false,false,false]; S.rollsLeft=3; S.rolled=false; S.dice=[0,0,0,0,0]; busy=false; renderAll(); }
+}
+
 $('rollBtn').addEventListener('click',async()=>{
+  if(S.turn==='draw') return drawStart();
   if(S.turn!=='player'||S.rollsLeft===0||busy) return;
   busy=true; renderAll();
   const heldBefore=[...S.held];
@@ -338,7 +389,7 @@ function playerScore(id){
   const pts=score(id,S.dice);
   S.scores.player[id]=pts; lastScored={who:'player',id};
   log('<b>Tú</b> anotas <span class="r">'+pts+'</span> en '+CATS.find(c=>c.id===id).name);
-  startRobot();
+  endTurn('player');
 }
 
 // ---------- Robot ----------
@@ -418,9 +469,7 @@ async function startRobot(){
   S.scores.robot[id]=pts; lastScored={who:'robot',id};
   log('<b>Robot</b> anota <span class="r">'+pts+'</span> en '+CATS.find(c=>c.id===id).name);
   renderAll(); await wait(); if(myGame!==gameId) return;
-  if(S.round>=ROUNDS){ S.turn='over'; busy=false; renderAll(); showEnd(); return; }
-  S.round++; S.turn='player'; S.held=[false,false,false,false,false]; S.rollsLeft=3; S.rolled=false; S.dice=[0,0,0,0,0];
-  busy=false; renderAll();
+  endTurn('robot');
 }
 
 // ---------- Planilla ----------
@@ -474,14 +523,18 @@ function renderFair(){
 // ---------- Render general ----------
 function renderAll(){
   renderDice(); renderSheet(); renderFair();
-  $('meta').textContent= S.turn==='over' ? 'Partida terminada' : ('Ronda '+S.round+' de '+ROUNDS);
-  $('who').textContent= S.turn==='robot' ? 'Turno del robot' : S.turn==='over' ? 'Fin' : 'Tu turno';
-  const rb=$('rollBtn'); rb.disabled= S.turn!=='player'||S.rollsLeft===0||busy;
-  rb.textContent= S.rolled ? 'Volver a lanzar' : 'Lanzar dados';
+  const isDraw=S.turn==='draw';
+  $('draw').hidden=!isDraw; $('tray').hidden=isDraw; $('heldtags').hidden=isDraw; $('rollPips').hidden=isDraw;
+  $('meta').textContent= S.turn==='over' ? 'Partida terminada' : isDraw ? 'Antes de empezar' : ('Ronda '+S.round+' de '+ROUNDS+' · inicia '+(S.first==='player'?'tú':'el robot'));
+  $('who').textContent= isDraw ? '¿Quién inicia?' : S.turn==='robot' ? 'Turno del robot' : S.turn==='over' ? 'Fin' : 'Tu turno';
+  const rb=$('rollBtn');
+  rb.disabled= isDraw ? (busy||!!S.first) : (S.turn!=='player'||S.rollsLeft===0||busy);
+  rb.textContent= isDraw ? 'Lanzar dado de inicio' : S.rolled ? 'Volver a lanzar' : 'Lanzar dados';
   let p=''; for(let i=0;i<3;i++) p+='<i class="'+(i<S.rollsLeft?'full':'')+'"></i>'; $('rollPips').innerHTML=p;
   $('rollPips').setAttribute('aria-label','Tiradas restantes: '+S.rollsLeft);
   let hint='';
-  if(S.turn==='robot') hint='El robot está jugando. Sus decisiones aparecen en el registro.';
+  if(isDraw) hint=S.drawMsg||'Cada jugador lanza un dado: quien saque el número más alto inicia la partida.';
+  else if(S.turn==='robot') hint='El robot está jugando. Sus decisiones aparecen en el registro.';
   else if(S.turn==='player'){
     if(!S.rolled) hint='Lanza los dados para empezar tu turno.';
     else if(S.rollsLeft>0) hint='Toca un dado para retenerlo o anota en tu columna de la planilla.';
@@ -498,6 +551,7 @@ function showEnd(){
 function newGame(){
   gameId++; busy=false; fresh(); $('overlay').hidden=true; $('log').innerHTML='';
   log('Nueva partida. Modo del robot: <b>'+($('mode').value==='random'?'aleatorio':'estratégico')+'</b>.');
+  $('drawP').classList.remove('win'); $('drawR').classList.remove('win'); paintFace($('drawP'),0); paintFace($('drawR'),0);
   renderAll();
 }
 $('newGame').addEventListener('click',newGame);
